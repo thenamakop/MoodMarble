@@ -5,10 +5,7 @@ export interface SubmissionRateLimitResult {
 }
 
 export interface SubmissionRateLimiter {
-  consume(
-    deviceToken: string,
-    submissionDate: string,
-  ): Promise<SubmissionRateLimitResult>;
+  consume(deviceToken: string, submissionDate: string): Promise<SubmissionRateLimitResult>;
 }
 
 export class InMemorySubmissionRateLimiter implements SubmissionRateLimiter {
