@@ -5,14 +5,15 @@ import { buildApp } from "../../src/app";
 import type { MoodSubmissionStore } from "../../src/services/mood-submissions";
 
 const JWT_SECRET = "test-jwt-secret";
-const FIXED_DATE = new Date("2026-06-12T09:30:00.000Z");
 
 describe("POST /mood", () => {
   let createdSubmissions: unknown[];
   let app: Awaited<ReturnType<typeof buildApp>>;
+  let currentTime: Date;
 
   beforeEach(async () => {
     createdSubmissions = [];
+    currentTime = new Date("2026-06-12T09:30:00.000Z");
 
     const moodSubmissionStore: MoodSubmissionStore = {
       async createSubmission(submission) {
@@ -23,7 +24,7 @@ describe("POST /mood", () => {
     app = await buildApp({
       jwtSecret: JWT_SECRET,
       moodSubmissionStore,
-      now: () => FIXED_DATE,
+      now: () => currentTime,
     });
   });
 
@@ -175,6 +176,172 @@ describe("POST /mood", () => {
     expect(createdSubmissions[0]).not.toHaveProperty("user_id");
     expect(createdSubmissions[0]).not.toHaveProperty("email");
     expect(createdSubmissions[0]).not.toHaveProperty("device_token");
+  });
+
+  it("allows 5 submissions per day per device", async () => {
+    for (
+      let submissionNumber = 0;
+      submissionNumber < 5;
+      submissionNumber += 1
+    ) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/mood",
+        headers: {
+          authorization: createAuthorizationHeader(),
+        },
+        payload: {
+          workspace_id: "ws_abc123",
+          team_id: "tm_abc123",
+          mood_type: "happy",
+          hour_of_day: 9 + submissionNumber,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+    }
+
+    expect(createdSubmissions).toHaveLength(5);
+  });
+
+  it("blocks the 6th submission on the same day", async () => {
+    for (
+      let submissionNumber = 0;
+      submissionNumber < 5;
+      submissionNumber += 1
+    ) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/mood",
+        headers: {
+          authorization: createAuthorizationHeader(),
+        },
+        payload: {
+          workspace_id: "ws_abc123",
+          team_id: "tm_abc123",
+          mood_type: "focused",
+          hour_of_day: 9 + submissionNumber,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+    }
+
+    const blockedResponse = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: createAuthorizationHeader(),
+      },
+      payload: {
+        workspace_id: "ws_abc123",
+        team_id: "tm_abc123",
+        mood_type: "focused",
+        hour_of_day: 14,
+      },
+    });
+
+    expect(blockedResponse.statusCode).toBe(429);
+    expect(blockedResponse.json()).toEqual({
+      message: "Daily mood submission limit reached.",
+    });
+    expect(createdSubmissions).toHaveLength(5);
+  });
+
+  it("resets the daily limit on the next day", async () => {
+    for (
+      let submissionNumber = 0;
+      submissionNumber < 5;
+      submissionNumber += 1
+    ) {
+      const response = await app.inject({
+        method: "POST",
+        url: "/mood",
+        headers: {
+          authorization: createAuthorizationHeader(),
+        },
+        payload: {
+          workspace_id: "ws_abc123",
+          team_id: "tm_abc123",
+          mood_type: "calm",
+          hour_of_day: submissionNumber,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+    }
+
+    currentTime = new Date("2026-06-13T09:30:00.000Z");
+
+    const nextDayResponse = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: createAuthorizationHeader(),
+      },
+      payload: {
+        workspace_id: "ws_abc123",
+        team_id: "tm_abc123",
+        mood_type: "calm",
+        hour_of_day: 10,
+      },
+    });
+
+    expect(nextDayResponse.statusCode).toBe(201);
+    expect(createdSubmissions).toHaveLength(6);
+    expect(createdSubmissions[5]).toEqual(
+      expect.objectContaining({
+        submissionDate: "2026-06-13",
+      }),
+    );
+  });
+
+  it("returns a privacy-safe rate-limit error response", async () => {
+    for (
+      let submissionNumber = 0;
+      submissionNumber < 5;
+      submissionNumber += 1
+    ) {
+      await app.inject({
+        method: "POST",
+        url: "/mood",
+        headers: {
+          authorization: createAuthorizationHeader(),
+        },
+        payload: {
+          workspace_id: "ws_abc123",
+          team_id: "tm_abc123",
+          mood_type: "tired",
+          note: "Need a break.",
+          hour_of_day: submissionNumber,
+        },
+      });
+    }
+
+    const blockedResponse = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: createAuthorizationHeader(),
+      },
+      payload: {
+        workspace_id: "ws_abc123",
+        team_id: "tm_abc123",
+        mood_type: "tired",
+        note: "Need a break.",
+        hour_of_day: 12,
+      },
+    });
+
+    expect(blockedResponse.statusCode).toBe(429);
+    expect(blockedResponse.json()).toEqual({
+      message: "Daily mood submission limit reached.",
+    });
+    expect(blockedResponse.body).not.toContain("device_token");
+    expect(blockedResponse.body).not.toContain(
+      "550e8400-e29b-41d4-a716-446655440000",
+    );
+    expect(blockedResponse.body).not.toContain("Need a break.");
   });
 });
 

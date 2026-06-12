@@ -22,6 +22,10 @@ export function buildMoodSubmissionRecord(
   };
 }
 
+export function getSubmissionDate(now = new Date()): string {
+  return now.toISOString().slice(0, 10);
+}
+
 function createMarbleId(): string {
   return `mr_${randomUUID().replace(/-/g, "").slice(0, 10)}`;
 }
