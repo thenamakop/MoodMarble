@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
@@ -29,6 +29,7 @@ import {
   Spacing,
 } from "@/constants/theme";
 import { submitMoodSubmission } from "@/features/mood-submission/api";
+import { SubmissionConfirmation } from "@/features/mood-submission/submission-confirmation";
 import { useTheme } from "@/hooks/use-theme";
 
 const MAX_NOTE_LENGTH = 120;
@@ -55,7 +56,9 @@ export function MarbleTrayScreen({
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [confirmationMood, setConfirmationMood] = useState<MoodValue | null>(
+    null,
+  );
 
   const canSubmit = Boolean(selectedMood) && !isSubmitting;
   const noteCharactersRemaining = MAX_NOTE_LENGTH - note.length;
@@ -67,6 +70,10 @@ export function MarbleTrayScreen({
     }
 
     return BottomTabInset + Spacing.four;
+  }, []);
+
+  const handleDismissConfirmation = useCallback(() => {
+    setConfirmationMood(null);
   }, []);
 
   function toggleTag(tag: TagValue) {
@@ -99,13 +106,14 @@ export function MarbleTrayScreen({
 
     setIsSubmitting(true);
     setErrorMessage(null);
-    setSuccessMessage(null);
+    setConfirmationMood(null);
 
     try {
+      const submittedMood = selectedMood;
       const payload = MoodSubmissionSchema.parse({
         workspace_id: workspaceId,
         team_id: teamId,
-        mood_type: selectedMood,
+        mood_type: submittedMood,
         tags: selectedTags,
         note: note.trim() || undefined,
         hour_of_day: getCurrentHour(),
@@ -116,7 +124,7 @@ export function MarbleTrayScreen({
       setSelectedMood(null);
       setSelectedTags([]);
       setNote("");
-      setSuccessMessage("Marble shared anonymously.");
+      setConfirmationMood(submittedMood);
     } catch {
       setErrorMessage("Unable to submit mood right now.");
     } finally {
@@ -126,6 +134,10 @@ export function MarbleTrayScreen({
 
   return (
     <ThemedView style={styles.screen}>
+      <SubmissionConfirmation
+        mood={confirmationMood}
+        onDismiss={handleDismissConfirmation}
+      />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}
@@ -167,7 +179,7 @@ export function MarbleTrayScreen({
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => {
                       setErrorMessage(null);
-                      setSuccessMessage(null);
+                      setConfirmationMood(null);
                       setSelectedMood(mood);
                     }}
                     style={({ pressed }) => [
@@ -214,7 +226,7 @@ export function MarbleTrayScreen({
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => {
-                      setSuccessMessage(null);
+                      setConfirmationMood(null);
                       toggleTag(tag);
                     }}
                     style={({ pressed }) => [
@@ -274,11 +286,6 @@ export function MarbleTrayScreen({
           <View style={styles.feedbackArea}>
             {errorMessage ? (
               <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
-            ) : null}
-            {successMessage ? (
-              <ThemedText style={styles.successText}>
-                {successMessage}
-              </ThemedText>
             ) : null}
           </View>
 
@@ -410,9 +417,6 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: Colors.light.textSecondary,
-  },
-  successText: {
-    color: "#15803D",
   },
   submitButton: {
     minHeight: 56,

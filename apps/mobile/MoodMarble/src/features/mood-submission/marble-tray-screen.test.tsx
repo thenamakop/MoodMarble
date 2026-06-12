@@ -7,8 +7,10 @@ import {
 } from "@testing-library/react-native";
 
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
+import { CONFIRMATION_AUTO_DISMISS_MS } from "@/features/mood-submission/submission-confirmation";
 
 afterEach(() => {
+  jest.useRealTimers();
   cleanup();
 });
 
@@ -69,6 +71,50 @@ describe("MarbleTrayScreen", () => {
     );
   });
 
+  it("shows the confirmation after a successful submit", async () => {
+    const onSubmitMood = jest.fn().mockResolvedValue(undefined);
+    const { findByTestId, getByText } = await renderScreen({ onSubmitMood });
+
+    fireEvent.press(await findByTestId("mood-happy"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    await findByTestId("submission-confirmation");
+    expect(getByText("Marble shared anonymously.")).toBeTruthy();
+  });
+
+  it("auto-dismisses the confirmation after a short delay", async () => {
+    const onSubmitMood = jest.fn().mockResolvedValue(undefined);
+    const { findByTestId, queryByTestId } = await renderScreen({
+      onSubmitMood,
+    });
+
+    fireEvent.press(await findByTestId("mood-calm"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    await findByTestId("submission-confirmation");
+
+    await waitFor(
+      () => expect(queryByTestId("submission-confirmation")).toBeNull(),
+      { timeout: CONFIRMATION_AUTO_DISMISS_MS + 1000 },
+    );
+  });
+
+  it("dismisses the confirmation when tapped", async () => {
+    const onSubmitMood = jest.fn().mockResolvedValue(undefined);
+    const { findByTestId, queryByTestId } = await renderScreen({
+      onSubmitMood,
+    });
+
+    fireEvent.press(await findByTestId("mood-energised"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    fireEvent.press(await findByTestId("submission-confirmation"));
+
+    await waitFor(() =>
+      expect(queryByTestId("submission-confirmation")).toBeNull(),
+    );
+  });
+
   it("shows loading and error states while submitting", async () => {
     let rejectSubmission: (() => void) | undefined;
     const onSubmitMood = jest.fn(
@@ -77,7 +123,7 @@ describe("MarbleTrayScreen", () => {
           rejectSubmission = () => reject(new Error("network"));
         }),
     );
-    const { findByTestId, getByText, queryByText } = await renderScreen({
+    const { findByTestId, getByText, queryByTestId } = await renderScreen({
       onSubmitMood,
     });
 
@@ -85,13 +131,14 @@ describe("MarbleTrayScreen", () => {
     fireEvent.press(await findByTestId("submit-button"));
 
     await waitFor(() => expect(getByText("Sharing...")).toBeTruthy());
-    expect(queryByText("Unable to submit mood right now.")).toBeNull();
+    expect(queryByTestId("submission-confirmation")).toBeNull();
 
     rejectSubmission?.();
 
     await waitFor(() =>
       expect(getByText("Unable to submit mood right now.")).toBeTruthy(),
     );
+    expect(queryByTestId("submission-confirmation")).toBeNull();
   });
 });
 
