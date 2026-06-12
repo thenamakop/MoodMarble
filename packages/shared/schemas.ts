@@ -17,15 +17,31 @@ export const DeviceTokenSchema = z.string().uuid();
 export const WorkspaceIdSchema = z.string().min(1, "workspace_id is required");
 export const TeamIdSchema = z.string().min(1, "team_id is required");
 export const MarbleIdSchema = z.string().min(1, "marble_id is required");
+export const HourOfDaySchema = z
+  .number()
+  .int()
+  .min(0, "hour_of_day must be between 0 and 23")
+  .max(23, "hour_of_day must be between 0 and 23");
+export const MoodSubmissionTagsSchema = z
+  .array(TagSchema)
+  .max(2, "Up to 2 tags are allowed per submission.")
+  .default([]);
+export const MoodSubmissionNoteSchema = z
+  .string()
+  .trim()
+  .max(120, "Note must be 120 characters or fewer.")
+  .optional();
 
-export const MoodSubmissionSchema = z.object({
-  workspace_id: WorkspaceIdSchema.optional(),
-  team_id: TeamIdSchema,
-  mood_type: MoodSchema,
-  tags: z.array(TagSchema).max(2).default([]),
-  note: z.string().trim().max(120).optional(),
-  hour_of_day: z.number().int().min(0).max(23),
-});
+export const MoodSubmissionSchema = z
+  .object({
+    workspace_id: WorkspaceIdSchema,
+    team_id: TeamIdSchema,
+    mood_type: MoodSchema,
+    tags: MoodSubmissionTagsSchema,
+    note: MoodSubmissionNoteSchema,
+    hour_of_day: HourOfDaySchema,
+  })
+  .strict();
 
 export const MoodSubmissionResponseSchema = z.object({
   status: z.literal("received"),
