@@ -1,0 +1,76 @@
+import {
+  createApiUrl,
+  submitMoodSubmission,
+} from "@/features/mood-submission/api";
+
+describe("submitMoodSubmission", () => {
+  const originalFetch = globalThis.fetch;
+  const originalApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+
+  beforeEach(() => {
+    globalThis.fetch = jest.fn() as typeof fetch;
+    delete process.env.EXPO_PUBLIC_API_BASE_URL;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+
+    if (originalApiBaseUrl) {
+      process.env.EXPO_PUBLIC_API_BASE_URL = originalApiBaseUrl;
+    } else {
+      delete process.env.EXPO_PUBLIC_API_BASE_URL;
+    }
+  });
+
+  it("uses the configured API base URL", async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = "https://api.moodmarble.test";
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+    });
+
+    await submitMoodSubmission(
+      {
+        workspace_id: "ws_test",
+        team_id: "tm_test",
+        mood_type: "happy",
+        tags: ["#team"],
+        hour_of_day: 14,
+      },
+      "device-jwt-token",
+    );
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "https://api.moodmarble.test/mood",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer device-jwt-token",
+        },
+      }),
+    );
+  });
+
+  it("falls back to the local backend URL", () => {
+    expect(createApiUrl("/mood")).toBe("http://localhost:3000/mood");
+  });
+
+  it("throws a stable error for failed requests", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+    });
+
+    await expect(
+      submitMoodSubmission(
+        {
+          workspace_id: "ws_test",
+          team_id: "tm_test",
+          mood_type: "focused",
+          tags: [],
+          hour_of_day: 9,
+        },
+        "device-jwt-token",
+      ),
+    ).rejects.toThrow("Unable to submit mood right now.");
+  });
+});

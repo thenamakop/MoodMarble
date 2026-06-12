@@ -89,6 +89,28 @@ describe("POST /mood", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  it("rejects duplicate tags", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: createAuthorizationHeader(),
+      },
+      payload: {
+        workspace_id: "ws_abc123",
+        team_id: "tm_abc123",
+        mood_type: "focused",
+        tags: ["#workload", "#workload"],
+        hour_of_day: 14,
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: "Invalid mood submission payload.",
+    });
+  });
+
   it("rejects a note longer than 120 characters", async () => {
     const response = await app.inject({
       method: "POST",

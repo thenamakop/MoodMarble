@@ -25,6 +25,9 @@ export const HourOfDaySchema = z
 export const MoodSubmissionTagsSchema = z
   .array(TagSchema)
   .max(2, "Up to 2 tags are allowed per submission.")
+  .refine((tags) => new Set(tags).size === tags.length, {
+    message: "Duplicate tags are not allowed.",
+  })
   .default([]);
 export const MoodSubmissionNoteSchema = z
   .string()
