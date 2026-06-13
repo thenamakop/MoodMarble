@@ -413,27 +413,30 @@ Open using:
 
 ## Current Phase
 
-**Week 1 — Setup & Architecture**
+**Week 2 — Core Submission Flow Stabilization**
 
 ### Completed
 
 - Repository structure
-- Project planning
-- Architecture documentation
+- Shared schema package
+- Anonymous mood submission API
+- Workspace join foundation and device JWT issuance
+- Per-device daily rate limiting
+- Marble tray submission UI
+- Confirmation flow
+- Backend and mobile test coverage for the Week 2 flow
 - Docker infrastructure
 
 ### In Progress
 
-- Shared schema package
-- Database schema
-- Initial backend setup
+- Week 2 hardening and cleanup
+- Documentation alignment with the current implementation
+- Final foundation checks before Week 3
 
 ### Upcoming
 
-- Workspace join flow
-- Anonymous device authentication
-- Mood submission API
-- Marble tray UI
+- Week 3 onboarding and mobile join flow
+- Additional MVP features scheduled after the Week 2 foundation
 
 ---
 
