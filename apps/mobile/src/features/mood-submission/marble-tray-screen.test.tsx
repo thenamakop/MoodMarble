@@ -71,6 +71,20 @@ describe("MarbleTrayScreen", () => {
     );
   });
 
+  it("keeps submit disabled without the required submission context", async () => {
+    const onSubmitMood = jest.fn().mockResolvedValue(undefined);
+    const { findByTestId, queryByText } = await renderScreen({
+      deviceJwt: undefined,
+      onSubmitMood,
+    });
+
+    fireEvent.press(await findByTestId("mood-calm"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    expect(onSubmitMood).not.toHaveBeenCalled();
+    expect(queryByText("Submission is not ready yet.")).toBeNull();
+  });
+
   it("shows the confirmation after a successful submit", async () => {
     const onSubmitMood = jest.fn().mockResolvedValue(undefined);
     const { findByTestId, getByText } = await renderScreen({ onSubmitMood });
@@ -139,6 +153,20 @@ describe("MarbleTrayScreen", () => {
       expect(getByText("Unable to submit mood right now.")).toBeTruthy(),
     );
     expect(queryByTestId("submission-confirmation")).toBeNull();
+  });
+
+  it("shows the rate-limit message returned by the backend", async () => {
+    const onSubmitMood = jest
+      .fn()
+      .mockRejectedValue(new Error("Daily mood submission limit reached."));
+    const { findByTestId, getByText } = await renderScreen({ onSubmitMood });
+
+    fireEvent.press(await findByTestId("mood-focused"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    await waitFor(() =>
+      expect(getByText("Daily mood submission limit reached.")).toBeTruthy(),
+    );
   });
 });
 

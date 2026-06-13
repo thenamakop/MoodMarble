@@ -67,10 +67,12 @@ describe("backend foundation routes", () => {
 
     const decoded = jwt.verify(response.json().device_jwt, JWT_SECRET) as {
       device_token: string;
+      workspace_id: string;
     };
     expect(decoded.device_token).toMatch(
       /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
     );
+    expect(decoded.workspace_id).toBe("ws_localdemo");
   });
 
   it("returns not found for an unknown join code", async () => {

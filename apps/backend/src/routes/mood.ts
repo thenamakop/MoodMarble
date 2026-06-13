@@ -19,10 +19,12 @@ import {
   SubmissionRateLimitExceededError,
   type SubmissionRateLimiter,
 } from "../services/submission-rate-limit";
+import type { WorkspaceDirectory } from "../services/workspace-directory";
 
 interface RegisterMoodRouteOptions {
   jwtSecret?: string;
   moodSubmissionStore: MoodSubmissionStore;
+  workspaceDirectory: WorkspaceDirectory;
   submissionRateLimiter: SubmissionRateLimiter;
   now?: () => Date;
 }
@@ -41,6 +43,38 @@ export async function registerMoodRoute(
         );
         const currentTime = options.now?.() ?? new Date();
         const parsedSubmission = MoodSubmissionSchema.parse(request.body);
+
+        if (deviceJwt.workspace_id !== parsedSubmission.workspace_id) {
+          return reply.status(400).send({
+            message: "Invalid mood submission payload.",
+            issues: [
+              {
+                path: "workspace_id",
+                message:
+                  "Submission workspace does not match the joined workspace.",
+              },
+            ],
+          });
+        }
+
+        const teamBelongsToWorkspace =
+          await options.workspaceDirectory.hasTeamInWorkspace(
+            parsedSubmission.workspace_id,
+            parsedSubmission.team_id,
+          );
+
+        if (!teamBelongsToWorkspace) {
+          return reply.status(400).send({
+            message: "Invalid mood submission payload.",
+            issues: [
+              {
+                path: "team_id",
+                message: "team_id must belong to the submitted workspace.",
+              },
+            ],
+          });
+        }
+
         const currentDate = getSubmissionDate(currentTime);
         const rateLimitResult = await options.submissionRateLimiter.consume(
           deviceJwt.device_token,

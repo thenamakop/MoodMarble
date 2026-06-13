@@ -58,6 +58,7 @@ describe("submitMoodSubmission", () => {
   it("throws a stable error for failed requests", async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,
+      json: jest.fn().mockResolvedValue({}),
     });
 
     await expect(
@@ -72,5 +73,27 @@ describe("submitMoodSubmission", () => {
         "device-jwt-token",
       ),
     ).rejects.toThrow("Unable to submit mood right now.");
+  });
+
+  it("surfaces the backend rate-limit message when provided", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: jest
+        .fn()
+        .mockResolvedValue({ message: "Daily mood submission limit reached." }),
+    });
+
+    await expect(
+      submitMoodSubmission(
+        {
+          workspace_id: "ws_test",
+          team_id: "tm_test",
+          mood_type: "focused",
+          tags: [],
+          hour_of_day: 9,
+        },
+        "device-jwt-token",
+      ),
+    ).rejects.toThrow("Daily mood submission limit reached.");
   });
 });

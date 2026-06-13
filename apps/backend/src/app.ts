@@ -28,17 +28,19 @@ export async function buildApp(
   options: BuildAppOptions,
 ): Promise<FastifyInstance> {
   const app = Fastify();
+  const workspaceDirectory =
+    options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
 
   await registerHealthRoutes(app);
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
-    workspaceDirectory:
-      options.workspaceDirectory ?? new InMemoryWorkspaceDirectory(),
+    workspaceDirectory,
   });
   await registerMoodRoute(app, {
     jwtSecret: options.jwtSecret,
     moodSubmissionStore:
       options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore(),
+    workspaceDirectory,
     submissionRateLimiter:
       options.submissionRateLimiter ?? new InMemorySubmissionRateLimiter(),
     now: options.now,

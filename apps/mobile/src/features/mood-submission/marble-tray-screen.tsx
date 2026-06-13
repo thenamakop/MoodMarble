@@ -60,8 +60,9 @@ export function MarbleTrayScreen({
     null,
   );
 
-  const canSubmit = Boolean(selectedMood) && !isSubmitting;
-  const noteCharactersRemaining = MAX_NOTE_LENGTH - note.length;
+  const hasSubmissionContext = Boolean(workspaceId && teamId && deviceJwt);
+  const canSubmit =
+    Boolean(selectedMood) && hasSubmissionContext && !isSubmitting;
   const selectedMoodLabel = selectedMood ? MOOD_LABELS[selectedMood] : null;
 
   const safeBottomPadding = useMemo(() => {
@@ -125,8 +126,15 @@ export function MarbleTrayScreen({
       setSelectedTags([]);
       setNote("");
       setConfirmationMood(submittedMood);
-    } catch {
-      setErrorMessage("Unable to submit mood right now.");
+    } catch (error) {
+      if (
+        error instanceof Error &&
+        error.message === "Daily mood submission limit reached."
+      ) {
+        setErrorMessage(error.message);
+      } else {
+        setErrorMessage("Unable to submit mood right now.");
+      }
     } finally {
       setIsSubmitting(false);
     }

@@ -32,7 +32,7 @@ export async function registerWorkspaceJoinRoute(
           });
         }
 
-        const { deviceJwt } = createDeviceJwt(options.jwtSecret);
+        const { deviceJwt } = createDeviceJwt(options.jwtSecret, workspace.id);
 
         return reply.status(200).send(
           WorkspaceJoinResponseSchema.parse({

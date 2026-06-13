@@ -1,6 +1,10 @@
 import { eq } from "drizzle-orm";
 
-import type { TeamSummary, WorkspaceId } from "../../../../packages/shared";
+import type {
+  TeamId,
+  TeamSummary,
+  WorkspaceId,
+} from "../../../../packages/shared";
 import type { DatabaseClient } from "../db/client";
 import { teams, workspaces } from "../db/schema";
 
@@ -13,6 +17,7 @@ export interface WorkspaceDirectoryEntry {
 
 export interface WorkspaceDirectory {
   findByJoinCode(joinCode: string): Promise<WorkspaceDirectoryEntry | null>;
+  hasTeamInWorkspace(workspaceId: string, teamId: string): Promise<boolean>;
 }
 
 export const LOCAL_WORKSPACE_SEED: WorkspaceDirectoryEntry[] = [
@@ -44,6 +49,23 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
     return (
       this.workspaces.find((workspace) => workspace.joinCode === joinCode) ??
       null
+    );
+  }
+
+  async hasTeamInWorkspace(
+    workspaceId: string,
+    teamId: string,
+  ): Promise<boolean> {
+    const workspace = this.workspaces.find(
+      (currentWorkspace) => currentWorkspace.id === workspaceId,
+    );
+
+    if (!workspace) {
+      return false;
+    }
+
+    return workspace.teams.some(
+      (team): team is TeamSummary & { id: TeamId } => team.id === teamId,
     );
   }
 }
@@ -79,5 +101,16 @@ export class PostgresWorkspaceDirectory implements WorkspaceDirectory {
         }),
       ),
     };
+  }
+
+  async hasTeamInWorkspace(
+    workspaceId: string,
+    teamId: string,
+  ): Promise<boolean> {
+    const teamRecord = await this.databaseClient.db.query.teams.findFirst({
+      where: eq(teams.id, teamId),
+    });
+
+    return teamRecord?.workspaceId === workspaceId;
   }
 }

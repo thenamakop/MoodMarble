@@ -2,10 +2,14 @@ import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
-import { DeviceTokenSchema } from "../../../../packages/shared";
+import {
+  DeviceTokenSchema,
+  WorkspaceIdSchema,
+} from "../../../../packages/shared";
 
 const DeviceJwtPayloadSchema = z.object({
   device_token: DeviceTokenSchema,
+  workspace_id: WorkspaceIdSchema,
 });
 
 export type DeviceJwtPayload = z.infer<typeof DeviceJwtPayloadSchema>;
@@ -56,6 +60,7 @@ export function verifyDeviceJwt(
 
 export function createDeviceJwt(
   jwtSecret: string | undefined,
+  workspaceId: string,
 ): { deviceJwt: string; deviceToken: string } {
   if (!jwtSecret) {
     throw new MissingJwtSecretError();
@@ -65,6 +70,7 @@ export function createDeviceJwt(
   const deviceJwt = jwt.sign(
     {
       device_token: deviceToken,
+      workspace_id: workspaceId,
     },
     jwtSecret,
     {

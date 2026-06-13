@@ -3,8 +3,11 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../../src/app";
 import type { MoodSubmissionStore } from "../../src/services/mood-submissions";
+import type { WorkspaceDirectory } from "../../src/services/workspace-directory";
 
 const JWT_SECRET = "test-jwt-secret";
+const TEST_WORKSPACE_ID = "ws_test";
+const TEST_TEAM_ID = "tm_test";
 
 describe("POST /mood", () => {
   let createdSubmissions: unknown[];
@@ -20,10 +23,19 @@ describe("POST /mood", () => {
         createdSubmissions.push(submission);
       },
     };
+    const workspaceDirectory: WorkspaceDirectory = {
+      async findByJoinCode() {
+        return null;
+      },
+      async hasTeamInWorkspace(workspaceId, teamId) {
+        return workspaceId === TEST_WORKSPACE_ID && teamId === TEST_TEAM_ID;
+      },
+    };
 
     app = await buildApp({
       jwtSecret: JWT_SECRET,
       moodSubmissionStore,
+      workspaceDirectory,
       now: () => currentTime,
     });
   });
@@ -36,8 +48,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "stressed",
         tags: ["#workload", "#deadlines"],
         note: "Need some breathing room today.",
@@ -57,8 +69,8 @@ describe("POST /mood", () => {
       method: "POST",
       url: "/mood",
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "happy",
         hour_of_day: 14,
       },
@@ -78,8 +90,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "angry",
         hour_of_day: 14,
       },
@@ -96,8 +108,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "focused",
         tags: ["#workload", "#deadlines", "#team"],
         hour_of_day: 14,
@@ -115,8 +127,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "focused",
         tags: ["#workload", "#workload"],
         hour_of_day: 14,
@@ -137,8 +149,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "neutral",
         note: "x".repeat(121),
         hour_of_day: 14,
@@ -156,8 +168,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "happy",
       },
     });
@@ -169,8 +181,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "happy",
         hour_of_day: 24,
       },
@@ -188,8 +200,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "sad",
         tags: ["#management"],
         note: "Need more clarity this week.",
@@ -202,7 +214,7 @@ describe("POST /mood", () => {
 
     expect(createdSubmissions[0]).toEqual({
       id: expect.stringMatching(/^mr_[a-z0-9]{10}$/),
-      teamId: "tm_abc123",
+      teamId: TEST_TEAM_ID,
       moodType: "sad",
       tags: ["#management"],
       noteHash: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -218,6 +230,60 @@ describe("POST /mood", () => {
     expect(createdSubmissions[0]).not.toHaveProperty("device_token");
   });
 
+  it("rejects submissions for a different workspace than the joined JWT", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: createAuthorizationHeader(),
+      },
+      payload: {
+        workspace_id: "ws_other",
+        team_id: TEST_TEAM_ID,
+        mood_type: "happy",
+        hour_of_day: 14,
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Invalid mood submission payload.",
+      issues: [
+        {
+          path: "workspace_id",
+          message: "Submission workspace does not match the joined workspace.",
+        },
+      ],
+    });
+  });
+
+  it("rejects submissions for a team outside the submitted workspace", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: createAuthorizationHeader(),
+      },
+      payload: {
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: "tm_other",
+        mood_type: "happy",
+        hour_of_day: 14,
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      message: "Invalid mood submission payload.",
+      issues: [
+        {
+          path: "team_id",
+          message: "team_id must belong to the submitted workspace.",
+        },
+      ],
+    });
+  });
+
   it("allows 5 submissions per day per device", async () => {
     for (
       let submissionNumber = 0;
@@ -231,8 +297,8 @@ describe("POST /mood", () => {
           authorization: createAuthorizationHeader(),
         },
         payload: {
-          workspace_id: "ws_abc123",
-          team_id: "tm_abc123",
+          workspace_id: TEST_WORKSPACE_ID,
+          team_id: TEST_TEAM_ID,
           mood_type: "happy",
           hour_of_day: 9 + submissionNumber,
         },
@@ -257,8 +323,8 @@ describe("POST /mood", () => {
           authorization: createAuthorizationHeader(),
         },
         payload: {
-          workspace_id: "ws_abc123",
-          team_id: "tm_abc123",
+          workspace_id: TEST_WORKSPACE_ID,
+          team_id: TEST_TEAM_ID,
           mood_type: "focused",
           hour_of_day: 9 + submissionNumber,
         },
@@ -274,8 +340,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "focused",
         hour_of_day: 14,
       },
@@ -301,8 +367,8 @@ describe("POST /mood", () => {
           authorization: createAuthorizationHeader(),
         },
         payload: {
-          workspace_id: "ws_abc123",
-          team_id: "tm_abc123",
+          workspace_id: TEST_WORKSPACE_ID,
+          team_id: TEST_TEAM_ID,
           mood_type: "calm",
           hour_of_day: submissionNumber,
         },
@@ -320,8 +386,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "calm",
         hour_of_day: 10,
       },
@@ -349,8 +415,8 @@ describe("POST /mood", () => {
           authorization: createAuthorizationHeader(),
         },
         payload: {
-          workspace_id: "ws_abc123",
-          team_id: "tm_abc123",
+          workspace_id: TEST_WORKSPACE_ID,
+          team_id: TEST_TEAM_ID,
           mood_type: "tired",
           note: "Need a break.",
           hour_of_day: submissionNumber,
@@ -365,8 +431,8 @@ describe("POST /mood", () => {
         authorization: createAuthorizationHeader(),
       },
       payload: {
-        workspace_id: "ws_abc123",
-        team_id: "tm_abc123",
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
         mood_type: "tired",
         note: "Need a break.",
         hour_of_day: 12,
@@ -385,10 +451,11 @@ describe("POST /mood", () => {
   });
 });
 
-function createAuthorizationHeader(): string {
+function createAuthorizationHeader(workspaceId = TEST_WORKSPACE_ID): string {
   return `Bearer ${jwt.sign(
     {
       device_token: "550e8400-e29b-41d4-a716-446655440000",
+      workspace_id: workspaceId,
     },
     JWT_SECRET,
     {
