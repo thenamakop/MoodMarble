@@ -1,22 +1,40 @@
+import Redis from "ioredis";
+
 import { buildApp } from "./app";
-import { loadLocalEnvFile } from "./config/env";
+import { getAppEnv } from "./config/env";
+import { createDatabaseClient, verifyDatabaseConnection } from "./db/client";
+import { PostgresMoodSubmissionStore } from "./services/mood-submissions";
+import { RedisSubmissionRateLimiter } from "./services/submission-rate-limit";
+import { PostgresWorkspaceDirectory } from "./services/workspace-directory";
 
 async function startServer(): Promise<void> {
-  loadLocalEnvFile();
+  const env = getAppEnv();
+  const databaseClient = createDatabaseClient(env.DATABASE_URL);
+  const redis = new Redis(env.REDIS_URL, {
+    lazyConnect: true,
+  });
+
+  await verifyDatabaseConnection(databaseClient);
+  await redis.connect();
 
   const app = await buildApp({
-    jwtSecret: process.env.JWT_SECRET,
+    jwtSecret: env.JWT_SECRET,
+    moodSubmissionStore: new PostgresMoodSubmissionStore(databaseClient),
+    submissionRateLimiter: new RedisSubmissionRateLimiter(redis),
+    workspaceDirectory: new PostgresWorkspaceDirectory(databaseClient),
   });
 
-  const port = Number(process.env.PORT ?? "3000");
-  const host = process.env.HOST ?? "0.0.0.0";
+  app.addHook("onClose", async () => {
+    await redis.quit();
+    await databaseClient.close();
+  });
 
   await app.listen({
-    host,
-    port,
+    host: env.HOST,
+    port: env.PORT,
   });
 
-  console.log(`Backend listening on http://127.0.0.1:${port}`);
+  console.log(`Backend listening on http://127.0.0.1:${env.PORT}`);
 }
 
 void startServer();

@@ -1,30 +1,25 @@
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { z } from "zod";
+import { defineConfig } from "drizzle-kit";
 
-const BACKEND_ENV_FILE_PATH = resolve(__dirname, "../../.env");
-const ROOT_ENV_FILE_PATH = resolve(__dirname, "../../../../.env");
+const backendEnvPath = resolve(__dirname, ".env");
+const rootEnvPath = resolve(__dirname, "../../.env");
 
-const AppEnvSchema = z.object({
-  DATABASE_URL: z.string().min(1),
-  REDIS_URL: z.string().min(1),
-  JWT_SECRET: z.string().min(1),
-  HOST: z.string().min(1).default("0.0.0.0"),
-  PORT: z.coerce.number().int().positive().default(3000),
+loadEnvFile(backendEnvPath);
+loadEnvFile(rootEnvPath);
+
+if (!process.env.DATABASE_URL) {
+  throw new Error("DATABASE_URL is required to generate Drizzle migrations.");
+}
+
+export default defineConfig({
+  dialect: "postgresql",
+  schema: "./src/db/schema.ts",
+  out: "./drizzle",
+  dbCredentials: {
+    url: process.env.DATABASE_URL,
+  },
 });
-
-export type AppEnv = z.infer<typeof AppEnvSchema>;
-
-export function loadLocalEnvFile(): void {
-  loadEnvFile(BACKEND_ENV_FILE_PATH);
-  loadEnvFile(ROOT_ENV_FILE_PATH);
-}
-
-export function getAppEnv(): AppEnv {
-  loadLocalEnvFile();
-
-  return AppEnvSchema.parse(process.env);
-}
 
 function loadEnvFile(filePath: string): void {
   if (!existsSync(filePath)) {
@@ -32,6 +27,7 @@ function loadEnvFile(filePath: string): void {
   }
 
   const contents = readFileSync(filePath, "utf8");
+
   for (const line of contents.split(/\r?\n/u)) {
     const trimmedLine = line.trim();
 

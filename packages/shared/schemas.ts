@@ -67,7 +67,6 @@ export const WorkspaceJoinResponseSchema = z.object({
   }),
   teams: z.array(TeamSummarySchema),
   device_jwt: z.string().min(1),
-  device_token: DeviceTokenSchema,
 });
 
 export const MoodCountSchema = z.object({

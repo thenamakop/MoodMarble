@@ -32,7 +32,7 @@ export async function registerWorkspaceJoinRoute(
           });
         }
 
-        const { deviceJwt, deviceToken } = createDeviceJwt(options.jwtSecret);
+        const { deviceJwt } = createDeviceJwt(options.jwtSecret);
 
         return reply.status(200).send(
           WorkspaceJoinResponseSchema.parse({
@@ -42,7 +42,6 @@ export async function registerWorkspaceJoinRoute(
             },
             teams: workspace.teams,
             device_jwt: deviceJwt,
-            device_token: deviceToken,
           }),
         );
       } catch (error) {

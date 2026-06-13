@@ -63,11 +63,29 @@ describe("backend foundation routes", () => {
         },
       ],
     });
+    expect(response.json()).not.toHaveProperty("device_token");
 
     const decoded = jwt.verify(response.json().device_jwt, JWT_SECRET) as {
       device_token: string;
     };
-    expect(decoded.device_token).toBe(response.json().device_token);
+    expect(decoded.device_token).toMatch(
+      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
+    );
+  });
+
+  it("returns not found for an unknown join code", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspace/join",
+      payload: {
+        join_code: "ZZZ999",
+      },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json()).toEqual({
+      message: "Join code not found.",
+    });
   });
 
   it("rejects an invalid join code payload", async () => {

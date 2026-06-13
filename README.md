@@ -171,7 +171,7 @@ docker ps
 Create a `.env` file in the project root:
 
 ```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/moodmarble
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/moodmarble
 
 REDIS_URL=redis://localhost:6379
 

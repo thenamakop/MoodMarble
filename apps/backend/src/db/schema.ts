@@ -11,9 +11,8 @@ import {
   index,
   uniqueIndex,
   primaryKey,
-  relations,
 } from "drizzle-orm/pg-core";
-import { sql } from "drizzle-orm";
+import { relations, sql } from "drizzle-orm";
 
 /**
  * Shared enums
@@ -31,11 +30,7 @@ export const moodTypeEnum = pgEnum("mood_type", [
   "unheard",
 ]);
 
-export const teamRoleEnum = pgEnum("team_role", [
-  "member",
-  "manager",
-  "admin",
-]);
+export const teamRoleEnum = pgEnum("team_role", ["member", "manager", "admin"]);
 
 /**
  * workspaces
@@ -131,9 +126,7 @@ export const moodSubmissions = pgTable(
     submissionDateIdx: index("mood_submissions_submission_date_idx").on(
       table.submissionDate,
     ),
-    hourOfDayIdx: index("mood_submissions_hour_of_day_idx").on(
-      table.hourOfDay,
-    ),
+    hourOfDayIdx: index("mood_submissions_hour_of_day_idx").on(table.hourOfDay),
     moodTypeIdx: index("mood_submissions_mood_type_idx").on(table.moodType),
   }),
 );

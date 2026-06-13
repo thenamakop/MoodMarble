@@ -54,10 +54,9 @@ export function verifyDeviceJwt(
   }
 }
 
-export function createDeviceJwt(jwtSecret: string | undefined): {
-  deviceJwt: string;
-  deviceToken: string;
-} {
+export function createDeviceJwt(
+  jwtSecret: string | undefined,
+): { deviceJwt: string; deviceToken: string } {
   if (!jwtSecret) {
     throw new MissingJwtSecretError();
   }
