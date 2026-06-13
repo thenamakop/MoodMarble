@@ -11,7 +11,7 @@ export {
   TAGS,
   TeamIdSchema,
   WorkspaceIdSchema,
-} from "../../../../packages/shared";
+} from "../../../../packages/shared/index";
 
 export type {
   HourOfDay,
@@ -24,4 +24,4 @@ export type {
   MoodValue,
   TagValue,
   WorkspaceId,
-} from "../../../../packages/shared";
+} from "../../../../packages/shared/index";
