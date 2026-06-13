@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import { DeviceTokenSchema } from "../../../../packages/shared";
@@ -15,10 +16,20 @@ export class UnauthorizedError extends Error {
   }
 }
 
+export class MissingJwtSecretError extends Error {
+  constructor() {
+    super("Server configuration error.");
+  }
+}
+
 export function verifyDeviceJwt(
   authorizationHeader: string | undefined,
-  jwtSecret: string,
+  jwtSecret: string | undefined,
 ): DeviceJwtPayload {
+  if (!jwtSecret) {
+    throw new MissingJwtSecretError();
+  }
+
   if (!authorizationHeader?.startsWith("Bearer ")) {
     throw new UnauthorizedError();
   }
@@ -41,4 +52,29 @@ export function verifyDeviceJwt(
   } catch {
     throw new UnauthorizedError();
   }
+}
+
+export function createDeviceJwt(jwtSecret: string | undefined): {
+  deviceJwt: string;
+  deviceToken: string;
+} {
+  if (!jwtSecret) {
+    throw new MissingJwtSecretError();
+  }
+
+  const deviceToken = randomUUID();
+  const deviceJwt = jwt.sign(
+    {
+      device_token: deviceToken,
+    },
+    jwtSecret,
+    {
+      expiresIn: "30d",
+    },
+  );
+
+  return {
+    deviceJwt,
+    deviceToken,
+  };
 }

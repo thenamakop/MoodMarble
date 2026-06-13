@@ -52,6 +52,24 @@ describe("POST /mood", () => {
     expect(response.json().marble_id).toMatch(/^mr_[a-z0-9]{10}$/);
   });
 
+  it("rejects requests without a device JWT", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/mood",
+      payload: {
+        workspace_id: "ws_abc123",
+        team_id: "tm_abc123",
+        mood_type: "happy",
+        hour_of_day: 14,
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      message: "Unauthorized",
+    });
+  });
+
   it("rejects an invalid mood type", async () => {
     const response = await app.inject({
       method: "POST",

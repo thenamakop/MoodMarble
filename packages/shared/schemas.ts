@@ -56,6 +56,10 @@ export const TeamSummarySchema = z.object({
   name: z.string().min(1),
 });
 
+export const WorkspaceJoinRequestSchema = z.object({
+  join_code: JoinCodeSchema,
+});
+
 export const WorkspaceJoinResponseSchema = z.object({
   workspace: z.object({
     id: WorkspaceIdSchema,

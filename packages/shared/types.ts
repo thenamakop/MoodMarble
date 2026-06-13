@@ -18,6 +18,7 @@ import {
   TagSchema,
   TeamSummarySchema,
   TeamIdSchema,
+  WorkspaceJoinRequestSchema,
   WorkspaceIdSchema,
   WorkspaceJoinResponseSchema,
   WeeklyMoodPointSchema,
@@ -39,6 +40,7 @@ export type MoodSubmissionResponse = z.infer<
 >;
 
 export type TeamSummary = z.infer<typeof TeamSummarySchema>;
+export type WorkspaceJoinRequest = z.infer<typeof WorkspaceJoinRequestSchema>;
 export type WorkspaceJoinResponse = z.infer<typeof WorkspaceJoinResponseSchema>;
 
 export type MoodCount = z.infer<typeof MoodCountSchema>;

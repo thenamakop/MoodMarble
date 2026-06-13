@@ -5,7 +5,11 @@ import {
   MoodSubmissionResponseSchema,
   MoodSubmissionSchema,
 } from "../../../../packages/shared";
-import { UnauthorizedError, verifyDeviceJwt } from "../auth/device-jwt";
+import {
+  MissingJwtSecretError,
+  UnauthorizedError,
+  verifyDeviceJwt,
+} from "../auth/device-jwt";
 import {
   buildMoodSubmissionRecord,
   getSubmissionDate,
@@ -17,7 +21,7 @@ import {
 } from "../services/submission-rate-limit";
 
 interface RegisterMoodRouteOptions {
-  jwtSecret: string;
+  jwtSecret?: string;
   moodSubmissionStore: MoodSubmissionStore;
   submissionRateLimiter: SubmissionRateLimiter;
   now?: () => Date;
@@ -63,6 +67,10 @@ export async function registerMoodRoute(
       } catch (error) {
         if (error instanceof UnauthorizedError) {
           return reply.status(401).send({ message: "Unauthorized" });
+        }
+
+        if (error instanceof MissingJwtSecretError) {
+          return reply.status(500).send({ message: error.message });
         }
 
         if (error instanceof SubmissionRateLimitExceededError) {

@@ -7,6 +7,14 @@ export interface MoodSubmissionStore {
   createSubmission(submission: NewMoodSubmission): Promise<void>;
 }
 
+export class InMemoryMoodSubmissionStore implements MoodSubmissionStore {
+  readonly submissions: NewMoodSubmission[] = [];
+
+  async createSubmission(submission: NewMoodSubmission): Promise<void> {
+    this.submissions.push(submission);
+  }
+}
+
 export function buildMoodSubmissionRecord(
   submission: MoodSubmission,
   now = new Date(),
