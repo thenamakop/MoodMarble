@@ -1,6 +1,8 @@
 import jwt from "jsonwebtoken";
 import { beforeEach, describe, expect, it } from "vitest";
 
+import { WorkspaceJoinResponseSchema } from "../../../../packages/shared";
+
 import { buildApp } from "../../src/app";
 import type { MoodSubmissionStore } from "../../src/services/mood-submissions";
 
@@ -75,6 +77,21 @@ describe("backend foundation routes", () => {
     expect(decoded.workspace_id).toBe("ws_localdemo");
   });
 
+  it("returns a join response that matches the shared contract", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspace/join",
+      payload: {
+        join_code: "ABC123",
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(() =>
+      WorkspaceJoinResponseSchema.parse(response.json()),
+    ).not.toThrow();
+  });
+
   it("returns not found for an unknown join code", async () => {
     const response = await app.inject({
       method: "POST",
@@ -88,6 +105,9 @@ describe("backend foundation routes", () => {
     expect(response.json()).toEqual({
       message: "Join code not found.",
     });
+    expect(response.json()).not.toHaveProperty("workspace");
+    expect(response.json()).not.toHaveProperty("teams");
+    expect(response.json()).not.toHaveProperty("device_jwt");
   });
 
   it("rejects an invalid join code payload", async () => {
@@ -103,6 +123,22 @@ describe("backend foundation routes", () => {
     expect(response.json()).toMatchObject({
       message: "Invalid workspace join payload.",
     });
+  });
+
+  it("rejects a missing join code payload", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspace/join",
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: "Invalid workspace join payload.",
+    });
+    expect(response.json()).not.toHaveProperty("workspace");
+    expect(response.json()).not.toHaveProperty("teams");
+    expect(response.json()).not.toHaveProperty("device_jwt");
   });
 
   it("returns a server error when the JWT secret is missing", async () => {
