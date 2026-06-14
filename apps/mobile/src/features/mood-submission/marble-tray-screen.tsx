@@ -294,6 +294,13 @@ export function MarbleTrayScreen({
           <View style={styles.feedbackArea}>
             {errorMessage ? (
               <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
+            ) : !hasSubmissionContext ? (
+              <ThemedText
+                testID="submission-context-hint"
+                themeColor="textSecondary"
+              >
+                Submission needs workspace access before a marble can be shared.
+              </ThemedText>
             ) : null}
           </View>
 

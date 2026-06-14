@@ -71,9 +71,9 @@ describe("MarbleTrayScreen", () => {
     );
   });
 
-  it("keeps submit disabled without the required submission context", async () => {
+  it("keeps submit disabled and explains the missing submission context", async () => {
     const onSubmitMood = jest.fn().mockResolvedValue(undefined);
-    const { findByTestId, queryByText } = await renderScreen({
+    const { findByTestId, findByText } = await renderScreen({
       deviceJwt: undefined,
       onSubmitMood,
     });
@@ -82,7 +82,11 @@ describe("MarbleTrayScreen", () => {
     fireEvent.press(await findByTestId("submit-button"));
 
     expect(onSubmitMood).not.toHaveBeenCalled();
-    expect(queryByText("Submission is not ready yet.")).toBeNull();
+    expect(
+      await findByText(
+        "Submission needs workspace access before a marble can be shared.",
+      ),
+    ).toBeTruthy();
   });
 
   it("shows the confirmation after a successful submit", async () => {
