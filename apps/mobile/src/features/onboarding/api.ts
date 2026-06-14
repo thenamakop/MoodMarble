@@ -8,15 +8,21 @@ import { createApiUrl } from "@/features/mood-submission/api";
 export async function joinWorkspace(
   joinCode: string,
 ): Promise<WorkspaceJoinResponse> {
-  const response = await fetch(createApiUrl("/workspace/join"), {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      join_code: JoinCodeSchema.parse(joinCode),
-    }),
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(createApiUrl("/workspace/join"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        join_code: JoinCodeSchema.parse(joinCode),
+      }),
+    });
+  } catch {
+    throw new Error("Unable to join workspace right now.");
+  }
 
   if (!response.ok) {
     throw new Error(await getJoinErrorMessage(response));

@@ -5,10 +5,11 @@ import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
+import { saveAnonymousSession } from "@/features/onboarding/session";
 import {
-  loadAnonymousSession,
-  saveAnonymousSession,
-} from "@/features/onboarding/session";
+  getAnonymousSessionFromParams,
+  restoreAnonymousSession,
+} from "@/features/onboarding/session-boundary";
 import type { AnonymousSession } from "@/features/onboarding/types";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -27,13 +28,12 @@ export default function HomeScreen() {
     let cancelled = false;
 
     async function syncAnonymousSession() {
-      const nextContext = getSubmissionContext(params);
+      const nextContext = getAnonymousSessionFromParams(params);
+      const nextSession = await restoreAnonymousSession(params);
 
       if (nextContext) {
-        await saveAnonymousSession(nextContext);
-
         if (!cancelled) {
-          setSession(nextContext);
+          setSession(nextSession);
           setIsLoadingSession(false);
         }
 
@@ -41,10 +41,8 @@ export default function HomeScreen() {
         return;
       }
 
-      const storedSession = await loadAnonymousSession();
-
       if (!cancelled) {
-        setSession(storedSession);
+        setSession(nextSession);
         setIsLoadingSession(false);
       }
     }
@@ -90,29 +88,6 @@ export default function HomeScreen() {
       deviceJwt={session.deviceJwt}
     />
   );
-}
-
-function getSubmissionContext(params: {
-  workspace_id?: string | string[];
-  team_id?: string | string[];
-  device_jwt?: string | string[];
-}): AnonymousSession | null {
-  const workspaceId =
-    typeof params.workspace_id === "string" ? params.workspace_id : undefined;
-  const teamId =
-    typeof params.team_id === "string" ? params.team_id : undefined;
-  const deviceJwt =
-    typeof params.device_jwt === "string" ? params.device_jwt : undefined;
-
-  if (!workspaceId || !teamId || !deviceJwt) {
-    return null;
-  }
-
-  return {
-    workspaceId,
-    teamId,
-    deviceJwt,
-  };
 }
 
 function scrubUrl(router: ReturnType<typeof useRouter>) {

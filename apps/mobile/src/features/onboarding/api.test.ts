@@ -75,4 +75,14 @@ describe("joinWorkspace", () => {
       "Join code not found.",
     );
   });
+
+  it("falls back to a stable message when the network request itself fails", async () => {
+    (globalThis.fetch as jest.Mock).mockRejectedValue(
+      new TypeError("Network request failed"),
+    );
+
+    await expect(joinWorkspace("ABC123")).rejects.toThrow(
+      "Unable to join workspace right now.",
+    );
+  });
 });
