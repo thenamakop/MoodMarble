@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { AnonymousSessionSchema, type AnonymousSession } from "./types";
 
 const SESSION_STORAGE_KEY = "moodmarble.anonymous-session";
+let webSessionMemoryFallback: string | null = null;
 
 export async function loadAnonymousSession(): Promise<AnonymousSession | null> {
   const storedValue = await readStoredSession();
@@ -39,7 +40,18 @@ export async function saveAnonymousSession(
   const webStorage = getWebSessionStorage();
 
   if (webStorage) {
-    webStorage.setItem(SESSION_STORAGE_KEY, serializedSession);
+    try {
+      webStorage.setItem(SESSION_STORAGE_KEY, serializedSession);
+      webSessionMemoryFallback = serializedSession;
+      return;
+    } catch {
+      webSessionMemoryFallback = serializedSession;
+      return;
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    webSessionMemoryFallback = serializedSession;
     return;
   }
 
@@ -50,7 +62,16 @@ export async function clearAnonymousSession(): Promise<void> {
   const webStorage = getWebSessionStorage();
 
   if (webStorage) {
-    webStorage.removeItem(SESSION_STORAGE_KEY);
+    try {
+      webStorage.removeItem(SESSION_STORAGE_KEY);
+    } finally {
+      webSessionMemoryFallback = null;
+    }
+    return;
+  }
+
+  if (typeof window !== "undefined") {
+    webSessionMemoryFallback = null;
     return;
   }
 
@@ -61,7 +82,17 @@ async function readStoredSession(): Promise<string | null> {
   const webStorage = getWebSessionStorage();
 
   if (webStorage) {
-    return webStorage.getItem(SESSION_STORAGE_KEY);
+    try {
+      return (
+        webStorage.getItem(SESSION_STORAGE_KEY) ?? webSessionMemoryFallback
+      );
+    } catch {
+      return webSessionMemoryFallback;
+    }
+  }
+
+  if (typeof window !== "undefined") {
+    return webSessionMemoryFallback;
   }
 
   return SecureStore.getItemAsync(SESSION_STORAGE_KEY);
@@ -72,5 +103,9 @@ function getWebSessionStorage(): Storage | null {
     return null;
   }
 
-  return window.sessionStorage ?? null;
+  try {
+    return window.sessionStorage ?? null;
+  } catch {
+    return null;
+  }
 }
