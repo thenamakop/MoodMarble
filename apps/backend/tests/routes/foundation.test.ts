@@ -136,6 +136,24 @@ describe("backend foundation routes", () => {
     expect(response.statusCode).toBe(200);
   });
 
+  it("answers the local web preflight for POST /workspace/join", async () => {
+    const response = await app.inject({
+      method: "OPTIONS",
+      url: "/workspace/join",
+      headers: {
+        origin: "http://localhost:8081",
+        "access-control-request-method": "POST",
+        "access-control-request-headers": "content-type",
+      },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(response.headers["access-control-allow-origin"]).toBe(
+      "http://localhost:8081",
+    );
+    expect(response.headers["access-control-allow-methods"]).toContain("POST");
+  });
+
   it("allows a joined device JWT to submit a mood", async () => {
     const joinResponse = await app.inject({
       method: "POST",

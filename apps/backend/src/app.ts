@@ -1,3 +1,4 @@
+import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { registerHealthRoutes } from "./routes/health";
@@ -30,6 +31,12 @@ export async function buildApp(
   const app = Fastify();
   const workspaceDirectory =
     options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
+
+  await app.register(cors, {
+    origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u],
+    methods: ["GET", "POST", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  });
 
   await registerHealthRoutes(app);
   await registerWorkspaceJoinRoute(app, {
