@@ -5,10 +5,18 @@ import { z } from "zod";
 const BACKEND_ENV_FILE_PATH = resolve(__dirname, "../../.env");
 const ROOT_ENV_FILE_PATH = resolve(__dirname, "../../../../.env");
 
+const JwtSecretSchema = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => !looksLikeJwt(value), {
+    message: "JWT_SECRET must be a signing secret, not a JWT token.",
+  });
+
 const AppEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
-  JWT_SECRET: z.string().min(1),
+  JWT_SECRET: JwtSecretSchema,
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(3000),
 });
@@ -52,4 +60,8 @@ function loadEnvFile(filePath: string): void {
       process.env[key] = value;
     }
   }
+}
+
+function looksLikeJwt(value: string): boolean {
+  return /^[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+$/u.test(value);
 }
