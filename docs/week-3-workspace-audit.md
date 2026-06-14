@@ -2,175 +2,322 @@
 
 ## Scope
 
-This audit records the current repository state for MoodMarble during the Week 3 phase.
+This audit records the current repository state for MoodMarble against the actual source of truth:
 
-It is based on:
-
+- `MoodMarble_Project_Specification.docx`
 - `README.md`
 - `docs/architecture.md`
 - the current source tree under `apps/` and `packages/`
-- the current test suites in `apps/backend/tests` and `apps/mobile/src/**/__tests__`-style files
+- the current backend and mobile test suites
 
-## Specification blocker
+The goal is to measure the repository against the real specification during the current Week 3 phase.
 
-The repository does not currently contain the actual `MoodMarble_Project_Specification.docx` file.
+## Source of truth
 
-Observed state:
+The specification is now available at:
 
-- a Word temporary lock file was present as `~$odMarble_Project_Specification.docx`
-- that temporary file was deleted from the worktree on request
-- no non-temporary `MoodMarble_Project_Specification.docx` file was found under `C:\Users\mauli\Documents`
+- `C:\Users\mauli\Documents\Projects\MoodMarble\MoodMarble_Project_Specification.docx`
 
-Result:
+The `.docx` defines itself as the single source of truth for:
 
-- full `.docx` line-by-line extraction is blocked
-- all findings below are limited to the evidence available in the repository
-- any future check against the real specification must revisit this audit
+- scope
+- technology choices
+- privacy rules
+- API behavior
+- delivery milestones
+- testing expectations
 
-## Requirements found in repository documentation
+## Specification requirements extracted from the `.docx`
 
-### Privacy and compliance rules
+### Product and role model
 
-Repository docs consistently require:
+The specification defines three core product roles:
+
+- team member
+- manager
+- admin
+
+The MVP responsibilities implied by the spec are:
+
+- team members submit anonymous moods quickly
+- managers see aggregated team-level data only
+- admins create and manage workspaces and teams
+- personal mood history remains private on-device
+
+### Core MVP features that must ship
+
+Section `4.1` requires these MVP features:
+
+- mood marble submission
+- daily mood prompts
+- personal mood history
+- team mood dashboard
+- workspace and team setup
+
+These are definition-of-done features, not optional backlog ideas.
+
+### Privacy and anonymity rules
+
+The specification is strict on anonymity:
 
 - no names
 - no email addresses
-- no user profiles
+- no visible login
+- no profile photos
+- no user identifiers in backend mood submissions
+- no device ID or IMEI collection
 - no GPS or location
-- no device identifiers in mood submissions
-- no IP logging
-- no raw note text stored on the backend
-- no individual manager visibility into mood entries
-- personal mood history stored on-device only
+- no IP address logging
+- no raw free-text note storage on the backend
+- no individual-level manager visibility
 
-### Functional expectations
+The mood submission payload sent to the backend may include:
 
-The documented MVP includes:
+- `workspace_id`
+- `team_id`
+- `mood_type`
+- optional `tags`
+- optional anonymous note
+- `hour_of_day`
 
-- anonymous workspace join by 6-character code
-- anonymous mood submission
-- optional tags
-- optional mood notes
-- personal mood history
-- mood streak tracking
-- daily prompts and reminders
-- manager dashboard views for daily, weekly, and tags
-- admin tools for team management, join code management, and anonymised CSV export
+The backend may store only anonymised submission data. The spec explicitly says the backend must not store:
 
-### Authentication and session expectations
+- device ID
+- user ID
+- IP address
+- full timestamp
 
-The repository docs define:
+### Anonymous auth and session model
 
-- an anonymous `device_token`
-- a device JWT for mood submission
-- a manager JWT for dashboard access
-- an admin JWT for workspace and team management
-- JWT expiry of 30 days
-- rate limiting of 5 submissions per device per day
+The specification requires:
 
-### Performance and delivery expectations
+- a device-generated UUID as the anonymous `device_token`
+- the token is used only for rate limiting
+- the token must never be stored in `mood_submissions`
+- `POST /workspace/join` returns a signed device JWT
+- `POST /mood` requires a device JWT
+- manager endpoints require a manager JWT
+- admin endpoints require an admin JWT
+- JWT expiry is `30 days`
+- rate limiting is `5 submissions per device per day`
 
-Repository docs define these targets:
+### Dashboard and privacy-threshold behavior
 
-- app cold start under 2 seconds
-- submission round-trip under 500ms on 4G
-- dashboard load under 1.5 seconds
-- backend scale target up to 10,000 submissions per day
-- uptime target of 99.5%
-- offline queue and later sync
-- backend coverage minimum 60%
-- frontend coverage minimum 40%
-- Detox coverage for key journeys before MVP completion
+The manager dashboard is required to include:
 
-### Milestone expectations
+- daily mood heatmap
+- weekly trend line
+- mood distribution ring
+- tag frequency chart
+- mood alert banner
+- submission volume
 
-The architecture document maps work into weekly milestones:
+The backend must enforce:
 
-- Week 1: setup and architecture
-- Week 2: core submission flow
-- Week 3: onboarding and auth
-- Week 4: personal history
-- Week 5: dashboard
-- Week 6: notifications and settings
-- Week 7: admin panel and export
-- Week 8: polish, testing, and deployment
+- dashboard data appears only when a team has `5+ submissions` in the time window
+- if a team has fewer than `5 members`, aggregated data is blurred into ranges
+- managers cannot filter to a specific hour if fewer than `3 submissions` exist in that hour
+
+### Personal history and notifications
+
+The specification requires:
+
+- local-only personal mood history
+- timeline view grouped by day
+- mood streak tracker
+- mood calendar
+- configurable daily prompts
+- opt-out support
+- notification schedules stored locally on-device
+
+### Admin and workspace setup
+
+The specification requires:
+
+- admin-created workspaces with unique join codes
+- team creation inside a workspace
+- join-code based team member onboarding
+- manager assignment to a team
+- anonymised CSV export by date range
+
+### Technology constraints
+
+The specification requires the stack to be:
+
+- free
+- open-source
+- buildable with no credit card required
+
+It also specifies:
+
+- Expo React Native mobile app
+- TypeScript across mobile and backend
+- Zustand
+- Expo SecureStore plus AsyncStorage
+- Reanimated 3
+- Victory Native
+- Expo Notifications
+- NativeWind
+- Lucide React Native
+- Fastify
+- Drizzle ORM
+- PostgreSQL 16
+- Redis
+- custom JWT auth
+- Zod
+- Swagger
+- GitHub Actions
+- Expo EAS
+- Railway or Render
+- Neon or Supabase
+- Upstash Redis
+- Sentry free tier
+
+### Testing and non-functional requirements
+
+The specification requires:
+
+- backend unit tests using `Jest + Supertest`
+- frontend unit tests using `Jest + React Native Testing Library`
+- backend coverage target `60% minimum`
+- frontend coverage target `40% minimum`
+- Detox E2E on key journeys
+- manual testing across all 8 screens
+- privacy audit including request inspection
+- cold start under `2 seconds`
+- submission round-trip under `500ms` on 4G
+- dashboard load under `1.5 seconds`
+- support for `10,000 submissions/day`
+- graceful offline queue and sync
+- HTTPS only
+- no sensitive data in error responses
+- `.env`-based configuration
+- ESLint and Prettier via pre-commit hooks
+- i18n-ready architecture using `i18next`
 
 ## Current implementation state
 
-### Implemented and verified
+### Implemented and aligned
 
-The current codebase already implements the following:
+The current repository already satisfies these specification points:
 
-- anonymous workspace join route
-- device JWT issuance on join
-- device JWT verification on mood submission
-- onboarding screen and team selection
-- anonymous mobile session persistence
-- anonymous mood submission route
-- mood validation against shared schemas
-- per-device daily rate limiting
-- note hashing before persistence
-- absence of raw note text and device token fields in `mood_submissions`
+- anonymous workspace join route exists
+- join response includes a device JWT
+- anonymous mood submission route exists
+- backend verifies a device JWT for `POST /mood`
+- JWT expiry is currently set to `30d`
+- per-device daily rate limiting exists
+- onboarding UI and team selection exist
+- anonymous session persistence exists on mobile
+- backend stores hashed notes instead of raw note text
+- backend `mood_submissions` excludes device token and user identity fields
+- mobile and backend both have active automated test suites
 
-### Implemented but only partially aligned to documented intent
+### Implemented but only partially aligned
 
-The following areas exist but are not yet fully aligned with the documented model:
+The current repository partially matches the specification in these areas:
 
-- Week 3 appears partially completed in code, while `README.md` still marks it as upcoming
-- the backend schema includes `team_members`, but the join flow does not create or update membership records
-- the current join flow issues a fresh device JWT without a persistent device token lifecycle on the client
-- the mobile session stores `workspaceId`, `teamId`, and `deviceJwt`, but there is no explicit device-token management flow on-device
-- the documented manager and admin JWT models are not implemented in backend routing
+- the auth model uses a UUID inside the JWT payload, but the client does not yet expose a clear device-token lifecycle that matches the spec wording
+- `team_members` exists in the database schema, but the join flow does not yet establish anonymous membership records
+- workspace and team setup exists only as seeded data and lookup behavior, not as admin-managed product functionality
+- mobile session persistence exists, but personal history persistence is not yet implemented
+- the dashboard contracts exist in shared schemas, but the full manager flow does not
+- documentation in `README.md` still reports Week 3 as upcoming even though part of Week 3 is already implemented
 
-### Documented but not implemented
+### Missing from the current repository
 
-The following documented areas do not currently exist in working code:
+These specification requirements are not yet implemented in working code:
 
-- manager dashboard endpoints
-- manager dashboard UI
-- privacy threshold enforcement for dashboard visibility
+- daily mood prompts
+- configurable prompt schedule UI
 - personal history timeline
+- mood streak tracking
 - mood calendar
-- streak tracking
-- daily prompt scheduling
+- manager dashboard endpoints
+- dashboard widgets and charts
+- dashboard privacy-threshold enforcement
+- mood alert banner logic
+- submission volume analytics view
+- manager JWT flow
+- admin JWT flow
+- admin team creation API
+- join code generation and management UI/API
+- CSV export endpoint and admin UI flow
+- manager assignment workflow
+- offline queue and later sync
 - settings screen
-- offline queue and sync flow
-- admin routes
-- admin UI
-- CSV export flow
-- Swagger or OpenAPI route registration
-- GitHub Actions workflows
+- i18n-ready string architecture
+- Swagger route registration
+- GitHub Actions CI/CD workflow
 - Detox E2E coverage
+- Expo EAS build workflow
 - deployment automation
+- Sentry integration
+- pre-commit hooks for ESLint and Prettier
+
+## Compliance and drift findings
+
+### Week 3 milestone status
+
+The specification says Week 3 should deliver:
+
+- join code flow
+- device JWT issuance
+- onboarding screens
+- workspace and team setup
+
+Current status against that list:
+
+- join code flow: implemented
+- device JWT issuance: implemented
+- onboarding screens: implemented
+- workspace and team setup: partial only
+
+### Technology drift
+
+The repository is not fully aligned with the specified stack:
+
+- backend testing uses Vitest, while the spec calls for Jest + Supertest
+- the codebase does not yet show `i18next` wiring
+- there are no visible GitHub Actions workflows beyond the placeholder
+- Swagger dependencies are present, but Swagger is not wired into the backend app
+- notification and dashboard dependencies described by the spec are not yet fully active in product flows
+
+### Privacy-sensitive observations
+
+The current code is generally privacy-aligned, but the following areas still need explicit completion:
+
+- the device token lifecycle is not yet codified as a first-class anonymous session contract
+- manager/admin auth and access boundaries are not implemented yet
+- dashboard threshold rules are not yet enforced because dashboard endpoints do not exist
+- offline queue behavior must be implemented carefully so no raw identifiers leak into synced payloads
 
 ## Test baseline
 
 ### Backend
 
 - command: `pnpm test`
-- result: 5 test files passed, 37 tests passed
+- result: `5` files passed, `37` tests passed
 
 ### Mobile
 
 - command: `pnpm test --runInBand`
-- result: 6 test suites passed, 28 tests passed
-
-## Drift and risks already visible
-
-- the real specification `.docx` is missing, so source-of-truth validation is incomplete
-- `README.md` status does not match the actual implementation state
-- architecture docs describe a larger MVP than the shipped code supports today
-- backend test tooling uses Vitest, while the architecture document still says Jest + Supertest
-- mobile dependencies and documented technology choices are not fully aligned in every area
+- result: `6` suites passed, `28` tests passed
 
 ## Week 3 conclusion
 
-Based on repository evidence alone, MoodMarble is not at a clean Week 3 checkpoint yet.
+Based on the actual specification and the current repository state, MoodMarble is in a partial Week 3 state.
 
-The join and onboarding foundation exists, but the repository still needs:
+Week 3 work already present:
 
-- source-of-truth specification recovery
-- documentation alignment
-- a clarified anonymous auth and session model
-- explicit completion criteria for remaining Week 3 work
-- a tracked plan for Weeks 4 through 8
+- anonymous join flow
+- device JWT issuance
+- onboarding UI
+- anonymous mood submission foundation
+
+Week 3 work still needed to reach a clean checkpoint:
+
+- formalise the anonymous device-token and JWT session model end to end
+- complete the workspace and team setup story in a spec-aligned way
+- update repository documentation to match current implementation and remaining scope
+- keep all future tasks aligned to the `.docx`, not the older repo-doc interpretation

@@ -2,137 +2,153 @@
 
 ## Purpose
 
-This tracker records the actionable work required to move MoodMarble from the current repository state toward the documented MVP and milestone plan.
+This tracker records the actionable work required to move MoodMarble from its current repository state to the exact MVP and milestone expectations defined by `MoodMarble_Project_Specification.docx`.
 
-This file is version-controlled so progress can be updated in-place as work is completed.
+This file is version-controlled and should be updated as work changes state.
 
 ## Source boundary
 
-This tracker is based on repository evidence only:
+This tracker is derived from:
 
-- `docs/architecture.md`
+- `MoodMarble_Project_Specification.docx`
 - `README.md`
+- `docs/architecture.md`
 - current source code
-- current tests
+- current automated tests
 
-The actual `MoodMarble_Project_Specification.docx` is not present in the workspace, so this tracker must be revalidated once the real specification is added.
+If repository docs conflict with the `.docx`, the `.docx` wins.
 
 ## Status scale
 
 - `done`: implemented and verified in the current repository
-- `partial`: implemented in part, but still incomplete or misaligned
-- `pending`: documented but not yet implemented
-- `blocked`: cannot be closed until the real specification is available
+- `partial`: implemented in part but incomplete or misaligned
+- `pending`: required by the specification but not implemented yet
 
 ## Week 3 snapshot
 
 ### Done
 
-- workspace join route exists
-- device JWT issuance exists
-- onboarding UI exists
-- mood submission flow exists
+- anonymous join-code flow
+- device JWT issuance
+- onboarding screen flow
+- anonymous mood submission foundation
 
 ### Partial
 
-- anonymous auth and session model is implemented, but not fully codified against the documented device-token lifecycle
-- workspace and team setup is only seeded, not fully managed through product flows
-- documentation does not reflect the current implementation state
+- anonymous device-token lifecycle
+- workspace and team setup
+- repository documentation alignment
 
-### Blocked
+### Pending
 
-- source-of-truth validation against the missing `.docx` specification
+- manager and admin auth scaffolding required by later endpoints
+- explicit Week 3 sign-off criteria tied to the specification
 
 ## Active work items
 
-### MM-W3-01 - Recover and ingest the real specification
-
-- Status: `blocked`
-- Priority: `P0`
-- Estimated effort: `small`
-- Dependencies: none
-- Scope: add the real `MoodMarble_Project_Specification.docx` to the project workspace or otherwise make it accessible for review
-- Acceptance criteria:
-- the real `.docx` is available in the workspace
-- all tracker items are revalidated against the actual source of truth
-- any repo-doc drift against the `.docx` is captured explicitly
-
-### MM-W3-02 - Reconcile documentation with implementation
+### MM-W3-01 - Reconcile repository docs with the source-of-truth spec
 
 - Status: `partial`
 - Priority: `P0`
 - Estimated effort: `small`
-- Dependencies: `MM-W3-01`
-- Scope: align `README.md` and supporting docs with the actual state of onboarding, join flow, and device JWT support already present in code
+- Dependencies: none
+- Scope: align `README.md`, `docs/architecture.md`, and tasking docs to the actual `.docx` requirements and the current implementation state
 - Acceptance criteria:
-- Week 3 status is reported consistently across repository docs
-- implemented features are no longer listed as merely upcoming
-- any features that remain pending are clearly separated from shipped functionality
+- Week 3 is no longer described as entirely upcoming if code already implements part of it
+- repo docs do not contradict the `.docx` on scope, privacy, or technology choices
+- outstanding work is clearly separated from shipped behavior
 
-### MM-W3-03 - Finalise the anonymous auth and session model
+### MM-W3-02 - Finalise anonymous device-token generation and storage
 
 - Status: `partial`
 - Priority: `P0`
 - Estimated effort: `medium`
-- Dependencies: `MM-W3-01`
-- Scope: define the device-token and device-JWT lifecycle in code and tests without introducing accounts, profiles, or PII
+- Dependencies: none
+- Scope: implement the device-generated UUID lifecycle exactly as specified, keeping it anonymous and limited to allowed flows
 - Acceptance criteria:
-- token creation point is explicit
-- token storage point is explicit
-- request attachment rules are explicit
-- JWT validity window matches the documented 30-day lifetime
-- invalid, expired, or missing JWT behavior is covered by tests
-- the device token is not treated as a user profile or account identity
-- no raw identifier reaches `mood_submissions`
+- the device token is generated on-device
+- the token is stored locally
+- the token is used only for rate limiting and anonymous session flows
+- the token is not treated as a user account or profile identifier
+- the token is not written into `mood_submissions`
+- automated tests cover generation and persistence
 
-### MM-W3-04 - Complete anonymous workspace and team membership setup
+### MM-W3-03 - Finalise the device JWT session model
+
+- Status: `partial`
+- Priority: `P0`
+- Estimated effort: `medium`
+- Dependencies: `MM-W3-02`
+- Scope: make the join-to-session flow explicit and fully test-covered for anonymous sessions
+- Acceptance criteria:
+- `POST /workspace/join` returns a signed device JWT
+- mobile stores the session in a privacy-safe local store
+- requests attach the JWT correctly
+- JWT lifetime is `30 days`
+- invalid, expired, or missing JWTs are rejected safely
+- fallback behavior for missing token/session is defined and tested
+
+### MM-W3-04 - Complete workspace and team setup for the MVP phase
 
 - Status: `partial`
 - Priority: `P1`
 - Estimated effort: `medium`
 - Dependencies: `MM-W3-03`
-- Scope: decide how `team_members` is meant to participate in the anonymous join flow and implement only the documented requirement
+- Scope: close the remaining Week 3 gap around workspace and team setup without inventing non-spec account flows
 - Acceptance criteria:
-- the join flow either manages membership explicitly or the table is documented as intentionally unused for MVP
-- team selection and workspace scope are validated consistently
-- privacy guarantees remain intact
+- workspace setup behavior is explicit
+- team membership handling is explicit
+- join code behavior remains anonymous and email-free
+- manager assignment requirements are documented or implemented in the minimum spec-aligned way
 
-### MM-W3-05 - Add Week 3 completion checks
+### MM-W3-05 - Add Week 3 completion checklist
 
 - Status: `pending`
 - Priority: `P1`
 - Estimated effort: `small`
-- Dependencies: `MM-W3-02`, `MM-W3-03`, `MM-W3-04`
-- Scope: define the exact verification checklist for closing Week 3 without relying on implied scope
+- Dependencies: `MM-W3-01`, `MM-W3-02`, `MM-W3-03`, `MM-W3-04`
+- Scope: create a concise sign-off checklist for closing Week 3 and entering Week 4
 - Acceptance criteria:
-- each Week 3 milestone item maps to code, tests, or an explicit blocker
-- open gaps are visible in one place
-- the repository can be advanced to Week 4 with a clear handoff
+- each Week 3 deliverable maps to code, tests, or an explicit unresolved gap
+- open risks are documented
+- the handoff to Week 4 is unambiguous
 
-### MM-W4-01 - Build local-only personal mood history
+### MM-W4-01 - Implement local-only personal mood history storage
 
 - Status: `pending`
 - Priority: `P1`
 - Estimated effort: `medium`
 - Dependencies: `MM-W3-05`
-- Scope: add local-only storage and retrieval for personal history with no backend exposure
+- Scope: store personal mood history on-device only, never synced with any identifier
 - Acceptance criteria:
-- submitted moods are available in a local history view
-- no personal history data is uploaded to the backend
-- storage can be cleared locally
+- each local submission can be recorded for the current device
+- data remains local only
+- local history can be deleted from the device
+- implementation uses the spec-aligned local storage approach
 
-### MM-W4-02 - Add timeline, calendar, and streak tracking
+### MM-W4-02 - Build the history timeline screen
 
 - Status: `pending`
 - Priority: `P2`
 - Estimated effort: `medium`
 - Dependencies: `MM-W4-01`
-- Scope: build the documented history presentation and streak features on top of local-only data
+- Scope: implement the scrollable by-day timeline view required by the specification
 - Acceptance criteria:
-- timeline view exists
-- mood calendar exists
+- history is grouped by day
+- users can scroll past submissions
+- the screen exposes only device-local data
+
+### MM-W4-03 - Add streak tracking and mood calendar
+
+- Status: `pending`
+- Priority: `P2`
+- Estimated effort: `medium`
+- Dependencies: `MM-W4-01`
+- Scope: implement the remaining personal history features defined for Week 4
+- Acceptance criteria:
 - streak counter exists
-- all features use device-local data only
+- month calendar exists
+- dominant mood per day is represented in the calendar
 
 ### MM-W5-01 - Implement aggregated dashboard backend endpoints
 
@@ -140,152 +156,250 @@ The actual `MoodMarble_Project_Specification.docx` is not present in the workspa
 - Priority: `P1`
 - Estimated effort: `large`
 - Dependencies: `MM-W3-05`
-- Scope: implement the documented daily, weekly, and tags dashboard endpoints using aggregated data only
+- Scope: implement the dashboard endpoints required by the specification
 - Acceptance criteria:
 - `GET /dashboard/team/:teamId/daily` exists
 - `GET /dashboard/team/:teamId/weekly` exists
 - `GET /dashboard/team/:teamId/tags` exists
-- shared response schemas are enforced
-- no individual records are exposed
+- responses are aggregated only
+- no individual-level data is exposed
 
-### MM-W5-02 - Enforce dashboard privacy thresholds
+### MM-W5-02 - Enforce minimum anonymity thresholds
 
 - Status: `pending`
 - Priority: `P0`
 - Estimated effort: `medium`
 - Dependencies: `MM-W5-01`
-- Scope: enforce the documented visibility thresholds for low-volume and low-member-count cases
+- Scope: implement the spec-defined threshold protection rules for manager-visible data
 - Acceptance criteria:
-- fewer than 5 submissions results in protected output
-- fewer than 5 team members results in blurred output
-- fewer than 3 submissions in an hour prevents hour-level drill-down
-- tests cover each threshold rule
+- teams with fewer than `5` submissions do not get standard dashboard output
+- teams with fewer than `5` members return blurred ranges
+- hour-level filtering is blocked below `3` submissions in that hour
+- tests cover all threshold rules
 
-### MM-W5-03 - Build the manager dashboard UI
+### MM-W5-03 - Build the manager dashboard widgets
 
 - Status: `pending`
 - Priority: `P2`
 - Estimated effort: `large`
 - Dependencies: `MM-W5-01`, `MM-W5-02`
-- Scope: add the documented aggregated chart views without exposing individual mood entries
+- Scope: implement the required manager-facing views and widgets from the specification
 - Acceptance criteria:
-- daily view exists
-- weekly trend view exists
-- top tags view exists
-- low-sample privacy behavior is visible in the UI
+- daily mood heatmap exists
+- weekly trend line exists
+- mood distribution ring exists
+- tag frequency chart exists
+- submission volume view exists
+- mood alert banner logic is visible when thresholds are met
 
-### MM-W6-01 - Add daily prompts and settings
+### MM-W5-04 - Add manager JWT authorization flow
+
+- Status: `pending`
+- Priority: `P1`
+- Estimated effort: `medium`
+- Dependencies: `MM-W5-01`
+- Scope: implement only the spec-required authorization needed to protect dashboard endpoints
+- Acceptance criteria:
+- dashboard routes require a manager JWT
+- manager access is team-scoped
+- no personal account or profile flow is introduced beyond the specification
+
+### MM-W6-01 - Implement daily mood prompts
+
+- Status: `pending`
+- Priority: `P1`
+- Estimated effort: `medium`
+- Dependencies: `MM-W4-01`
+- Scope: implement local configurable notification reminders for mood check-ins
+- Acceptance criteria:
+- users can enable or disable prompts
+- users can configure `1-3` reminder times per day
+- reminder copy remains friendly and non-intrusive
+- notification schedules remain device-local
+
+### MM-W6-02 - Build the settings screen
 
 - Status: `pending`
 - Priority: `P2`
 - Estimated effort: `medium`
-- Dependencies: `MM-W4-01`
-- Scope: implement local reminder scheduling and a settings surface for prompt preferences
+- Dependencies: `MM-W6-01`
+- Scope: add the settings surface defined in the spec
 - Acceptance criteria:
-- users can configure or disable reminders
-- reminder settings stay on-device
-- settings include local data deletion and onboarding replay if still required by docs
+- users can replay onboarding
+- users can clear local data
+- users can manage prompt settings
 
-### MM-W6-02 - Implement offline queue and sync
+### MM-W6-03 - Implement offline queue and sync
 
 - Status: `pending`
 - Priority: `P1`
 - Estimated effort: `large`
 - Dependencies: `MM-W3-03`, `MM-W4-01`
-- Scope: meet the documented offline behavior target by queueing mood submissions locally and syncing them later
+- Scope: satisfy the graceful offline behavior requirement in the non-functional specification
 - Acceptance criteria:
-- offline submissions are retained locally
+- submissions can be queued locally while offline
 - queued submissions sync when connectivity returns
-- duplicate submission handling is defined by tests
 - privacy rules remain intact during queue persistence
+- tests cover queue and sync behavior
 
-### MM-W7-01 - Build admin APIs for workspace and team management
-
-- Status: `pending`
-- Priority: `P2`
-- Estimated effort: `large`
-- Dependencies: `MM-W3-01`
-- Scope: add only the documented admin capabilities for team creation, join code management, and anonymised export
-- Acceptance criteria:
-- admin team creation flow exists
-- workspace export flow exists
-- join code management behavior is explicit
-- exported data remains anonymous
-
-### MM-W7-02 - Build admin UI
-
-- Status: `pending`
-- Priority: `P3`
-- Estimated effort: `large`
-- Dependencies: `MM-W7-01`
-- Scope: implement the documented admin panel screens needed to use the Week 7 backend capabilities
-- Acceptance criteria:
-- admin panel exists
-- team management UI exists
-- export flow is reachable
-- privacy-safe messaging is used throughout
-
-### MM-W8-01 - Add CI, E2E, and deployment readiness
+### MM-W7-01 - Implement admin team management and join-code APIs
 
 - Status: `pending`
 - Priority: `P1`
 - Estimated effort: `large`
-- Dependencies: `MM-W5-03`, `MM-W6-01`, `MM-W6-02`, `MM-W7-02`
-- Scope: close the documented testing and delivery gaps before MVP completion
+- Dependencies: `MM-W3-04`
+- Scope: implement the backend side of admin-controlled workspace and team setup
+- Acceptance criteria:
+- `POST /admin/team` exists
+- join code generation or management behavior is explicit
+- the flow remains account-light and spec-aligned
+
+### MM-W7-02 - Implement anonymised CSV export
+
+- Status: `pending`
+- Priority: `P1`
+- Estimated effort: `medium`
+- Dependencies: `MM-W7-01`
+- Scope: implement export behavior for admin users without leaking identity
+- Acceptance criteria:
+- `GET /admin/workspace/:id/export` exists
+- export supports date-range filtering
+- exported data is anonymised
+
+### MM-W7-03 - Build the admin panel
+
+- Status: `pending`
+- Priority: `P2`
+- Estimated effort: `large`
+- Dependencies: `MM-W7-01`, `MM-W7-02`
+- Scope: implement the admin UI screens required by the specification
+- Acceptance criteria:
+- create/edit team flow exists
+- join code can be viewed or copied
+- export action is reachable from the UI
+
+### MM-W7-04 - Add admin JWT authorization flow
+
+- Status: `pending`
+- Priority: `P1`
+- Estimated effort: `medium`
+- Dependencies: `MM-W7-01`, `MM-W7-02`
+- Scope: implement the authorization required to protect admin endpoints
+- Acceptance criteria:
+- admin routes require an admin JWT
+- admin access is isolated from member and manager flows
+
+### MM-W8-01 - Align backend test tooling with the specification
+
+- Status: `pending`
+- Priority: `P2`
+- Estimated effort: `medium`
+- Dependencies: `MM-W5-04`, `MM-W7-04`
+- Scope: decide whether to adopt `Jest + Supertest` as specified or formally resolve the tooling drift with the project owner
+- Acceptance criteria:
+- backend test strategy is explicitly aligned to the source-of-truth spec
+- route and anonymity coverage targets remain measurable
+
+### MM-W8-02 - Add E2E coverage for key journeys
+
+- Status: `pending`
+- Priority: `P1`
+- Estimated effort: `large`
+- Dependencies: `MM-W4-03`, `MM-W5-03`
+- Scope: cover the key user journeys named in the specification
+- Acceptance criteria:
+- onboarding to submit mood to view history journey is covered
+- manager dashboard journey is covered if the dashboard exists
+- E2E setup is runnable in the repository
+
+### MM-W8-03 - Add CI/CD and deployment readiness
+
+- Status: `pending`
+- Priority: `P1`
+- Estimated effort: `large`
+- Dependencies: `MM-W8-01`, `MM-W8-02`
+- Scope: satisfy the delivery requirements in the source-of-truth spec
 - Acceptance criteria:
 - GitHub Actions workflow exists
-- Detox E2E covers the documented key journeys
-- performance checks are recorded
-- deployment steps are documented and working
-- definition-of-done items are all measurable
+- Expo EAS build path is configured
+- deployment path for backend is documented
+- README includes setup, environment, and deployment steps
 
-### MM-X-01 - Wire Swagger or OpenAPI documentation
+### MM-X-01 - Wire Swagger documentation
 
 - Status: `pending`
 - Priority: `P3`
 - Estimated effort: `small`
 - Dependencies: `MM-W5-01`, `MM-W7-01`
-- Scope: register API documentation tooling already listed in backend dependencies and docs
+- Scope: activate the API documentation tooling required by the specification
 - Acceptance criteria:
-- API docs route is available
-- route contracts match shared schemas
+- Swagger route is available
+- docs match implemented route schemas
+
+### MM-X-02 - Add i18n-ready string architecture
+
+- Status: `pending`
+- Priority: `P3`
+- Estimated effort: `medium`
+- Dependencies: `MM-W3-05`
+- Scope: satisfy the maintainability and internationalisation requirement without expanding user-visible scope beyond English-only v1
+- Acceptance criteria:
+- app strings are centralised
+- architecture is ready for `i18next`
+- English remains the only shipped locale for v1
+
+### MM-X-03 - Add pre-commit lint and format enforcement
+
+- Status: `pending`
+- Priority: `P3`
+- Estimated effort: `small`
+- Dependencies: none
+- Scope: satisfy the maintainability requirement for ESLint and Prettier via pre-commit hooks
+- Acceptance criteria:
+- lint and format hooks run before commit
+- environment-specific assumptions are documented
 
 ## Dependency map
 
-- `MM-W3-01` gates all source-of-truth validation
-- `MM-W3-03` gates auth-sensitive work and offline sync
-- `MM-W3-05` gates clean transition into Week 4 and Week 5
-- `MM-W4-01` is the base for history, streaks, settings, and local deletion
-- `MM-W5-01` is the base for privacy-threshold enforcement and dashboard UI
-- `MM-W7-01` is the base for the admin UI
-- `MM-W8-01` depends on major feature completion across Weeks 5 through 7
+- `MM-W3-02` must land before the full session model in `MM-W3-03`
+- `MM-W3-05` gates a clean handoff from Week 3 into Weeks 4 and 5
+- `MM-W4-01` is the base for history, streaks, settings, and offline queueing
+- `MM-W5-01` is the base for threshold enforcement and dashboard UI
+- `MM-W5-04` is the base for protected manager access
+- `MM-W7-01` is the base for export and admin UI work
+- `MM-W7-04` is the base for admin route protection
+- `MM-W8-03` depends on feature maturity across Weeks 5 through 7
 
-## Coverage check against repository requirements
+## Coverage check against the specification
 
-The current tracker covers every major requirement category documented in the repository:
+This tracker covers every major requirement area defined in the `.docx`:
 
-- privacy and anonymity rules
-- onboarding and anonymous auth
-- submission flow
+- anonymous submission
+- daily prompts
 - personal history
-- dashboard aggregation
-- notifications and settings
-- admin tooling and export
-- testing, CI, deployment, and performance
+- dashboard analytics
+- anonymity thresholds
+- workspace and team setup
+- admin flows
+- testing and quality gates
+- deployment and infrastructure
+- non-functional and maintainability requirements
 
 ## Duplicate elimination notes
 
-The following overlaps were merged into single tracked items:
+The following overlaps were intentionally merged:
 
-- dashboard daily, weekly, and tags backend work was grouped under `MM-W5-01`
-- reminder scheduling and settings surface work was grouped under `MM-W6-01`
-- CI, E2E, performance audit, and deployment readiness were grouped under `MM-W8-01`
+- dashboard endpoint work is grouped in `MM-W5-01`
+- dashboard privacy rules are grouped in `MM-W5-02`
+- dashboard visual widgets are grouped in `MM-W5-03`
+- daily prompts and notification configuration are grouped in `MM-W6-01`
+- CI, EAS, and deployment readiness are grouped in `MM-W8-03`
 
 ## Next update rule
 
 When a task changes state:
 
 - update its `Status`
-- add or refine dependencies if scope changes
-- keep acceptance criteria tied to documented requirements only
-- re-run the coverage check if the real specification `.docx` becomes available
+- keep acceptance criteria tied to the `.docx`
+- avoid adding scope not stated in the specification
+- note any privacy-impacting ambiguity before implementation starts
