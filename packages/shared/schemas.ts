@@ -51,24 +51,32 @@ export const MoodSubmissionResponseSchema = z.object({
   marble_id: MarbleIdSchema,
 });
 
-export const TeamSummarySchema = z.object({
-  id: TeamIdSchema,
-  name: z.string().min(1),
-});
-
-export const WorkspaceJoinRequestSchema = z.object({
-  join_code: JoinCodeSchema,
-  device_token: DeviceTokenSchema,
-});
-
-export const WorkspaceJoinResponseSchema = z.object({
-  workspace: z.object({
-    id: WorkspaceIdSchema,
+export const TeamSummarySchema = z
+  .object({
+    id: TeamIdSchema,
     name: z.string().min(1),
-  }),
-  teams: z.array(TeamSummarySchema),
-  device_jwt: z.string().min(1),
-});
+  })
+  .strict();
+
+export const WorkspaceJoinRequestSchema = z
+  .object({
+    join_code: JoinCodeSchema,
+    device_token: DeviceTokenSchema,
+  })
+  .strict();
+
+export const WorkspaceJoinResponseSchema = z
+  .object({
+    workspace: z
+      .object({
+        id: WorkspaceIdSchema,
+        name: z.string().min(1),
+      })
+      .strict(),
+    teams: z.array(TeamSummarySchema),
+    device_jwt: z.string().min(1),
+  })
+  .strict();
 
 export const MoodCountSchema = z.object({
   mood_type: MoodSchema,

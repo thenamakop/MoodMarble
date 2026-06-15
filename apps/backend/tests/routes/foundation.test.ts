@@ -128,6 +128,24 @@ describe("backend foundation routes", () => {
     });
   });
 
+  it("rejects privacy-breaking extra fields in the join payload", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/workspace/join",
+      payload: {
+        join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
+        email: "person@example.com",
+        password: "not-allowed",
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      message: "Invalid workspace join payload.",
+    });
+  });
+
   it("rejects a missing join code payload", async () => {
     const response = await app.inject({
       method: "POST",

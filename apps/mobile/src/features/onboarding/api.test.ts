@@ -75,6 +75,28 @@ describe("joinWorkspace", () => {
     );
   });
 
+  it("rejects join responses that leak unsupported extra workspace fields", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        workspace: {
+          id: "ws_test",
+          name: "MoodMarble Workspace",
+          admin_email: "person@example.com",
+        },
+        teams: [
+          {
+            id: "tm_product",
+            name: "Product",
+          },
+        ],
+        device_jwt: "device-jwt-token",
+      }),
+    });
+
+    await expect(joinWorkspace("abc123")).rejects.toThrow();
+  });
+
   it("surfaces the backend join error message when provided", async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,

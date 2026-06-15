@@ -55,6 +55,21 @@ describe("WorkspaceJoinService", () => {
     await expect(service.joinWorkspace({})).rejects.toBeInstanceOf(ZodError);
   });
 
+  it("rejects privacy-breaking extra fields in the join payload", async () => {
+    const service = new WorkspaceJoinService({
+      jwtSecret: JWT_SECRET,
+      workspaceDirectory: new InMemoryWorkspaceDirectory(),
+    });
+
+    await expect(
+      service.joinWorkspace({
+        join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
+        email: "person@example.com",
+      }),
+    ).rejects.toBeInstanceOf(ZodError);
+  });
+
   it("rejects an unknown join code without leaking workspace data", async () => {
     const service = new WorkspaceJoinService({
       jwtSecret: JWT_SECRET,
