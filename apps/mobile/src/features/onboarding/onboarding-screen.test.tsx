@@ -13,6 +13,58 @@ afterEach(() => {
 });
 
 describe("OnboardingScreen", () => {
+  it("shows the onboarding copy and progresses through the 3 slides", async () => {
+    const view = await renderScreen();
+
+    expect(await view.findByText("Anonymous by design")).toBeTruthy();
+    expect(
+      await view.findByText(
+        "No login, no profile, and no name attached. MoodMarble keeps your check-ins private and lightweight.",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+
+    expect(await view.findByText("Join with a 6-character code")).toBeTruthy();
+    expect(
+      await view.findByText(
+        "Enter your workspace code, choose your team, and get into the app in a few taps.",
+      ),
+    ).toBeTruthy();
+
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+
+    expect(
+      await view.findByText("Share how your marble is rolling"),
+    ).toBeTruthy();
+    expect(await view.findByText("Enter join code")).toBeTruthy();
+
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+
+    expect(await view.findByTestId("join-code-input")).toBeTruthy();
+  });
+
+  it("supports back navigation during the onboarding slides", async () => {
+    const view = await renderScreen();
+
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+    fireEvent.press(await view.findByTestId("back-onboarding-button"));
+
+    expect(await view.findByText("Join with a 6-character code")).toBeTruthy();
+  });
+
+  it("can skip directly into the join-code screen", async () => {
+    const view = await renderScreen();
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+
+    expect(await view.findByTestId("join-code-input")).toBeTruthy();
+    expect(
+      await view.findByText("Join your workspace anonymously."),
+    ).toBeTruthy();
+  });
+
   it("validates the join code before calling the API", async () => {
     const onJoinWorkspace = jest.fn();
     const view = await renderScreen({
@@ -20,6 +72,7 @@ describe("OnboardingScreen", () => {
       onSessionReady: jest.fn(),
     });
 
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
     fireEvent.changeText(await view.findByTestId("join-code-input"), "abc12");
     fireEvent.press(await view.findByTestId("join-workspace-button"));
 
@@ -55,6 +108,7 @@ describe("OnboardingScreen", () => {
       onSessionReady,
     });
 
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
     fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
     fireEvent.press(await view.findByTestId("join-workspace-button"));
 
