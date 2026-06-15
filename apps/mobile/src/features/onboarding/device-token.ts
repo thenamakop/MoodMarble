@@ -1,3 +1,5 @@
+import * as Crypto from "expo-crypto";
+
 import { DeviceTokenSchema } from "@/contracts/mood-submission";
 
 const DEVICE_TOKEN_STORAGE_KEY = "moodmarble.anonymous-device-token";
@@ -62,7 +64,8 @@ async function readStoredDeviceToken(): Promise<string | null> {
   if (webStorage) {
     try {
       return (
-        webStorage.getItem(DEVICE_TOKEN_STORAGE_KEY) ?? webDeviceTokenMemoryFallback
+        webStorage.getItem(DEVICE_TOKEN_STORAGE_KEY) ??
+        webDeviceTokenMemoryFallback
       );
     } catch {
       return webDeviceTokenMemoryFallback;
@@ -77,6 +80,13 @@ async function readStoredDeviceToken(): Promise<string | null> {
 }
 
 function createDeviceToken(): string {
+  try {
+    return DeviceTokenSchema.parse(Crypto.randomUUID());
+  } catch {
+    // Fall through to the runtime crypto fallback for environments where
+    // Expo crypto is unavailable but Web Crypto is present.
+  }
+
   const cryptoObject = globalThis.crypto as
     | {
         randomUUID?: () => string;
