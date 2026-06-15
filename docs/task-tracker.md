@@ -29,13 +29,18 @@ If repository docs conflict with the `.docx`, the `.docx` wins.
 ### Done
 
 - anonymous join-code flow
+- anonymous device-token generation and persistence
 - device JWT issuance
+- secure session persistence and recovery
 - onboarding screen flow
+- join-code entry and team selection flow
+- anonymous route protection and fallback rules
+- Week 3 privacy and specification compliance audit
+- Week 3 handoff and completion checklist
 - anonymous mood submission foundation
 
 ### Partial
 
-- anonymous device-token lifecycle
 - workspace and team setup
 - repository documentation alignment
 
@@ -60,7 +65,7 @@ If repository docs conflict with the `.docx`, the `.docx` wins.
 
 ### MM-W3-02 - Finalise anonymous device-token generation and storage
 
-- Status: `partial`
+- Status: `done`
 - Priority: `P0`
 - Estimated effort: `medium`
 - Dependencies: none
@@ -75,7 +80,7 @@ If repository docs conflict with the `.docx`, the `.docx` wins.
 
 ### MM-W3-03 - Finalise the device JWT session model
 
-- Status: `partial`
+- Status: `done`
 - Priority: `P0`
 - Estimated effort: `medium`
 - Dependencies: `MM-W3-02`
@@ -103,7 +108,7 @@ If repository docs conflict with the `.docx`, the `.docx` wins.
 
 ### MM-W3-05 - Add Week 3 completion checklist
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `small`
 - Dependencies: `MM-W3-01`, `MM-W3-02`, `MM-W3-03`, `MM-W3-04`
@@ -112,6 +117,22 @@ If repository docs conflict with the `.docx`, the `.docx` wins.
 - each Week 3 deliverable maps to code, tests, or an explicit unresolved gap
 - open risks are documented
 - the handoff to Week 4 is unambiguous
+
+## Week 4 handoff
+
+Week 4 may now begin from this stable Week 3 base:
+
+- onboarding, join-code entry, and team selection are implemented and verified
+- the anonymous device-token and device JWT session model are implemented and verified
+- secure session persistence and restart recovery are implemented and verified
+- unsupported routes redirect back to the anonymous member flow
+- the Week 3 privacy audit confirms that no email, password, profile, dashboard, history, notification, or admin product flow is active in the shipped Week 3 path
+
+Week 4 should begin with `MM-W4-01` only:
+
+- keep personal history local-only and device-only
+- do not add backend identifiers or new auth models
+- do not start dashboard, notification, manager, or admin work during the first Week 4 increment
 
 ### MM-W4-01 - Implement local-only personal mood history storage
 

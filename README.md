@@ -269,7 +269,8 @@ Use this to get a device JWT for the anonymous submission flow.
 
 ```json
 {
-  "join_code": "ABC123"
+  "join_code": "ABC123",
+  "device_token": "550e8400-e29b-41d4-a716-446655440000"
 }
 ```
 
@@ -413,7 +414,7 @@ Open using:
 
 ## Current Phase
 
-**Week 2 — Core Submission Flow Stabilization**
+**Week 3 complete - ready for Week 4 Personal Mood History**
 
 ### Completed
 
@@ -421,22 +422,31 @@ Open using:
 - Shared schema package
 - Anonymous mood submission API
 - Workspace join foundation and device JWT issuance
+- Device-generated anonymous token flow
+- Mobile onboarding slides
+- Join-code entry and team selection flow
+- Secure anonymous session persistence and recovery
+- Route protection for the anonymous member flow
+- Week 3 privacy and specification compliance audit
 - Per-device daily rate limiting
 - Marble tray submission UI
 - Confirmation flow
-- Backend and mobile test coverage for the Week 2 flow
+- Backend and mobile verification coverage for the Week 3 flow
 - Docker infrastructure
 
-### In Progress
+### Stable for Week 4
 
-- Week 2 hardening and cleanup
-- Documentation alignment with the current implementation
-- Final foundation checks before Week 3
+- Anonymous onboarding and join flow
+- Workspace-scoped team selection
+- Device JWT issuance and validation
+- Secure mobile session restore and fallback to onboarding
+- Privacy-safe join and submission error handling
 
 ### Upcoming
 
-- Week 3 onboarding and mobile join flow
-- Additional MVP features scheduled after the Week 2 foundation
+- Week 4 local-only personal mood history storage
+- Week 4 history timeline screen
+- Week 4 streak and mood calendar work after local storage is in place
 
 ---
 
