@@ -109,8 +109,29 @@ function getWebSessionStorage(): Storage | null {
     return null;
   }
 
+  const localStorage = tryReadWebStorage("localStorage");
+
+  if (localStorage) {
+    return localStorage;
+  }
+
+  return tryReadWebStorage("sessionStorage");
+}
+
+function tryReadWebStorage(storageKey: "localStorage" | "sessionStorage") {
   try {
-    return window.sessionStorage ?? null;
+    const storage = window[storageKey];
+
+    if (
+      storage &&
+      typeof storage.getItem === "function" &&
+      typeof storage.setItem === "function" &&
+      typeof storage.removeItem === "function"
+    ) {
+      return storage;
+    }
+
+    return null;
   } catch {
     return null;
   }

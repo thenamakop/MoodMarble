@@ -8,6 +8,10 @@ import {
 } from "@/features/onboarding/session-boundary";
 
 describe("anonymous session route boundary", () => {
+  beforeEach(() => {
+    installLocalStorageMock();
+  });
+
   afterEach(async () => {
     await clearAnonymousSession();
   });
@@ -84,7 +88,7 @@ describe("anonymous session route boundary", () => {
   });
 
   it("falls back to onboarding when the stored session token is missing", async () => {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "moodmarble.anonymous-session",
       JSON.stringify({
         workspaceId: "ws_existing",
@@ -102,7 +106,7 @@ describe("anonymous session route boundary", () => {
       deviceJwt: createDeviceJwt({ exp: pastExp() + 120 }),
     });
 
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "moodmarble.anonymous-session",
       JSON.stringify({
         workspaceId: "ws_existing",
@@ -137,4 +141,36 @@ function futureExp(): number {
 
 function pastExp(): number {
   return Math.floor(Date.now() / 1000) - 60;
+}
+
+function installLocalStorageMock() {
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: createStorageMock(),
+  });
+}
+
+function createStorageMock(): Storage {
+  const storageMap = new Map<string, string>();
+
+  return {
+    get length() {
+      return storageMap.size;
+    },
+    clear() {
+      storageMap.clear();
+    },
+    getItem(key: string) {
+      return storageMap.get(key) ?? null;
+    },
+    key(index: number) {
+      return Array.from(storageMap.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      storageMap.delete(key);
+    },
+    setItem(key: string, value: string) {
+      storageMap.set(key, value);
+    },
+  };
 }

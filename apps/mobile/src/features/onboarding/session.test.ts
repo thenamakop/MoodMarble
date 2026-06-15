@@ -9,8 +9,13 @@ import {
 describe("anonymous session storage", () => {
   const originalWindow = globalThis.window;
 
+  beforeEach(() => {
+    installLocalStorageMock();
+  });
+
   afterEach(async () => {
     if (typeof window !== "undefined") {
+      window.localStorage.clear();
       window.sessionStorage.clear();
     }
 
@@ -34,7 +39,7 @@ describe("anonymous session storage", () => {
       deviceJwt: activeDeviceJwt,
     });
 
-    expect(window.sessionStorage.getItem("moodmarble.anonymous-session")).toBe(
+    expect(window.localStorage.getItem("moodmarble.anonymous-session")).toBe(
       JSON.stringify({
         workspaceId: "ws_test",
         teamId: "tm_product",
@@ -46,7 +51,7 @@ describe("anonymous session storage", () => {
   it("loads a stored anonymous session", async () => {
     const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
 
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "moodmarble.anonymous-session",
       JSON.stringify({
         workspaceId: "ws_test",
@@ -67,7 +72,7 @@ describe("anonymous session storage", () => {
   });
 
   it("clears an invalid stored anonymous session", async () => {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "moodmarble.anonymous-session",
       JSON.stringify({
         workspaceId: "ws_test",
@@ -76,12 +81,12 @@ describe("anonymous session storage", () => {
 
     await expect(loadAnonymousSession()).resolves.toBeNull();
     expect(
-      window.sessionStorage.getItem("moodmarble.anonymous-session"),
+      window.localStorage.getItem("moodmarble.anonymous-session"),
     ).toBeNull();
   });
 
   it("clears an expired stored anonymous session", async () => {
-    window.sessionStorage.setItem(
+    window.localStorage.setItem(
       "moodmarble.anonymous-session",
       JSON.stringify({
         workspaceId: "ws_test",
@@ -92,31 +97,31 @@ describe("anonymous session storage", () => {
 
     await expect(loadAnonymousSession()).resolves.toBeNull();
     expect(
-      window.sessionStorage.getItem("moodmarble.anonymous-session"),
+      window.localStorage.getItem("moodmarble.anonymous-session"),
     ).toBeNull();
   });
 
   it("clears the stored anonymous session on sign-out cleanup", async () => {
-    window.sessionStorage.setItem("moodmarble.anonymous-session", "{}");
+    window.localStorage.setItem("moodmarble.anonymous-session", "{}");
 
     await clearAnonymousSession();
 
     expect(
-      window.sessionStorage.getItem("moodmarble.anonymous-session"),
+      window.localStorage.getItem("moodmarble.anonymous-session"),
     ).toBeNull();
   });
 
-  it("falls back when web sessionStorage access is unavailable", async () => {
+  it("falls back to sessionStorage when localStorage access is unavailable", async () => {
     const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
-    const sessionStorageDescriptor = Object.getOwnPropertyDescriptor(
+    const localStorageDescriptor = Object.getOwnPropertyDescriptor(
       window,
-      "sessionStorage",
+      "localStorage",
     );
 
-    Object.defineProperty(window, "sessionStorage", {
+    Object.defineProperty(window, "localStorage", {
       configurable: true,
       get() {
-        throw new Error("sessionStorage blocked");
+        throw new Error("localStorage blocked");
       },
     });
 
@@ -127,6 +132,16 @@ describe("anonymous session storage", () => {
         deviceJwt: activeDeviceJwt,
       });
 
+      expect(
+        window.sessionStorage.getItem("moodmarble.anonymous-session"),
+      ).toBe(
+        JSON.stringify({
+          workspaceId: "ws_test",
+          teamId: "tm_product",
+          deviceJwt: activeDeviceJwt,
+        }),
+      );
+
       await expect(loadAnonymousSession()).resolves.toEqual({
         workspaceId: "ws_test",
         teamId: "tm_product",
@@ -136,12 +151,8 @@ describe("anonymous session storage", () => {
       await clearAnonymousSession();
       await expect(loadAnonymousSession()).resolves.toBeNull();
     } finally {
-      if (sessionStorageDescriptor) {
-        Object.defineProperty(
-          window,
-          "sessionStorage",
-          sessionStorageDescriptor,
-        );
+      if (localStorageDescriptor) {
+        Object.defineProperty(window, "localStorage", localStorageDescriptor);
       }
     }
   });
@@ -220,4 +231,36 @@ function futureExp(): number {
 
 function pastExp(): number {
   return Math.floor(Date.now() / 1000) - 60;
+}
+
+function installLocalStorageMock() {
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: createStorageMock(),
+  });
+}
+
+function createStorageMock(): Storage {
+  const storageMap = new Map<string, string>();
+
+  return {
+    get length() {
+      return storageMap.size;
+    },
+    clear() {
+      storageMap.clear();
+    },
+    getItem(key: string) {
+      return storageMap.get(key) ?? null;
+    },
+    key(index: number) {
+      return Array.from(storageMap.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      storageMap.delete(key);
+    },
+    setItem(key: string, value: string) {
+      storageMap.set(key, value);
+    },
+  };
 }
