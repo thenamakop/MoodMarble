@@ -13,6 +13,31 @@ afterEach(() => {
 });
 
 describe("OnboardingScreen", () => {
+  it("submits a valid join code to the workspace lookup", async () => {
+    const onJoinWorkspace = jest.fn().mockResolvedValue({
+      workspace: {
+        id: "ws_localdemo",
+        name: "MoodMarble Local Workspace",
+      },
+      teams: [
+        {
+          id: "tm_product",
+          name: "Product",
+        },
+      ],
+      device_jwt: "device-jwt-token",
+    });
+    const view = await renderScreen({
+      onJoinWorkspace,
+    });
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+    fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
+    fireEvent.press(await view.findByTestId("join-workspace-button"));
+
+    await waitFor(() => expect(onJoinWorkspace).toHaveBeenCalledWith("ABC123"));
+  });
+
   it("shows the onboarding copy and progresses through the 3 slides", async () => {
     const view = await renderScreen();
 
@@ -82,6 +107,150 @@ describe("OnboardingScreen", () => {
         "Join code must be exactly 6 alphanumeric characters.",
       ),
     ).toBeTruthy();
+  });
+
+  it("renders the workspace team list after a successful join lookup", async () => {
+    const view = await renderScreen({
+      onJoinWorkspace: jest.fn().mockResolvedValue({
+        workspace: {
+          id: "ws_localdemo",
+          name: "MoodMarble Local Workspace",
+        },
+        teams: [
+          {
+            id: "tm_product",
+            name: "Product",
+          },
+          {
+            id: "tm_engineering",
+            name: "Engineering",
+          },
+        ],
+        device_jwt: "device-jwt-token",
+      }),
+    });
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+    fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
+    fireEvent.press(await view.findByTestId("join-workspace-button"));
+
+    expect(await view.findByText("MoodMarble Local Workspace")).toBeTruthy();
+    expect(await view.findByTestId("team-option-tm_product")).toBeTruthy();
+    expect(await view.findByTestId("team-option-tm_engineering")).toBeTruthy();
+  });
+
+  it("requires selecting exactly one team before continuing", async () => {
+    const onSessionReady = jest.fn().mockResolvedValue(undefined);
+    const view = await renderScreen({
+      onSessionReady,
+      onJoinWorkspace: jest.fn().mockResolvedValue({
+        workspace: {
+          id: "ws_localdemo",
+          name: "MoodMarble Local Workspace",
+        },
+        teams: [
+          {
+            id: "tm_product",
+            name: "Product",
+          },
+          {
+            id: "tm_engineering",
+            name: "Engineering",
+          },
+        ],
+        device_jwt: "device-jwt-token",
+      }),
+    });
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+    fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
+    fireEvent.press(await view.findByTestId("join-workspace-button"));
+
+    const continueButton = await view.findByTestId(
+      "complete-onboarding-button",
+    );
+    fireEvent.press(continueButton);
+    expect(onSessionReady).not.toHaveBeenCalled();
+
+    fireEvent.press(await view.findByTestId("team-option-tm_engineering"));
+
+    expect(await view.findByText("Selected")).toBeTruthy();
+    expect(await view.findByTestId("team-option-tm_engineering")).toHaveProp(
+      "accessibilityState",
+      { selected: true },
+    );
+    expect(await view.findByTestId("team-option-tm_product")).toHaveProp(
+      "accessibilityState",
+      { selected: false },
+    );
+    fireEvent.press(await view.findByTestId("complete-onboarding-button"));
+    await waitFor(() =>
+      expect(onSessionReady).toHaveBeenCalledWith({
+        workspaceId: "ws_localdemo",
+        teamId: "tm_engineering",
+        deviceJwt: "device-jwt-token",
+      }),
+    );
+  });
+
+  it("shows the loading state while checking the join code", async () => {
+    let resolveJoin:
+      | ((value: {
+          workspace: { id: string; name: string };
+          teams: { id: string; name: string }[];
+          device_jwt: string;
+        }) => void)
+      | null = null;
+
+    const onJoinWorkspace = jest.fn(
+      () =>
+        new Promise<{
+          workspace: { id: string; name: string };
+          teams: { id: string; name: string }[];
+          device_jwt: string;
+        }>((resolve) => {
+          resolveJoin = resolve;
+        }),
+    );
+    const view = await renderScreen({
+      onJoinWorkspace,
+    });
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+    fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
+    fireEvent.press(await view.findByTestId("join-workspace-button"));
+
+    expect(await view.findByText("Checking code...")).toBeTruthy();
+
+    resolveJoin?.({
+      workspace: {
+        id: "ws_localdemo",
+        name: "MoodMarble Local Workspace",
+      },
+      teams: [
+        {
+          id: "tm_product",
+          name: "Product",
+        },
+      ],
+      device_jwt: "device-jwt-token",
+    });
+
+    expect(await view.findByTestId("team-option-tm_product")).toBeTruthy();
+  });
+
+  it("shows the backend join error when the join code lookup fails", async () => {
+    const view = await renderScreen({
+      onJoinWorkspace: jest
+        .fn()
+        .mockRejectedValue(new Error("Join code not found.")),
+    });
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+    fireEvent.changeText(await view.findByTestId("join-code-input"), "ZZZ999");
+    fireEvent.press(await view.findByTestId("join-workspace-button"));
+
+    expect(await view.findByText("Join code not found.")).toBeTruthy();
   });
 
   it("completes onboarding after join and team selection", async () => {

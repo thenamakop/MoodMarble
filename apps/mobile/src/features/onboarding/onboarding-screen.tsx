@@ -83,7 +83,7 @@ export function OnboardingScreen({
     try {
       const joinResult = await onJoinWorkspace(parsedJoinCode.data);
       setWorkspaceResult(joinResult);
-      setSelectedTeamId(joinResult.teams[0]?.id ?? null);
+      setSelectedTeamId(null);
     } catch (error) {
       setErrorMessage(
         getErrorMessage(error, "Unable to join workspace right now."),
@@ -299,7 +299,10 @@ export function OnboardingScreen({
                   testID="join-workspace-button"
                 >
                   {isJoining ? (
-                    <ActivityIndicator color={theme.text} />
+                    <View style={styles.loadingContent}>
+                      <ActivityIndicator color={theme.text} />
+                      <ThemedText type="smallBold">Checking code...</ThemedText>
+                    </View>
                   ) : (
                     <ThemedText type="smallBold">Continue</ThemedText>
                   )}
@@ -314,7 +317,7 @@ export function OnboardingScreen({
                     {workspaceResult.workspace.name}
                   </ThemedText>
                   <ThemedText themeColor="textSecondary">
-                    Choose the team you are sharing from.
+                    Choose one team to continue anonymously.
                   </ThemedText>
                 </View>
                 <Pressable
@@ -333,6 +336,7 @@ export function OnboardingScreen({
                     <Pressable
                       key={team.id}
                       accessibilityRole="button"
+                      accessibilityState={{ selected: isSelected }}
                       onPress={() => setSelectedTeamId(team.id)}
                       style={[
                         styles.teamOption,
@@ -347,7 +351,14 @@ export function OnboardingScreen({
                       ]}
                       testID={`team-option-${team.id}`}
                     >
-                      <ThemedText type="smallBold">{team.name}</ThemedText>
+                      <View style={styles.teamOptionContent}>
+                        <ThemedText type="smallBold">{team.name}</ThemedText>
+                        {isSelected ? (
+                          <ThemedText type="small" themeColor="textSecondary">
+                            Selected
+                          </ThemedText>
+                        ) : null}
+                      </View>
                     </Pressable>
                   );
                 })}
@@ -369,7 +380,10 @@ export function OnboardingScreen({
                 testID="complete-onboarding-button"
               >
                 {isSavingSession ? (
-                  <ActivityIndicator color={theme.text} />
+                  <View style={styles.loadingContent}>
+                    <ActivityIndicator color={theme.text} />
+                    <ThemedText type="smallBold">Saving team...</ThemedText>
+                  </View>
                 ) : (
                   <ThemedText type="smallBold">Continue anonymously</ThemedText>
                 )}
@@ -461,6 +475,12 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     letterSpacing: 3,
   },
+  loadingContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.two,
+  },
   primaryButton: {
     borderRadius: 999,
     paddingVertical: Spacing.three,
@@ -513,6 +533,9 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.three,
+  },
+  teamOptionContent: {
+    gap: Spacing.one,
   },
   errorText: {
     color: "#b42318",
