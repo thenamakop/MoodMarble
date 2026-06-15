@@ -2,6 +2,7 @@ import {
   loadAnonymousSession,
   saveAnonymousSession,
 } from "@/features/onboarding/session";
+import { isDeviceJwtActive } from "@/features/onboarding/device-jwt";
 import {
   AnonymousSessionSchema,
   type AnonymousSession,
@@ -25,6 +26,10 @@ export function getAnonymousSessionFromParams(
   });
 
   if (!parsedSession.success) {
+    return null;
+  }
+
+  if (!isDeviceJwtActive(parsedSession.data.deviceJwt)) {
     return null;
   }
 

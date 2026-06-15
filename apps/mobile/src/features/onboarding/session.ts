@@ -1,6 +1,7 @@
 import * as SecureStore from "expo-secure-store";
 
 import { AnonymousSessionSchema, type AnonymousSession } from "./types";
+import { isDeviceJwtActive } from "./device-jwt";
 
 const SESSION_STORAGE_KEY = "moodmarble.anonymous-session";
 let webSessionMemoryFallback: string | null = null;
@@ -24,6 +25,11 @@ export async function loadAnonymousSession(): Promise<AnonymousSession | null> {
   const parsedSession = AnonymousSessionSchema.safeParse(decodedValue);
 
   if (!parsedSession.success) {
+    await clearAnonymousSession();
+    return null;
+  }
+
+  if (!isDeviceJwtActive(parsedSession.data.deviceJwt)) {
     await clearAnonymousSession();
     return null;
   }
