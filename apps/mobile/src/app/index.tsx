@@ -5,6 +5,7 @@ import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 import { ThemedText } from "@/components/themed-text";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
+import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
 import { saveAnonymousSession } from "@/features/onboarding/session";
 import {
   getAnonymousSessionFromParams,
@@ -77,7 +78,7 @@ export default function HomeScreen() {
     );
   }
 
-  if (!session) {
+  if (resolveAnonymousHomeState(session) === "onboarding") {
     return <OnboardingScreen onSessionReady={handleSessionReady} />;
   }
 
