@@ -22,6 +22,9 @@ export default function HomeScreen() {
     team_id?: string;
     device_jwt?: string;
   }>();
+  const workspaceIdParamKey = getParamDependencyKey(params.workspace_id);
+  const teamIdParamKey = getParamDependencyKey(params.team_id);
+  const deviceJwtParamKey = getParamDependencyKey(params.device_jwt);
   const [session, setSession] = useState<AnonymousSession | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
 
@@ -53,7 +56,7 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [params, router]);
+  }, [deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
 
   async function handleSessionReady(nextSession: AnonymousSession) {
     await saveAnonymousSession(nextSession);
@@ -99,6 +102,20 @@ function scrubUrl(router: ReturnType<typeof useRouter>) {
   }
 
   router.replace("/");
+}
+
+function getParamDependencyKey(
+  value: string | string[] | undefined,
+): string | null {
+  if (typeof value === "string") {
+    return `string:${value}`;
+  }
+
+  if (Array.isArray(value)) {
+    return `array:${value.join("\u0000")}`;
+  }
+
+  return null;
 }
 
 const styles = StyleSheet.create({
