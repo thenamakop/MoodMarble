@@ -82,6 +82,58 @@ describe("POST /mood", () => {
     });
   });
 
+  it("rejects requests with an invalid device JWT", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: "Bearer invalid-jwt",
+      },
+      payload: {
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
+        mood_type: "happy",
+        hour_of_day: 14,
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      message: "Unauthorized",
+    });
+  });
+
+  it("rejects requests with an expired device JWT", async () => {
+    const expiredJwt = jwt.sign(
+      {
+        device_token: "550e8400-e29b-41d4-a716-446655440000",
+        workspace_id: TEST_WORKSPACE_ID,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: -1,
+      },
+    );
+    const response = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: `Bearer ${expiredJwt}`,
+      },
+      payload: {
+        workspace_id: TEST_WORKSPACE_ID,
+        team_id: TEST_TEAM_ID,
+        mood_type: "happy",
+        hour_of_day: 14,
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      message: "Unauthorized",
+    });
+  });
+
   it("rejects an invalid mood type", async () => {
     const response = await app.inject({
       method: "POST",

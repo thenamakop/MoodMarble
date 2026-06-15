@@ -96,4 +96,21 @@ describe("submitMoodSubmission", () => {
       ),
     ).rejects.toThrow("Daily mood submission limit reached.");
   });
+
+  it("fails fast when the anonymous session jwt is missing", async () => {
+    await expect(
+      submitMoodSubmission(
+        {
+          workspace_id: "ws_test",
+          team_id: "tm_test",
+          mood_type: "focused",
+          tags: [],
+          hour_of_day: 9,
+        },
+        "",
+      ),
+    ).rejects.toThrow("Anonymous session missing. Join your workspace again.");
+
+    expect(globalThis.fetch).not.toHaveBeenCalled();
+  });
 });

@@ -1,12 +1,21 @@
 import { joinWorkspace } from "@/features/onboarding/api";
+import { getOrCreateDeviceToken } from "@/features/onboarding/device-token";
+
+jest.mock("@/features/onboarding/device-token", () => ({
+  getOrCreateDeviceToken: jest.fn(),
+}));
 
 describe("joinWorkspace", () => {
   const originalFetch = globalThis.fetch;
   const originalApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const mockedGetOrCreateDeviceToken = jest.mocked(getOrCreateDeviceToken);
 
   beforeEach(() => {
     globalThis.fetch = jest.fn() as typeof fetch;
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
+    mockedGetOrCreateDeviceToken.mockResolvedValue(
+      "550e8400-e29b-41d4-a716-446655440000",
+    );
   });
 
   afterEach(() => {
@@ -60,6 +69,7 @@ describe("joinWorkspace", () => {
         },
         body: JSON.stringify({
           join_code: "ABC123",
+          device_token: "550e8400-e29b-41d4-a716-446655440000",
         }),
       }),
     );

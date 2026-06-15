@@ -1,4 +1,5 @@
 export {
+  DeviceTokenSchema,
   HourOfDaySchema,
   MOOD_COLORS,
   MOOD_LABELS,

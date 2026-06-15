@@ -7,6 +7,7 @@ import { buildApp } from "../../src/app";
 import type { MoodSubmissionStore } from "../../src/services/mood-submissions";
 
 const JWT_SECRET = "test-jwt-secret";
+const DEVICE_TOKEN = "550e8400-e29b-41d4-a716-446655440000";
 
 describe("backend foundation routes", () => {
   let createdSubmissions: unknown[];
@@ -45,6 +46,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "abc123",
+        device_token: DEVICE_TOKEN,
       },
     });
 
@@ -71,9 +73,7 @@ describe("backend foundation routes", () => {
       device_token: string;
       workspace_id: string;
     };
-    expect(decoded.device_token).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
-    );
+    expect(decoded.device_token).toBe(DEVICE_TOKEN);
     expect(decoded.workspace_id).toBe("ws_localdemo");
   });
 
@@ -83,6 +83,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
       },
     });
 
@@ -98,6 +99,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "ZZZ999",
+        device_token: DEVICE_TOKEN,
       },
     });
 
@@ -116,6 +118,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "abc12",
+        device_token: DEVICE_TOKEN,
       },
     });
 
@@ -151,6 +154,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
       },
     });
 
@@ -166,6 +170,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
       },
     });
 
@@ -196,6 +201,7 @@ describe("backend foundation routes", () => {
       url: "/workspace/join",
       payload: {
         join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
       },
     });
 

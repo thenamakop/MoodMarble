@@ -58,6 +58,7 @@ export const TeamSummarySchema = z.object({
 
 export const WorkspaceJoinRequestSchema = z.object({
   join_code: JoinCodeSchema,
+  device_token: DeviceTokenSchema,
 });
 
 export const WorkspaceJoinResponseSchema = z.object({

@@ -1,16 +1,24 @@
 import type { MoodSubmission } from "@/contracts/mood-submission";
+import { z } from "zod";
 
 const DEFAULT_API_BASE_URL = "http://localhost:3000";
+const DeviceJwtSchema = z.string().trim().min(1);
 
 export async function submitMoodSubmission(
   payload: MoodSubmission,
   deviceJwt: string,
 ): Promise<void> {
+  const authorizationValue = DeviceJwtSchema.safeParse(deviceJwt);
+
+  if (!authorizationValue.success) {
+    throw new Error("Anonymous session missing. Join your workspace again.");
+  }
+
   const response = await fetch(createApiUrl("/mood"), {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      Authorization: `Bearer ${deviceJwt}`,
+      Authorization: `Bearer ${authorizationValue.data}`,
     },
     body: JSON.stringify(payload),
   });

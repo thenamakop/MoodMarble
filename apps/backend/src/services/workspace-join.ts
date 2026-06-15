@@ -30,7 +30,11 @@ export class WorkspaceJoinService {
       throw new WorkspaceJoinNotFoundError();
     }
 
-    const { deviceJwt } = createDeviceJwt(this.options.jwtSecret, workspace.id);
+    const { deviceJwt } = createDeviceJwt(
+      this.options.jwtSecret,
+      workspace.id,
+      parsedPayload.device_token,
+    );
 
     return WorkspaceJoinResponseSchema.parse({
       workspace: {

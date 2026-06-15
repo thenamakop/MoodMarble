@@ -11,6 +11,7 @@ import {
 import { InMemoryWorkspaceDirectory } from "../../src/services/workspace-directory";
 
 const JWT_SECRET = "test-jwt-secret";
+const DEVICE_TOKEN = "550e8400-e29b-41d4-a716-446655440000";
 
 describe("WorkspaceJoinService", () => {
   it("returns the shared join response and signs a device jwt", async () => {
@@ -21,6 +22,7 @@ describe("WorkspaceJoinService", () => {
 
     const response = await service.joinWorkspace({
       join_code: "abc123",
+      device_token: DEVICE_TOKEN,
     });
 
     expect(() => WorkspaceJoinResponseSchema.parse(response)).not.toThrow();
@@ -39,9 +41,7 @@ describe("WorkspaceJoinService", () => {
     };
 
     expect(decoded.workspace_id).toBe("ws_localdemo");
-    expect(decoded.device_token).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,
-    );
+    expect(decoded.device_token).toBe(DEVICE_TOKEN);
   });
 
   it("rejects a missing join code payload", async () => {
@@ -62,6 +62,7 @@ describe("WorkspaceJoinService", () => {
     await expect(
       service.joinWorkspace({
         join_code: "ZZZ999",
+        device_token: DEVICE_TOKEN,
       }),
     ).rejects.toEqual(new WorkspaceJoinNotFoundError());
   });
@@ -75,6 +76,7 @@ describe("WorkspaceJoinService", () => {
     await expect(
       service.joinWorkspace({
         join_code: "ABC123",
+        device_token: DEVICE_TOKEN,
       }),
     ).rejects.toBeInstanceOf(MissingJwtSecretError);
   });

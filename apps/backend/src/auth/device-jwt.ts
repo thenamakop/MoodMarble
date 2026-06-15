@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { randomUUID } from "node:crypto";
 import { z } from "zod";
 
 import {
@@ -25,6 +24,8 @@ export class MissingJwtSecretError extends Error {
     super("Server configuration error.");
   }
 }
+
+export const DEVICE_JWT_EXPIRES_IN = "30d" as const;
 
 export function verifyDeviceJwt(
   authorizationHeader: string | undefined,
@@ -61,25 +62,26 @@ export function verifyDeviceJwt(
 export function createDeviceJwt(
   jwtSecret: string | undefined,
   workspaceId: string,
+  deviceToken: string,
 ): { deviceJwt: string; deviceToken: string } {
   if (!jwtSecret) {
     throw new MissingJwtSecretError();
   }
 
-  const deviceToken = randomUUID();
+  const parsedDeviceToken = DeviceTokenSchema.parse(deviceToken);
   const deviceJwt = jwt.sign(
     {
-      device_token: deviceToken,
+      device_token: parsedDeviceToken,
       workspace_id: workspaceId,
     },
     jwtSecret,
     {
-      expiresIn: "30d",
+      expiresIn: DEVICE_JWT_EXPIRES_IN,
     },
   );
 
   return {
     deviceJwt,
-    deviceToken,
+    deviceToken: parsedDeviceToken,
   };
 }

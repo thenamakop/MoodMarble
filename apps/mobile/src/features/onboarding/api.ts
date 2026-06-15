@@ -1,14 +1,17 @@
 import {
   JoinCodeSchema,
   type WorkspaceJoinResponse,
+  WorkspaceJoinRequestSchema,
   WorkspaceJoinResponseSchema,
 } from "@/contracts/workspace-join";
 import { createApiUrl } from "@/features/mood-submission/api";
+import { getOrCreateDeviceToken } from "./device-token";
 
 export async function joinWorkspace(
   joinCode: string,
 ): Promise<WorkspaceJoinResponse> {
   let response: Response;
+  const deviceToken = await getOrCreateDeviceToken();
 
   try {
     response = await fetch(createApiUrl("/workspace/join"), {
@@ -16,9 +19,12 @@ export async function joinWorkspace(
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        join_code: JoinCodeSchema.parse(joinCode),
-      }),
+      body: JSON.stringify(
+        WorkspaceJoinRequestSchema.parse({
+          join_code: JoinCodeSchema.parse(joinCode),
+          device_token: deviceToken,
+        }),
+      ),
     });
   } catch {
     throw new Error("Unable to join workspace right now.");
