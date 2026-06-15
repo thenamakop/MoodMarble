@@ -7,6 +7,8 @@ import {
 import { createApiUrl } from "@/features/mood-submission/api";
 import { getOrCreateDeviceToken } from "./device-token";
 
+const SAFE_JOIN_ERROR_MESSAGES = new Set(["Join code not found."]);
+
 export async function joinWorkspace(
   joinCode: string,
 ): Promise<WorkspaceJoinResponse> {
@@ -40,12 +42,13 @@ export async function joinWorkspace(
 async function getJoinErrorMessage(response: Response): Promise<string> {
   try {
     const responseBody = (await response.json()) as { message?: unknown };
+    const publicErrorMessage =
+      typeof responseBody.message === "string"
+        ? responseBody.message.trim()
+        : "";
 
-    if (
-      typeof responseBody.message === "string" &&
-      responseBody.message.trim()
-    ) {
-      return responseBody.message;
+    if (SAFE_JOIN_ERROR_MESSAGES.has(publicErrorMessage)) {
+      return publicErrorMessage;
     }
   } catch {
     // Fall through to the stable default message.

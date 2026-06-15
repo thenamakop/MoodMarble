@@ -97,6 +97,29 @@ describe("submitMoodSubmission", () => {
     ).rejects.toThrow("Daily mood submission limit reached.");
   });
 
+  it("falls back to the stable message for unsafe backend submission errors", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: jest.fn().mockResolvedValue({
+        message:
+          "Submission rejected for device 550e8400-e29b-41d4-a716-446655440000.",
+      }),
+    });
+
+    await expect(
+      submitMoodSubmission(
+        {
+          workspace_id: "ws_test",
+          team_id: "tm_test",
+          mood_type: "focused",
+          tags: [],
+          hour_of_day: 9,
+        },
+        "device-jwt-token",
+      ),
+    ).rejects.toThrow("Unable to submit mood right now.");
+  });
+
   it("fails fast when the anonymous session jwt is missing", async () => {
     await expect(
       submitMoodSubmission(

@@ -3,6 +3,9 @@ import { z } from "zod";
 
 const DEFAULT_API_BASE_URL = "http://localhost:3000";
 const DeviceJwtSchema = z.string().trim().min(1);
+const SAFE_SUBMISSION_ERROR_MESSAGES = new Set([
+  "Daily mood submission limit reached.",
+]);
 
 export async function submitMoodSubmission(
   payload: MoodSubmission,
@@ -38,12 +41,13 @@ export function createApiUrl(path: string): string {
 async function getSubmissionErrorMessage(response: Response): Promise<string> {
   try {
     const responseBody = (await response.json()) as { message?: unknown };
+    const publicErrorMessage =
+      typeof responseBody.message === "string"
+        ? responseBody.message.trim()
+        : "";
 
-    if (
-      typeof responseBody.message === "string" &&
-      responseBody.message.trim()
-    ) {
-      return responseBody.message;
+    if (SAFE_SUBMISSION_ERROR_MESSAGES.has(publicErrorMessage)) {
+      return publicErrorMessage;
     }
   } catch {
     // Fall through to the stable default message.

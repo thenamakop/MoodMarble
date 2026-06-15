@@ -86,6 +86,19 @@ describe("joinWorkspace", () => {
     );
   });
 
+  it("falls back to the stable join message for unsafe backend errors", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: jest.fn().mockResolvedValue({
+        message: "Workspace lookup failed for ws_localdemo on shard 3.",
+      }),
+    });
+
+    await expect(joinWorkspace("ABC123")).rejects.toThrow(
+      "Unable to join workspace right now.",
+    );
+  });
+
   it("falls back to a stable message when the network request itself fails", async () => {
     (globalThis.fetch as jest.Mock).mockRejectedValue(
       new TypeError("Network request failed"),

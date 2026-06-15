@@ -34,6 +34,8 @@ describe("WorkspaceJoinService", () => {
       { id: "tm_product", name: "Product" },
       { id: "tm_engineering", name: "Engineering" },
     ]);
+    expect(response).not.toHaveProperty("device_token");
+    expect(response).not.toHaveProperty("join_code");
 
     const decoded = jwt.verify(response.device_jwt, JWT_SECRET) as {
       device_token: string;
