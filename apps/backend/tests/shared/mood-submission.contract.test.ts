@@ -11,6 +11,7 @@ describe("MoodSubmissionSchema", () => {
       tags: ["#workload", "#deadlines"],
       note: "Sprint pressure feels high today.",
       hour_of_day: 14,
+      submission_date: "2026-06-16",
     });
 
     expect(result).toEqual({
@@ -20,6 +21,7 @@ describe("MoodSubmissionSchema", () => {
       tags: ["#workload", "#deadlines"],
       note: "Sprint pressure feels high today.",
       hour_of_day: 14,
+      submission_date: "2026-06-16",
     });
   });
 
@@ -29,6 +31,7 @@ describe("MoodSubmissionSchema", () => {
       team_id: "tm_123",
       mood_type: "happy",
       hour_of_day: 9,
+      submission_date: "2026-06-16",
     });
 
     expect(result.tags).toEqual([]);
@@ -44,6 +47,7 @@ describe("MoodSubmissionSchema", () => {
           team_id: "tm_123",
           mood_type: mood,
           hour_of_day: 12,
+          submission_date: "2026-06-16",
         }).mood_type,
       ).toBe(mood);
     }
@@ -54,6 +58,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "angry",
         hour_of_day: 12,
+        submission_date: "2026-06-16",
       }),
     ).toThrow();
   });
@@ -75,6 +80,7 @@ describe("MoodSubmissionSchema", () => {
         mood_type: "focused",
         tags: ["#workload", "#team", "#deadlines"],
         hour_of_day: 10,
+        submission_date: "2026-06-16",
       }),
     ).toThrow("Up to 2 tags are allowed per submission.");
 
@@ -85,6 +91,7 @@ describe("MoodSubmissionSchema", () => {
         mood_type: "focused",
         tags: ["#standup"],
         hour_of_day: 10,
+        submission_date: "2026-06-16",
       }),
     ).toThrow();
   });
@@ -96,6 +103,7 @@ describe("MoodSubmissionSchema", () => {
       mood_type: "neutral",
       note: "  Keeping it brief.  ",
       hour_of_day: 11,
+      submission_date: "2026-06-16",
     });
 
     expect(result.note).toBe("Keeping it brief.");
@@ -107,6 +115,7 @@ describe("MoodSubmissionSchema", () => {
         mood_type: "neutral",
         note: "x".repeat(121),
         hour_of_day: 11,
+        submission_date: "2026-06-16",
       }),
     ).toThrow("Note must be 120 characters or fewer.");
   });
@@ -118,6 +127,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "calm",
         hour_of_day: 0,
+        submission_date: "2026-06-16",
       }).hour_of_day,
     ).toBe(0);
 
@@ -127,6 +137,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "calm",
         hour_of_day: 23,
+        submission_date: "2026-06-16",
       }).hour_of_day,
     ).toBe(23);
 
@@ -136,6 +147,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "calm",
         hour_of_day: 24,
+        submission_date: "2026-06-16",
       }),
     ).toThrow("hour_of_day must be between 0 and 23");
   });
@@ -146,6 +158,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "sad",
         hour_of_day: 15,
+        submission_date: "2026-06-16",
       }),
     ).toThrow();
 
@@ -155,6 +168,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "sad",
         hour_of_day: 15,
+        submission_date: "2026-06-16",
         user_id: "user_123",
       }),
     ).toThrow();
@@ -165,6 +179,7 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "sad",
         hour_of_day: 15,
+        submission_date: "2026-06-16",
         email: "person@example.com",
       }),
     ).toThrow();
@@ -175,8 +190,31 @@ describe("MoodSubmissionSchema", () => {
         team_id: "tm_123",
         mood_type: "sad",
         hour_of_day: 15,
+        submission_date: "2026-06-16",
         device_token: "550e8400-e29b-41d4-a716-446655440000",
       }),
     ).toThrow();
+  });
+
+  it("requires a valid local submission_date", () => {
+    expect(
+      MoodSubmissionSchema.parse({
+        workspace_id: "ws_123",
+        team_id: "tm_123",
+        mood_type: "happy",
+        hour_of_day: 9,
+        submission_date: "2026-06-16",
+      }).submission_date,
+    ).toBe("2026-06-16");
+
+    expect(() =>
+      MoodSubmissionSchema.parse({
+        workspace_id: "ws_123",
+        team_id: "tm_123",
+        mood_type: "happy",
+        hour_of_day: 9,
+        submission_date: "2026-02-30",
+      }),
+    ).toThrow("submission_date must be a real calendar date");
   });
 });

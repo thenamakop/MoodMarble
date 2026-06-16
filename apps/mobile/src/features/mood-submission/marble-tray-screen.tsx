@@ -19,6 +19,7 @@ import {
   TAGS,
   type MoodValue,
   type TagValue,
+  getLocalSubmissionDate,
 } from "@/contracts/mood-submission";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -41,6 +42,7 @@ interface MarbleTrayScreenProps {
   deviceJwt?: string;
   onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<void>;
   getCurrentHour?: () => number;
+  getCurrentSubmissionDate?: () => string;
 }
 
 export function MarbleTrayScreen({
@@ -49,6 +51,7 @@ export function MarbleTrayScreen({
   deviceJwt,
   onSubmitMood = submitMoodSubmission,
   getCurrentHour = () => new Date().getHours(),
+  getCurrentSubmissionDate = () => getLocalSubmissionDate(),
 }: MarbleTrayScreenProps) {
   const theme = useTheme();
   const [selectedMood, setSelectedMood] = useState<MoodValue | null>(null);
@@ -118,6 +121,7 @@ export function MarbleTrayScreen({
         tags: selectedTags,
         note: note.trim() || undefined,
         hour_of_day: getCurrentHour(),
+        submission_date: getCurrentSubmissionDate(),
       });
 
       await onSubmitMood(payload, deviceJwt);

@@ -43,9 +43,9 @@ export async function registerMoodRoute(
         );
         const currentTime = options.now?.() ?? new Date();
         const parsedSubmission = MoodSubmissionSchema.parse(request.body);
-
         if (deviceJwt.workspace_id !== parsedSubmission.workspace_id) {
           return reply.status(400).send({
+            message: "Invalid mood submission payload.",
             message: "Invalid mood submission payload.",
             issues: [
               {
@@ -75,7 +75,7 @@ export async function registerMoodRoute(
           });
         }
 
-        const currentDate = getSubmissionDate(currentTime);
+        const currentDate = getSubmissionDate(parsedSubmission);
         const rateLimitResult = await options.submissionRateLimiter.consume(
           deviceJwt.device_token,
           currentDate,
@@ -85,10 +85,7 @@ export async function registerMoodRoute(
           throw new SubmissionRateLimitExceededError();
         }
 
-        const storedSubmission = buildMoodSubmissionRecord(
-          parsedSubmission,
-          currentTime,
-        );
+        const storedSubmission = buildMoodSubmissionRecord(parsedSubmission);
 
         await options.moodSubmissionStore.createSubmission(storedSubmission);
 

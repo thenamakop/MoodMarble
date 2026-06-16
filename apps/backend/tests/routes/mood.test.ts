@@ -47,14 +47,12 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "stressed",
         tags: ["#workload", "#deadlines"],
         note: "Need some breathing room today.",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(201);
@@ -89,12 +87,10 @@ describe("POST /mood", () => {
       headers: {
         authorization: "Bearer invalid-jwt",
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "happy",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(401);
@@ -120,12 +116,10 @@ describe("POST /mood", () => {
       headers: {
         authorization: `Bearer ${expiredJwt}`,
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "happy",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(401);
@@ -141,12 +135,10 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "angry",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(400);
@@ -159,13 +151,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "focused",
         tags: ["#workload", "#deadlines", "#team"],
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(400);
@@ -178,13 +168,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "focused",
         tags: ["#workload", "#workload"],
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(400);
@@ -200,13 +188,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "neutral",
         note: "x".repeat(121),
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(400);
@@ -223,6 +209,7 @@ describe("POST /mood", () => {
         workspace_id: TEST_WORKSPACE_ID,
         team_id: TEST_TEAM_ID,
         mood_type: "happy",
+        submission_date: "2026-06-12",
       },
     });
 
@@ -232,12 +219,10 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "happy",
         hour_of_day: 24,
-      },
+      }),
     });
 
     expect(missingHourResponse.statusCode).toBe(400);
@@ -251,14 +236,12 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "sad",
         tags: ["#management"],
         note: "Need more clarity this week.",
         hour_of_day: 16,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(201);
@@ -289,12 +272,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
+      payload: createMoodPayload({
         workspace_id: "ws_other",
-        team_id: TEST_TEAM_ID,
         mood_type: "happy",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(400);
@@ -316,12 +298,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
+      payload: createMoodPayload({
         team_id: "tm_other",
         mood_type: "happy",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(response.statusCode).toBe(400);
@@ -348,12 +329,10 @@ describe("POST /mood", () => {
         headers: {
           authorization: createAuthorizationHeader(),
         },
-        payload: {
-          workspace_id: TEST_WORKSPACE_ID,
-          team_id: TEST_TEAM_ID,
+        payload: createMoodPayload({
           mood_type: "happy",
           hour_of_day: 9 + submissionNumber,
-        },
+        }),
       });
 
       expect(response.statusCode).toBe(201);
@@ -374,12 +353,10 @@ describe("POST /mood", () => {
         headers: {
           authorization: createAuthorizationHeader(),
         },
-        payload: {
-          workspace_id: TEST_WORKSPACE_ID,
-          team_id: TEST_TEAM_ID,
+        payload: createMoodPayload({
           mood_type: "focused",
           hour_of_day: 9 + submissionNumber,
-        },
+        }),
       });
 
       expect(response.statusCode).toBe(201);
@@ -391,12 +368,10 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "focused",
         hour_of_day: 14,
-      },
+      }),
     });
 
     expect(blockedResponse.statusCode).toBe(429);
@@ -418,18 +393,14 @@ describe("POST /mood", () => {
         headers: {
           authorization: createAuthorizationHeader(),
         },
-        payload: {
-          workspace_id: TEST_WORKSPACE_ID,
-          team_id: TEST_TEAM_ID,
+        payload: createMoodPayload({
           mood_type: "calm",
           hour_of_day: submissionNumber,
-        },
+        }),
       });
 
       expect(response.statusCode).toBe(201);
     }
-
-    currentTime = new Date("2026-06-13T09:30:00.000Z");
 
     const nextDayResponse = await app.inject({
       method: "POST",
@@ -437,12 +408,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "calm",
         hour_of_day: 10,
-      },
+        submission_date: "2026-06-13",
+      }),
     });
 
     expect(nextDayResponse.statusCode).toBe(201);
@@ -466,13 +436,11 @@ describe("POST /mood", () => {
         headers: {
           authorization: createAuthorizationHeader(),
         },
-        payload: {
-          workspace_id: TEST_WORKSPACE_ID,
-          team_id: TEST_TEAM_ID,
+        payload: createMoodPayload({
           mood_type: "tired",
           note: "Need a break.",
           hour_of_day: submissionNumber,
-        },
+        }),
       });
     }
 
@@ -482,13 +450,11 @@ describe("POST /mood", () => {
       headers: {
         authorization: createAuthorizationHeader(),
       },
-      payload: {
-        workspace_id: TEST_WORKSPACE_ID,
-        team_id: TEST_TEAM_ID,
+      payload: createMoodPayload({
         mood_type: "tired",
         note: "Need a break.",
         hour_of_day: 12,
-      },
+      }),
     });
 
     expect(blockedResponse.statusCode).toBe(429);
@@ -514,4 +480,18 @@ function createAuthorizationHeader(workspaceId = TEST_WORKSPACE_ID): string {
       expiresIn: "30d",
     },
   )}`;
+}
+
+function createMoodPayload(
+  overrides: Record<string, unknown> = {},
+): Record<string, unknown> {
+  return {
+    workspace_id: TEST_WORKSPACE_ID,
+    team_id: TEST_TEAM_ID,
+    mood_type: "happy",
+    tags: [],
+    hour_of_day: 14,
+    submission_date: "2026-06-12",
+    ...overrides,
+  };
 }

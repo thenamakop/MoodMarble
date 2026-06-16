@@ -26,7 +26,6 @@ export class PostgresMoodSubmissionStore implements MoodSubmissionStore {
 
 export function buildMoodSubmissionRecord(
   submission: MoodSubmission,
-  now = new Date(),
 ): NewMoodSubmission {
   return {
     id: createMarbleId(),
@@ -35,12 +34,12 @@ export function buildMoodSubmissionRecord(
     tags: submission.tags,
     noteHash: hashOptionalNote(submission.note),
     hourOfDay: submission.hour_of_day,
-    submissionDate: now.toISOString().slice(0, 10),
+    submissionDate: getSubmissionDate(submission),
   };
 }
 
-export function getSubmissionDate(now = new Date()): string {
-  return now.toISOString().slice(0, 10);
+export function getSubmissionDate(submission: MoodSubmission): string {
+  return submission.submission_date;
 }
 
 function createMarbleId(): string {

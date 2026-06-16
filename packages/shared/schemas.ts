@@ -22,6 +22,27 @@ export const HourOfDaySchema = z
   .int()
   .min(0, "hour_of_day must be between 0 and 23")
   .max(23, "hour_of_day must be between 0 and 23");
+export const SubmissionDateSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/u, "submission_date must be YYYY-MM-DD")
+  .refine((value) => {
+    const [yearPart, monthPart, dayPart] = value.split("-");
+    const year = Number(yearPart);
+    const month = Number(monthPart);
+    const day = Number(dayPart);
+
+    if (Number.isNaN(year) || Number.isNaN(month) || Number.isNaN(day)) {
+      return false;
+    }
+
+    const parsedDate = new Date(Date.UTC(year, month - 1, day));
+
+    return (
+      parsedDate.getUTCFullYear() === year &&
+      parsedDate.getUTCMonth() === month - 1 &&
+      parsedDate.getUTCDate() === day
+    );
+  }, "submission_date must be a real calendar date");
 export const MoodSubmissionTagsSchema = z
   .array(TagSchema)
   .max(2, "Up to 2 tags are allowed per submission.")
@@ -43,6 +64,7 @@ export const MoodSubmissionSchema = z
     tags: MoodSubmissionTagsSchema,
     note: MoodSubmissionNoteSchema,
     hour_of_day: HourOfDaySchema,
+    submission_date: SubmissionDateSchema,
   })
   .strict();
 

@@ -14,6 +14,7 @@ import {
   MoodSubmissionResponseSchema,
   MoodSubmissionSchema,
   MoodSubmissionTagsSchema,
+  SubmissionDateSchema,
   TagCountSchema,
   TagSchema,
   TeamSummarySchema,
@@ -31,6 +32,7 @@ export type DeviceToken = z.infer<typeof DeviceTokenSchema>;
 export type WorkspaceId = z.infer<typeof WorkspaceIdSchema>;
 export type TeamId = z.infer<typeof TeamIdSchema>;
 export type HourOfDay = z.infer<typeof HourOfDaySchema>;
+export type SubmissionDate = z.infer<typeof SubmissionDateSchema>;
 export type MoodSubmissionTags = z.infer<typeof MoodSubmissionTagsSchema>;
 export type MoodSubmissionNote = z.infer<typeof MoodSubmissionNoteSchema>;
 

@@ -66,6 +66,7 @@ describe("MarbleTrayScreen", () => {
         tags: ["#team"],
         note: "Keeping steady today.",
         hour_of_day: 14,
+        submission_date: "2026-06-16",
       },
       "device-jwt-token",
     );
@@ -181,6 +182,7 @@ async function renderScreen(
     <MarbleTrayScreen
       deviceJwt="device-jwt-token"
       getCurrentHour={() => 14}
+      getCurrentSubmissionDate={() => "2026-06-16"}
       teamId="tm_test"
       workspaceId="ws_test"
       {...overrides}

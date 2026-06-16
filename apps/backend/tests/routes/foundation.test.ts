@@ -234,6 +234,7 @@ describe("backend foundation routes", () => {
         team_id: "tm_product",
         mood_type: "happy",
         hour_of_day: 10,
+        submission_date: "2026-06-16",
       },
     });
 
