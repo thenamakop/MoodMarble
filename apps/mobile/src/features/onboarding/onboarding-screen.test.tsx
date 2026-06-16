@@ -253,6 +253,28 @@ describe("OnboardingScreen", () => {
     expect(await view.findByText("Join code not found.")).toBeTruthy();
   });
 
+  it("surfaces development diagnostics from the join flow", async () => {
+    const view = await renderScreen({
+      onJoinWorkspace: jest
+        .fn()
+        .mockRejectedValue(
+          new Error(
+            "Unable to join workspace right now. Dev details: TypeError: Network request failed (http://10.0.2.2:3000/workspace/join)",
+          ),
+        ),
+    });
+
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+    fireEvent.changeText(await view.findByTestId("join-code-input"), "ABC123");
+    fireEvent.press(await view.findByTestId("join-workspace-button"));
+
+    expect(
+      await view.findByText(
+        "Unable to join workspace right now. Dev details: TypeError: Network request failed (http://10.0.2.2:3000/workspace/join)",
+      ),
+    ).toBeTruthy();
+  });
+
   it("completes onboarding after join and team selection", async () => {
     const onSessionReady = jest.fn().mockResolvedValue(undefined);
     const onJoinWorkspace = jest.fn().mockResolvedValue({

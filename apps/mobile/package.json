@@ -42,8 +42,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo start --clear --host localhost --android",
+    "ios": "expo start --clear --host localhost --ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest"
