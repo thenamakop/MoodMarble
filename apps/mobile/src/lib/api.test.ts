@@ -53,4 +53,13 @@ describe("resolveApiBaseUrl", () => {
 
     expect(resolveApiBaseUrl()).toBe("http://localhost:3000");
   });
+
+  it("requires EXPO_PUBLIC_API_BASE_URL on a physical device", () => {
+    delete process.env.EXPO_PUBLIC_API_BASE_URL;
+    const { resolveApiBaseUrl } = loadApiModule("android", true);
+
+    expect(() => resolveApiBaseUrl()).toThrow(
+      "EXPO_PUBLIC_API_BASE_URL must be set when running on a physical device.",
+    );
+  });
 });
