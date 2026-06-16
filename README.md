@@ -408,12 +408,16 @@ Open using:
 - Android Emulator
 - iOS Simulator
 
-For a physical phone on the same Wi-Fi network:
+### Physical Device Setup
 
-- Keep the backend running on the host machine at `http://<YOUR_LAN_IP>:3000`.
-- Set `apps/mobile/.env.local` to `EXPO_PUBLIC_API_BASE_URL=http://<YOUR_LAN_IP>:3000`.
-- Start Expo from `apps/mobile` so the mobile bundle loads that app-local env file.
-- Restart Expo after any `.env.local` change before reopening Expo Go.
+- Run the backend on the host machine.
+- Keep the phone and computer on the same Wi-Fi network.
+- Use the host LAN IP, not `localhost`, for physical devices.
+- Set `apps/mobile/.env.local` to `EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:3000`.
+- Keep that env file local-only and do not commit it.
+- Start Expo from `apps/mobile`.
+- Restart Expo after changing `apps/mobile/.env.local`.
+- Web and emulator behavior remain unchanged.
 
 ---
 
