@@ -8,6 +8,7 @@ jest.mock("@/features/onboarding/device-token", () => ({
 describe("joinWorkspace", () => {
   const originalFetch = globalThis.fetch;
   const originalApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
+  const originalNodeEnv = process.env.NODE_ENV;
   const mockedGetOrCreateDeviceToken = jest.mocked(getOrCreateDeviceToken);
 
   beforeEach(() => {
@@ -25,6 +26,12 @@ describe("joinWorkspace", () => {
       process.env.EXPO_PUBLIC_API_BASE_URL = originalApiBaseUrl;
     } else {
       delete process.env.EXPO_PUBLIC_API_BASE_URL;
+    }
+
+    if (originalNodeEnv) {
+      process.env.NODE_ENV = originalNodeEnv;
+    } else {
+      delete process.env.NODE_ENV;
     }
   });
 
@@ -75,6 +82,33 @@ describe("joinWorkspace", () => {
     );
   });
 
+  it("uses the resolved API URL when an override is configured", async () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = "http://10.0.2.2:3000";
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        workspace: {
+          id: "ws_test",
+          name: "MoodMarble Workspace",
+        },
+        teams: [
+          {
+            id: "tm_product",
+            name: "Product",
+          },
+        ],
+        device_jwt: "device-jwt-token",
+      }),
+    });
+
+    await joinWorkspace("abc123");
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://10.0.2.2:3000/workspace/join",
+      expect.any(Object),
+    );
+  });
+
   it("rejects join responses that leak unsupported extra workspace fields", async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: true,
@@ -122,6 +156,17 @@ describe("joinWorkspace", () => {
   });
 
   it("falls back to a stable message when the network request itself fails", async () => {
+    (globalThis.fetch as jest.Mock).mockRejectedValue(
+      new TypeError("Network request failed"),
+    );
+
+    await expect(joinWorkspace("ABC123")).rejects.toThrow(
+      "Unable to join workspace right now. Dev details: TypeError: Network request failed (http://localhost:3000/workspace/join)",
+    );
+  });
+
+  it("keeps the stable join message in production when the network request fails", async () => {
+    process.env.NODE_ENV = "production";
     (globalThis.fetch as jest.Mock).mockRejectedValue(
       new TypeError("Network request failed"),
     );

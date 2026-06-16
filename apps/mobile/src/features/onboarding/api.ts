@@ -4,7 +4,7 @@ import {
   WorkspaceJoinRequestSchema,
   WorkspaceJoinResponseSchema,
 } from "@/contracts/workspace-join";
-import { createApiUrl } from "@/features/mood-submission/api";
+import { createApiUrl, getApiRequestErrorMessage } from "@/lib/api";
 import { getOrCreateDeviceToken } from "./device-token";
 
 const SAFE_JOIN_ERROR_MESSAGES = new Set(["Join code not found."]);
@@ -14,9 +14,11 @@ export async function joinWorkspace(
 ): Promise<WorkspaceJoinResponse> {
   let response: Response;
   const deviceToken = await getOrCreateDeviceToken();
+  let joinUrl = "";
 
   try {
-    response = await fetch(createApiUrl("/workspace/join"), {
+    joinUrl = createApiUrl("/workspace/join");
+    response = await fetch(joinUrl, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -28,8 +30,14 @@ export async function joinWorkspace(
         }),
       ),
     });
-  } catch {
-    throw new Error("Unable to join workspace right now.");
+  } catch (error: unknown) {
+    throw new Error(
+      getApiRequestErrorMessage(
+        "Unable to join workspace right now.",
+        error,
+        joinUrl,
+      ),
+    );
   }
 
   if (!response.ok) {

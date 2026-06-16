@@ -1,7 +1,7 @@
 import type { MoodSubmission } from "@/contracts/mood-submission";
+import { createApiUrl } from "@/lib/api";
 import { z } from "zod";
 
-const DEFAULT_API_BASE_URL = "http://localhost:3000";
 const DeviceJwtSchema = z.string().trim().min(1);
 const SAFE_SUBMISSION_ERROR_MESSAGES = new Set([
   "Daily mood submission limit reached.",
@@ -29,13 +29,6 @@ export async function submitMoodSubmission(
   if (!response.ok) {
     throw new Error(await getSubmissionErrorMessage(response));
   }
-}
-
-export function createApiUrl(path: string): string {
-  const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
-  const apiBaseUrl = configuredApiBaseUrl || DEFAULT_API_BASE_URL;
-
-  return new URL(path, apiBaseUrl).toString();
 }
 
 async function getSubmissionErrorMessage(response: Response): Promise<string> {

@@ -1,7 +1,5 @@
-import {
-  createApiUrl,
-  submitMoodSubmission,
-} from "@/features/mood-submission/api";
+import { submitMoodSubmission } from "@/features/mood-submission/api";
+import { createApiUrl } from "@/lib/api";
 
 describe("submitMoodSubmission", () => {
   const originalFetch = globalThis.fetch;
