@@ -33,6 +33,13 @@ describe("resolveApiBaseUrl", () => {
     expect(resolveApiBaseUrl()).toBe("https://api.moodmarble.test");
   });
 
+  it("uses the configured API base URL on a physical device", () => {
+    process.env.EXPO_PUBLIC_API_BASE_URL = "http://192.168.1.40:3000";
+    const { resolveApiBaseUrl } = loadApiModule("ios", true);
+
+    expect(resolveApiBaseUrl()).toBe("http://192.168.1.40:3000");
+  });
+
   it("defaults to localhost on web", () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
     const { resolveApiBaseUrl } = loadApiModule("web", false);

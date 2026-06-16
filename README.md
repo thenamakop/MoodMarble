@@ -411,7 +411,8 @@ Open using:
 For a physical phone on the same Wi-Fi network:
 
 - Keep the backend running on the host machine at `http://<YOUR_LAN_IP>:3000`.
-- Set root `.env.local` to `EXPO_PUBLIC_API_BASE_URL=http://<YOUR_LAN_IP>:3000`.
+- Set `apps/mobile/.env.local` to `EXPO_PUBLIC_API_BASE_URL=http://<YOUR_LAN_IP>:3000`.
+- Start Expo from `apps/mobile` so the mobile bundle loads that app-local env file.
 - Restart Expo after any `.env.local` change before reopening Expo Go.
 
 ---
