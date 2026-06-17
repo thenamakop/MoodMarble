@@ -5,6 +5,7 @@ import { LocalMoodTimelineScreen } from "@/features/history/timeline-screen";
 import { loadGroupedLocalMoodHistory } from "@/features/history/storage";
 
 jest.mock("@/features/history/storage", () => ({
+  clearLocalMoodHistory: jest.fn(),
   loadGroupedLocalMoodHistory: jest.fn(),
 }));
 
@@ -15,6 +16,8 @@ jest.mock("@/features/mood-submission/api", () => ({
 afterEach(() => {
   cleanup();
   jest.clearAllMocks();
+  jest.mocked(loadGroupedLocalMoodHistory).mockReset();
+  jest.mocked(submitMoodSubmission).mockReset();
 });
 
 describe("LocalMoodTimelineScreen", () => {
@@ -78,6 +81,7 @@ describe("LocalMoodTimelineScreen", () => {
     expect(view.getByText("#workload")).toBeTruthy();
     expect(view.getByText("2 days")).toBeTruthy();
     expect(view.getByText("Streak ending on 2026-06-16")).toBeTruthy();
+    expect(view.getByTestId("clear-local-history-button")).toBeTruthy();
     expect(submitMoodSubmission).not.toHaveBeenCalled();
   });
 

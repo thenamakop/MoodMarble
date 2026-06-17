@@ -1,6 +1,10 @@
 import * as SecureStore from "expo-secure-store";
 
 import {
+  loadAnonymousSession,
+  saveAnonymousSession,
+} from "@/features/onboarding/session";
+import {
   appendLocalMoodHistoryRecord,
   clearLocalMoodHistory,
   loadGroupedLocalMoodHistory,
@@ -169,6 +173,63 @@ describe("local mood history storage", () => {
     await expect(loadLocalMoodHistory()).resolves.toEqual([]);
   });
 
+  it("clears only local history and leaves the anonymous session intact", async () => {
+    const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
+
+    await saveAnonymousSession({
+      workspaceId: "ws_test",
+      teamId: "tm_product",
+      deviceJwt: activeDeviceJwt,
+    });
+    await saveLocalMoodHistory([
+      createHistoryRecord({
+        id: "history-1",
+        mood_type: "happy",
+        submission_date: "2026-06-15",
+        recorded_at: "2026-06-15T08:00:00.000Z",
+      }),
+    ]);
+
+    await clearLocalMoodHistory();
+
+    await expect(loadLocalMoodHistory()).resolves.toEqual([]);
+    await expect(loadAnonymousSession()).resolves.toEqual({
+      workspaceId: "ws_test",
+      teamId: "tm_product",
+      deviceJwt: activeDeviceJwt,
+    });
+  });
+
+  it("safely starts a fresh local history after clearing", async () => {
+    await saveLocalMoodHistory([
+      createHistoryRecord({
+        id: "history-1",
+        mood_type: "happy",
+        submission_date: "2026-06-15",
+        recorded_at: "2026-06-15T08:00:00.000Z",
+      }),
+    ]);
+
+    await clearLocalMoodHistory();
+    await appendLocalMoodHistoryRecord(
+      createHistoryRecord({
+        id: "history-2",
+        mood_type: "focused",
+        submission_date: "2026-06-16",
+        recorded_at: "2026-06-16T09:00:00.000Z",
+      }),
+    );
+
+    await expect(loadLocalMoodHistory()).resolves.toEqual([
+      createHistoryRecord({
+        id: "history-2",
+        mood_type: "focused",
+        submission_date: "2026-06-16",
+        recorded_at: "2026-06-16T09:00:00.000Z",
+      }),
+    ]);
+  });
+
   it("persists local history across module reloads", async () => {
     await saveLocalMoodHistory([
       createHistoryRecord({
@@ -314,4 +375,24 @@ function createStorageMock(): Storage {
       storageMap.set(key, value);
     },
   };
+}
+
+function createDeviceJwt(payload: { exp: number }): string {
+  return [
+    encodeJsonSegment({ alg: "none", typ: "JWT" }),
+    encodeJsonSegment(payload),
+    "signature",
+  ].join(".");
+}
+
+function encodeJsonSegment(value: unknown): string {
+  return Buffer.from(JSON.stringify(value), "utf-8")
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/g, "");
+}
+
+function futureExp(): number {
+  return Math.floor(Date.now() / 1000) + 60 * 60;
 }

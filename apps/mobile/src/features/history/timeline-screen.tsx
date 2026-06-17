@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -14,20 +15,30 @@ import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
 import type { LocalMoodHistoryDayGroup } from "@/features/history/model";
 import { normalizeLocalMoodHistoryRecords } from "@/features/history/model";
 import { calculateLocalMoodHistoryStreakFromDayKeys } from "@/features/history/streak";
-import { loadGroupedLocalMoodHistory } from "@/features/history/storage";
+import {
+  clearLocalMoodHistory,
+  loadGroupedLocalMoodHistory,
+} from "@/features/history/storage";
 import { MOOD_COLORS, MOOD_LABELS } from "@/contracts/mood-submission";
 import { useTheme } from "@/hooks/use-theme";
 
 interface LocalMoodTimelineScreenProps {
+  initialTimeline?: LocalMoodHistoryDayGroup[] | null;
   loadTimeline?: () => Promise<LocalMoodHistoryDayGroup[]>;
+  clearHistory?: () => Promise<void>;
 }
 
 export function LocalMoodTimelineScreen({
+  initialTimeline = null,
   loadTimeline = loadGroupedLocalMoodHistory,
+  clearHistory = clearLocalMoodHistory,
 }: LocalMoodTimelineScreenProps) {
   const theme = useTheme();
-  const [dayGroups, setDayGroups] = useState<LocalMoodHistoryDayGroup[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [dayGroups, setDayGroups] = useState<LocalMoodHistoryDayGroup[]>(
+    initialTimeline ? normalizeTimelineGroups(initialTimeline) : [],
+  );
+  const [isLoading, setIsLoading] = useState(initialTimeline === null);
+  const [isClearing, setIsClearing] = useState(false);
 
   const safeBottomPadding = useMemo(() => {
     if (Platform.OS === "web") {
@@ -44,10 +55,19 @@ export function LocalMoodTimelineScreen({
     [dayGroups],
   );
 
+  const hydrateTimeline = useCallback(async () => {
+    const nextGroups = normalizeTimelineGroups(await loadTimeline());
+    setDayGroups(nextGroups);
+  }, [loadTimeline]);
+
   useEffect(() => {
+    if (initialTimeline) {
+      return;
+    }
+
     let cancelled = false;
 
-    async function hydrateTimeline() {
+    async function loadInitialTimeline() {
       try {
         const nextGroups = normalizeTimelineGroups(await loadTimeline());
 
@@ -61,12 +81,23 @@ export function LocalMoodTimelineScreen({
       }
     }
 
-    void hydrateTimeline();
+    void loadInitialTimeline();
 
     return () => {
       cancelled = true;
     };
-  }, [loadTimeline]);
+  }, [initialTimeline, loadTimeline]);
+
+  const handleClearHistory = useCallback(async () => {
+    setIsClearing(true);
+
+    try {
+      await clearHistory();
+      await hydrateTimeline();
+    } finally {
+      setIsClearing(false);
+    }
+  }, [clearHistory, hydrateTimeline]);
 
   return (
     <ThemedView style={styles.screen}>
@@ -93,12 +124,38 @@ export function LocalMoodTimelineScreen({
             style={styles.streakPanel}
             testID="timeline-streak-panel"
           >
-            <ThemedText type="subtitle" style={styles.streakValue}>
-              {streak.dayCount} day{streak.dayCount === 1 ? "" : "s"}
-            </ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Streak ending on {streak.endDate ?? "your next marble"}
-            </ThemedText>
+            <View style={styles.streakHeader}>
+              <View style={styles.streakCopy}>
+                <ThemedText type="subtitle" style={styles.streakValue}>
+                  {streak.dayCount} day{streak.dayCount === 1 ? "" : "s"}
+                </ThemedText>
+                <ThemedText themeColor="textSecondary">
+                  Streak ending on {streak.endDate ?? "your next marble"}
+                </ThemedText>
+              </View>
+
+              {dayGroups.length > 0 ? (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityState={{ disabled: isClearing }}
+                  disabled={isClearing}
+                  onPress={handleClearHistory}
+                  style={({ pressed }) => [
+                    styles.clearButton,
+                    {
+                      backgroundColor: theme.background,
+                      borderColor: theme.backgroundSelected,
+                      opacity: pressed && !isClearing ? 0.85 : 1,
+                    },
+                  ]}
+                  testID="clear-local-history-button"
+                >
+                  <ThemedText type="smallBold">
+                    {isClearing ? "Clearing..." : "Clear local history"}
+                  </ThemedText>
+                </Pressable>
+              ) : null}
+            </View>
           </ThemedView>
 
           {isLoading ? (
@@ -259,9 +316,25 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.one,
   },
+  streakHeader: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: Spacing.two,
+  },
+  streakCopy: {
+    flex: 1,
+    gap: Spacing.one,
+  },
   streakValue: {
     fontSize: 24,
     lineHeight: 30,
+  },
+  clearButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   emptyPanel: {
     borderRadius: Spacing.four,
