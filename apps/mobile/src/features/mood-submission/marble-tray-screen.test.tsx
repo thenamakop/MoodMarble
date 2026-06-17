@@ -6,6 +6,10 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 
+jest.mock("expo-router", () => ({
+  useRouter: jest.fn(),
+}));
+
 import {
   createLocalMoodHistoryRecord,
   extractLocalMoodHistoryRecordInput,
@@ -23,6 +27,10 @@ jest.mock("@/features/history/storage", () => ({
   appendLocalMoodHistoryRecord: jest.fn(),
 }));
 
+const { useRouter } = jest.requireMock("expo-router") as {
+  useRouter: jest.Mock;
+};
+
 afterEach(() => {
   jest.useRealTimers();
   cleanup();
@@ -30,6 +38,12 @@ afterEach(() => {
 });
 
 describe("MarbleTrayScreen", () => {
+  beforeEach(() => {
+    useRouter.mockReturnValue({
+      push: jest.fn(),
+    });
+  });
+
   it("allows selecting a marble mood", async () => {
     const { findByTestId, getByText } = await renderScreen();
 
@@ -294,6 +308,15 @@ describe("MarbleTrayScreen", () => {
     await waitFor(() =>
       expect(getByText("Daily mood submission limit reached.")).toBeTruthy(),
     );
+  });
+
+  it("opens the local history flow from the member home screen", async () => {
+    const onOpenHistory = jest.fn();
+    const { findByTestId } = await renderScreen({ onOpenHistory });
+
+    fireEvent.press(await findByTestId("open-history-button"));
+
+    expect(onOpenHistory).toHaveBeenCalledTimes(1);
   });
 });
 

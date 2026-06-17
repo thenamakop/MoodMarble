@@ -1,4 +1,5 @@
 import {
+  ANONYMOUS_MEMBER_HISTORY_ROUTE,
   ANONYMOUS_MEMBER_HOME_ROUTE,
   getProtectedRouteRedirect,
   isAllowedAnonymousMemberRoute,
@@ -9,6 +10,7 @@ describe("anonymous route boundary", () => {
   it("allows access to the team-member home route", () => {
     expect(isAllowedAnonymousMemberRoute("/")).toBe(true);
     expect(isAllowedAnonymousMemberRoute("")).toBe(true);
+    expect(isAllowedAnonymousMemberRoute("/history")).toBe(true);
   });
 
   it("blocks unsupported role and future-feature routes", () => {
@@ -21,13 +23,16 @@ describe("anonymous route boundary", () => {
     expect(getProtectedRouteRedirect("/dashboard")).toBe(
       ANONYMOUS_MEMBER_HOME_ROUTE,
     );
-    expect(getProtectedRouteRedirect("/history")).toBe(
+    expect(getProtectedRouteRedirect("/manager/reports")).toBe(
       ANONYMOUS_MEMBER_HOME_ROUTE,
     );
   });
 
-  it("does not redirect the supported anonymous home route", () => {
+  it("does not redirect the supported anonymous member routes", () => {
     expect(getProtectedRouteRedirect("/")).toBeNull();
+    expect(
+      getProtectedRouteRedirect(ANONYMOUS_MEMBER_HISTORY_ROUTE),
+    ).toBeNull();
   });
 
   it("falls back to onboarding when the anonymous session is missing", () => {

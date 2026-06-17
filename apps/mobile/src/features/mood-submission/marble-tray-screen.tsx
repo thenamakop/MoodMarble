@@ -1,4 +1,5 @@
 import { useCallback, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   Platform,
@@ -45,6 +46,7 @@ interface MarbleTrayScreenProps {
   workspaceId?: string;
   teamId?: string;
   deviceJwt?: string;
+  onOpenHistory?: () => void;
   onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<void>;
   getCurrentHour?: () => number;
   getCurrentSubmissionDate?: () => string;
@@ -54,10 +56,12 @@ export function MarbleTrayScreen({
   workspaceId,
   teamId,
   deviceJwt,
+  onOpenHistory,
   onSubmitMood = submitMoodSubmission,
   getCurrentHour = () => new Date().getHours(),
   getCurrentSubmissionDate = () => getLocalSubmissionDate(),
 }: MarbleTrayScreenProps) {
+  const router = useRouter();
   const theme = useTheme();
   const [selectedMood, setSelectedMood] = useState<MoodValue | null>(null);
   const [selectedTags, setSelectedTags] = useState<TagValue[]>([]);
@@ -84,6 +88,14 @@ export function MarbleTrayScreen({
   const handleDismissConfirmation = useCallback(() => {
     setConfirmationMood(null);
   }, []);
+  const handleOpenHistory = useCallback(() => {
+    if (onOpenHistory) {
+      onOpenHistory();
+      return;
+    }
+
+    router.push("/history");
+  }, [onOpenHistory, router]);
 
   function toggleTag(tag: TagValue) {
     setSelectedTags((currentTags) => {
@@ -180,6 +192,21 @@ export function MarbleTrayScreen({
               Share a private snapshot of your day. No names. No public feed.
               Just one anonymous signal.
             </ThemedText>
+            <Pressable
+              accessibilityRole="button"
+              onPress={handleOpenHistory}
+              style={({ pressed }) => [
+                styles.historyButton,
+                {
+                  backgroundColor: theme.backgroundElement,
+                  borderColor: theme.backgroundSelected,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+              testID="open-history-button"
+            >
+              <ThemedText type="smallBold">View history</ThemedText>
+            </Pressable>
           </View>
 
           <ThemedView type="backgroundElement" style={styles.panel}>
@@ -389,6 +416,13 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     maxWidth: 540,
+  },
+  historyButton: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   panel: {
     borderRadius: Spacing.four,
