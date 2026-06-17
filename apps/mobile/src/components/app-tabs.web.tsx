@@ -22,10 +22,17 @@ export default function AppTabs() {
           <TabTrigger name="home" href="/" asChild>
             <TabButton>Marbles</TabButton>
           </TabTrigger>
+          <TabTrigger name="history" href="/history" asChild>
+            <HiddenTabRegistration />
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>
   );
+}
+
+function HiddenTabRegistration() {
+  return <View aria-hidden style={styles.hiddenTabTrigger} />;
 }
 
 export function TabButton({
@@ -100,5 +107,8 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
+  },
+  hiddenTabTrigger: {
+    display: "none",
   },
 });
