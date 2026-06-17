@@ -6,12 +6,27 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 
+import {
+  createLocalMoodHistoryRecord,
+  extractLocalMoodHistoryRecordInput,
+} from "@/features/history/model";
+import { appendLocalMoodHistoryRecord } from "@/features/history/storage";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { CONFIRMATION_AUTO_DISMISS_MS } from "@/features/mood-submission/submission-confirmation";
+
+jest.mock("@/features/history/model", () => ({
+  createLocalMoodHistoryRecord: jest.fn(),
+  extractLocalMoodHistoryRecordInput: jest.fn(),
+}));
+
+jest.mock("@/features/history/storage", () => ({
+  appendLocalMoodHistoryRecord: jest.fn(),
+}));
 
 afterEach(() => {
   jest.useRealTimers();
   cleanup();
+  jest.clearAllMocks();
 });
 
 describe("MarbleTrayScreen", () => {
@@ -101,6 +116,57 @@ describe("MarbleTrayScreen", () => {
     expect(getByText("Marble shared anonymously.")).toBeTruthy();
   });
 
+  it("creates a local history record after a successful submit", async () => {
+    const onSubmitMood = jest.fn().mockResolvedValue(undefined);
+    const extractedHistoryInput = {
+      mood_type: "happy",
+      tags: ["#team"],
+      hour_of_day: 14,
+      submission_date: "2026-06-16",
+    };
+    const createdHistoryRecord = {
+      id: "history-1",
+      mood_type: "happy",
+      tags: ["#team"],
+      hour_of_day: 14,
+      submission_date: "2026-06-16",
+      recorded_at: "2026-06-16T14:00:00.000Z",
+    };
+
+    jest
+      .mocked(extractLocalMoodHistoryRecordInput)
+      .mockReturnValue(extractedHistoryInput);
+    jest
+      .mocked(createLocalMoodHistoryRecord)
+      .mockReturnValue(createdHistoryRecord);
+    jest.mocked(appendLocalMoodHistoryRecord).mockResolvedValue([]);
+
+    const { findByTestId } = await renderScreen({ onSubmitMood });
+
+    fireEvent.press(await findByTestId("mood-happy"));
+    fireEvent.press(await findByTestId("tag-#team"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    await waitFor(() => expect(onSubmitMood).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(extractLocalMoodHistoryRecordInput).toHaveBeenCalledWith({
+        workspace_id: "ws_test",
+        team_id: "tm_test",
+        mood_type: "happy",
+        tags: ["#team"],
+        note: undefined,
+        hour_of_day: 14,
+        submission_date: "2026-06-16",
+      }),
+    );
+    expect(createLocalMoodHistoryRecord).toHaveBeenCalledWith(
+      extractedHistoryInput,
+    );
+    expect(appendLocalMoodHistoryRecord).toHaveBeenCalledWith(
+      createdHistoryRecord,
+    );
+  });
+
   it("auto-dismisses the confirmation after a short delay", async () => {
     const onSubmitMood = jest.fn().mockResolvedValue(undefined);
     const { findByTestId, queryByTestId } = await renderScreen({
@@ -158,6 +224,62 @@ describe("MarbleTrayScreen", () => {
       expect(getByText("Unable to submit mood right now.")).toBeTruthy(),
     );
     expect(queryByTestId("submission-confirmation")).toBeNull();
+  });
+
+  it("does not create local history when submission fails", async () => {
+    const onSubmitMood = jest.fn().mockRejectedValue(new Error("network"));
+    const { findByTestId, getByText } = await renderScreen({ onSubmitMood });
+
+    fireEvent.press(await findByTestId("mood-focused"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    await waitFor(() =>
+      expect(getByText("Unable to submit mood right now.")).toBeTruthy(),
+    );
+
+    expect(extractLocalMoodHistoryRecordInput).not.toHaveBeenCalled();
+    expect(createLocalMoodHistoryRecord).not.toHaveBeenCalled();
+    expect(appendLocalMoodHistoryRecord).not.toHaveBeenCalled();
+  });
+
+  it("keeps the confirmation flow even if the local history write fails", async () => {
+    const onSubmitMood = jest.fn().mockResolvedValue(undefined);
+    const extractedHistoryInput = {
+      mood_type: "calm",
+      tags: [],
+      hour_of_day: 14,
+      submission_date: "2026-06-16",
+    };
+    const createdHistoryRecord = {
+      id: "history-2",
+      mood_type: "calm",
+      tags: [],
+      hour_of_day: 14,
+      submission_date: "2026-06-16",
+      recorded_at: "2026-06-16T14:30:00.000Z",
+    };
+
+    jest
+      .mocked(extractLocalMoodHistoryRecordInput)
+      .mockReturnValue(extractedHistoryInput);
+    jest
+      .mocked(createLocalMoodHistoryRecord)
+      .mockReturnValue(createdHistoryRecord);
+    jest
+      .mocked(appendLocalMoodHistoryRecord)
+      .mockRejectedValue(new Error("storage failed"));
+
+    const { findByTestId, getByText } = await renderScreen({ onSubmitMood });
+
+    fireEvent.press(await findByTestId("mood-calm"));
+    fireEvent.press(await findByTestId("submit-button"));
+
+    await waitFor(() => expect(onSubmitMood).toHaveBeenCalledTimes(1));
+    await findByTestId("submission-confirmation");
+    expect(getByText("Marble shared anonymously.")).toBeTruthy();
+    expect(appendLocalMoodHistoryRecord).toHaveBeenCalledWith(
+      createdHistoryRecord,
+    );
   });
 
   it("shows the rate-limit message returned by the backend", async () => {

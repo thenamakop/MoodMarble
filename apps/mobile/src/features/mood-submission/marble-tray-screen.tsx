@@ -29,6 +29,11 @@ import {
   MaxContentWidth,
   Spacing,
 } from "@/constants/theme";
+import {
+  createLocalMoodHistoryRecord,
+  extractLocalMoodHistoryRecordInput,
+} from "@/features/history/model";
+import { appendLocalMoodHistoryRecord } from "@/features/history/storage";
 import { submitMoodSubmission } from "@/features/mood-submission/api";
 import { SubmissionConfirmation } from "@/features/mood-submission/submission-confirmation";
 import { useTheme } from "@/hooks/use-theme";
@@ -125,6 +130,15 @@ export function MarbleTrayScreen({
       });
 
       await onSubmitMood(payload, deviceJwt);
+      try {
+        await appendLocalMoodHistoryRecord(
+          createLocalMoodHistoryRecord(
+            extractLocalMoodHistoryRecordInput(payload),
+          ),
+        );
+      } catch {
+        // Keep the confirmed submission flow intact even if local persistence fails.
+      }
 
       setSelectedMood(null);
       setSelectedTags([]);
