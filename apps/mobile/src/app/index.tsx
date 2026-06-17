@@ -1,8 +1,9 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
+import { LocalHistoryScreen } from "@/features/history/history-screen";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
@@ -27,16 +28,21 @@ export default function HomeScreen() {
   const deviceJwtParamKey = getParamDependencyKey(params.device_jwt);
   const [session, setSession] = useState<AnonymousSession | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
+  const [activeNativeScreen, setActiveNativeScreen] = useState<
+    "marbles" | "history"
+  >("marbles");
+  const sessionSyncVersionRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
+    const syncVersion = ++sessionSyncVersionRef.current;
 
     async function syncAnonymousSession() {
       const nextContext = getAnonymousSessionFromParams(params);
       const nextSession = await restoreAnonymousSession(params);
 
       if (nextContext) {
-        if (!cancelled) {
+        if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
           setSession(nextSession);
           setIsLoadingSession(false);
         }
@@ -45,7 +51,7 @@ export default function HomeScreen() {
         return;
       }
 
-      if (!cancelled) {
+      if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
         setSession(nextSession);
         setIsLoadingSession(false);
       }
@@ -59,8 +65,11 @@ export default function HomeScreen() {
   }, [deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
 
   async function handleSessionReady(nextSession: AnonymousSession) {
+    sessionSyncVersionRef.current += 1;
     await saveAnonymousSession(nextSession);
     setSession(nextSession);
+    setIsLoadingSession(false);
+    setActiveNativeScreen("marbles");
   }
 
   if (isLoadingSession) {
@@ -85,11 +94,26 @@ export default function HomeScreen() {
     return <OnboardingScreen onSessionReady={handleSessionReady} />;
   }
 
+  if (Platform.OS !== "web" && activeNativeScreen === "history") {
+    return (
+      <LocalHistoryScreen
+        onReturnHome={() => setActiveNativeScreen("marbles")}
+      />
+    );
+  }
+
   return (
     <MarbleTrayScreen
       workspaceId={session.workspaceId}
       teamId={session.teamId}
       deviceJwt={session.deviceJwt}
+      onOpenHistory={
+        Platform.OS === "web"
+          ? undefined
+          : () => {
+              setActiveNativeScreen("history");
+            }
+      }
     />
   );
 }

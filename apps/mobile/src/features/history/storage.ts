@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 import { z } from "zod";
 
 import type {
@@ -64,7 +65,7 @@ export async function saveLocalMoodHistory(
     }
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     webHistoryMemoryFallback = serializedHistory;
     return normalizedRecords;
   }
@@ -103,7 +104,7 @@ export async function clearLocalMoodHistory(): Promise<void> {
     return;
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     webHistoryMemoryFallback = null;
     return;
   }
@@ -124,7 +125,7 @@ async function readStoredHistory(): Promise<string | null> {
     }
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     return webHistoryMemoryFallback;
   }
 
@@ -132,7 +133,7 @@ async function readStoredHistory(): Promise<string | null> {
 }
 
 function getWebHistoryStorage(): Storage | null {
-  if (typeof window === "undefined") {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
     return null;
   }
 

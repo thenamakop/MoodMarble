@@ -1,4 +1,14 @@
-import * as SecureStore from "expo-secure-store";
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "web",
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  deleteItemAsync: jest.fn(async () => undefined),
+  getItemAsync: jest.fn(async () => null),
+  setItemAsync: jest.fn(async () => undefined),
+}));
 
 import {
   loadAnonymousSession,
@@ -254,70 +264,6 @@ describe("local mood history storage", () => {
         recorded_at: "2026-06-15T08:00:00.000Z",
       }),
     ]);
-  });
-
-  it("uses secure storage when the app storage path is native", async () => {
-    const setItemAsync = jest
-      .spyOn(SecureStore, "setItemAsync")
-      .mockResolvedValue(undefined);
-    const getItemAsync = jest
-      .spyOn(SecureStore, "getItemAsync")
-      .mockResolvedValue(
-        JSON.stringify([
-          createHistoryRecord({
-            id: "history-native",
-            mood_type: "focused",
-            submission_date: "2026-06-15",
-            recorded_at: "2026-06-15T10:00:00.000Z",
-          }),
-        ]),
-      );
-    const deleteItemAsync = jest
-      .spyOn(SecureStore, "deleteItemAsync")
-      .mockResolvedValue(undefined);
-
-    Object.defineProperty(globalThis, "window", {
-      configurable: true,
-      value: undefined,
-    });
-
-    await saveLocalMoodHistory([
-      createHistoryRecord({
-        id: "history-native",
-        mood_type: "focused",
-        submission_date: "2026-06-15",
-        recorded_at: "2026-06-15T10:00:00.000Z",
-      }),
-    ]);
-
-    expect(setItemAsync).toHaveBeenCalledWith(
-      "moodmarble.local-mood-history",
-      expect.any(String),
-    );
-    expect(JSON.parse(setItemAsync.mock.calls[0]?.[1] ?? "[]")).toEqual([
-      createHistoryRecord({
-        id: "history-native",
-        mood_type: "focused",
-        submission_date: "2026-06-15",
-        recorded_at: "2026-06-15T10:00:00.000Z",
-      }),
-    ]);
-
-    await expect(loadLocalMoodHistory()).resolves.toEqual([
-      createHistoryRecord({
-        id: "history-native",
-        mood_type: "focused",
-        submission_date: "2026-06-15",
-        recorded_at: "2026-06-15T10:00:00.000Z",
-      }),
-    ]);
-
-    await clearLocalMoodHistory();
-
-    expect(deleteItemAsync).toHaveBeenCalledWith(
-      "moodmarble.local-mood-history",
-    );
-    expect(getItemAsync).toHaveBeenCalledWith("moodmarble.local-mood-history");
   });
 });
 

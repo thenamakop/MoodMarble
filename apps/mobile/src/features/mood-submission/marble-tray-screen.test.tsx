@@ -38,9 +38,12 @@ afterEach(() => {
 });
 
 describe("MarbleTrayScreen", () => {
+  let push: jest.Mock;
+
   beforeEach(() => {
+    push = jest.fn();
     useRouter.mockReturnValue({
-      push: jest.fn(),
+      push,
     });
   });
 
@@ -117,6 +120,22 @@ describe("MarbleTrayScreen", () => {
         "Submission needs workspace access before a marble can be shared.",
       ),
     ).toBeTruthy();
+  });
+
+  it("enables submit once a mood is selected and session context exists", async () => {
+    const { findByTestId, getByTestId } = await renderScreen();
+
+    expect(getByTestId("submit-button").props.accessibilityState.disabled).toBe(
+      true,
+    );
+
+    fireEvent.press(await findByTestId("mood-calm"));
+
+    await waitFor(() =>
+      expect(
+        getByTestId("submit-button").props.accessibilityState.disabled,
+      ).toBe(false),
+    );
   });
 
   it("shows the confirmation after a successful submit", async () => {
@@ -317,6 +336,14 @@ describe("MarbleTrayScreen", () => {
     fireEvent.press(await findByTestId("open-history-button"));
 
     expect(onOpenHistory).toHaveBeenCalledTimes(1);
+  });
+
+  it("navigates to history when no custom history handler is provided", async () => {
+    const { findByTestId } = await renderScreen();
+
+    fireEvent.press(await findByTestId("open-history-button"));
+
+    expect(push).toHaveBeenCalledWith("/history");
   });
 });
 

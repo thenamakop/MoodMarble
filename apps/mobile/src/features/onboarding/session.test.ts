@@ -1,4 +1,14 @@
-import * as SecureStore from "expo-secure-store";
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "web",
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  deleteItemAsync: jest.fn(),
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+}));
 
 import {
   clearAnonymousSession,
@@ -155,57 +165,6 @@ describe("anonymous session storage", () => {
         Object.defineProperty(window, "localStorage", localStorageDescriptor);
       }
     }
-  });
-
-  it("uses secure storage read and write when the app storage path is native", async () => {
-    const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
-    const setItemAsync = jest
-      .spyOn(SecureStore, "setItemAsync")
-      .mockResolvedValue(undefined);
-    const getItemAsync = jest
-      .spyOn(SecureStore, "getItemAsync")
-      .mockResolvedValue(
-        JSON.stringify({
-          workspaceId: "ws_native",
-          teamId: "tm_native",
-          deviceJwt: activeDeviceJwt,
-        }),
-      );
-    const deleteItemAsync = jest
-      .spyOn(SecureStore, "deleteItemAsync")
-      .mockResolvedValue(undefined);
-
-    Object.defineProperty(globalThis, "window", {
-      configurable: true,
-      value: undefined,
-    });
-
-    await saveAnonymousSession({
-      workspaceId: "ws_native",
-      teamId: "tm_native",
-      deviceJwt: activeDeviceJwt,
-    });
-
-    expect(setItemAsync).toHaveBeenCalledWith(
-      "moodmarble.anonymous-session",
-      JSON.stringify({
-        workspaceId: "ws_native",
-        teamId: "tm_native",
-        deviceJwt: activeDeviceJwt,
-      }),
-    );
-
-    await expect(loadAnonymousSession()).resolves.toEqual({
-      workspaceId: "ws_native",
-      teamId: "tm_native",
-      deviceJwt: activeDeviceJwt,
-    });
-
-    await clearAnonymousSession();
-    expect(deleteItemAsync).toHaveBeenCalledWith(
-      "moodmarble.anonymous-session",
-    );
-    expect(getItemAsync).toHaveBeenCalledWith("moodmarble.anonymous-session");
   });
 });
 

@@ -69,19 +69,44 @@ jest.mock("@/features/onboarding/onboarding-screen", () => {
 
 jest.mock("@/features/mood-submission/marble-tray-screen", () => {
   const React = require("react");
-  const { Text } = require("react-native");
+  const { Pressable, Text, View } = require("react-native");
 
   return {
     MarbleTrayScreen: ({
       workspaceId,
       teamId,
       deviceJwt,
+      onOpenHistory,
     }: {
       workspaceId?: string;
       teamId?: string;
       deviceJwt?: string;
+      onOpenHistory?: () => void;
     }) => (
-      <Text>{`marble-tray:${workspaceId ?? "none"}:${teamId ?? "none"}:${deviceJwt ?? "none"}`}</Text>
+      <View>
+        <Text>{`marble-tray:${workspaceId ?? "none"}:${teamId ?? "none"}:${deviceJwt ?? "none"}`}</Text>
+        {onOpenHistory ? (
+          <Pressable onPress={onOpenHistory} testID="open-history">
+            <Text>open-history</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    ),
+  };
+});
+
+jest.mock("@/features/history/history-screen", () => {
+  const React = require("react");
+  const { Pressable, Text, View } = require("react-native");
+
+  return {
+    LocalHistoryScreen: ({ onReturnHome }: { onReturnHome?: () => void }) => (
+      <View>
+        <Text>local-history-screen</Text>
+        <Pressable onPress={onReturnHome} testID="return-home">
+          <Text>return-home</Text>
+        </Pressable>
+      </View>
     ),
   };
 });
@@ -155,4 +180,86 @@ describe("HomeScreen", () => {
       expect(restoreAnonymousSession).toHaveBeenCalledTimes(1),
     );
   });
+
+  it("does not let a late restore overwrite a session that was just created", async () => {
+    let currentParams: Record<string, string> = {};
+    const pendingRestore = createDeferred<null>();
+
+    useLocalSearchParams.mockImplementation(() => currentParams);
+    jest
+      .mocked(restoreAnonymousSession)
+      .mockResolvedValueOnce(null)
+      .mockImplementationOnce(() => pendingRestore.promise);
+
+    const view = await render(<HomeScreen />);
+
+    expect(await view.findByText("onboarding-screen")).toBeTruthy();
+
+    currentParams = { workspace_id: "refresh-trigger" };
+    view.rerender(<HomeScreen />);
+
+    await waitFor(() =>
+      expect(restoreAnonymousSession).toHaveBeenCalledTimes(2),
+    );
+
+    fireEvent.press(await view.findByTestId("complete-onboarding"));
+
+    await waitFor(() =>
+      expect(
+        view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt"),
+      ).toBeTruthy(),
+    );
+
+    pendingRestore.resolve(null);
+
+    await waitFor(() =>
+      expect(
+        view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt"),
+      ).toBeTruthy(),
+    );
+    expect(view.queryByText("onboarding-screen")).toBeNull();
+  });
+
+  it("uses a native history handoff without losing the active session", async () => {
+    jest.mocked(restoreAnonymousSession).mockResolvedValue({
+      workspaceId: "ws_localdemo",
+      teamId: "tm_engineering",
+      deviceJwt: "active-device-jwt",
+    });
+
+    const view = await render(<HomeScreen />);
+
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
+        ),
+      ).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("open-history"));
+
+    await waitFor(() =>
+      expect(view.getByText("local-history-screen")).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("return-home"));
+
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
+        ),
+      ).toBeTruthy(),
+    );
+  });
 });
+
+function createDeferred<T>() {
+  let resolve!: (value: T | PromiseLike<T>) => void;
+  const promise = new Promise<T>((promiseResolve) => {
+    resolve = promiseResolve;
+  });
+
+  return { promise, resolve };
+}

@@ -1,4 +1,6 @@
 import * as Crypto from "expo-crypto";
+import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 import { DeviceTokenSchema } from "@/contracts/mood-submission";
 
@@ -36,9 +38,12 @@ export async function saveDeviceToken(deviceToken: string): Promise<void> {
     }
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     webDeviceTokenMemoryFallback = parsedDeviceToken;
+    return;
   }
+
+  await SecureStore.setItemAsync(DEVICE_TOKEN_STORAGE_KEY, parsedDeviceToken);
 }
 
 export async function clearDeviceToken(): Promise<void> {
@@ -53,9 +58,12 @@ export async function clearDeviceToken(): Promise<void> {
     return;
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     webDeviceTokenMemoryFallback = null;
+    return;
   }
+
+  await SecureStore.deleteItemAsync(DEVICE_TOKEN_STORAGE_KEY);
 }
 
 async function readStoredDeviceToken(): Promise<string | null> {
@@ -72,11 +80,11 @@ async function readStoredDeviceToken(): Promise<string | null> {
     }
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     return webDeviceTokenMemoryFallback;
   }
 
-  return null;
+  return SecureStore.getItemAsync(DEVICE_TOKEN_STORAGE_KEY);
 }
 
 function createDeviceToken(): string {
@@ -117,7 +125,7 @@ function createDeviceToken(): string {
 }
 
 function getWebSessionStorage(): Storage | null {
-  if (typeof window === "undefined") {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
     return null;
   }
 

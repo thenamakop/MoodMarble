@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import { Platform } from "react-native";
 
 import { AnonymousSessionSchema, type AnonymousSession } from "./types";
 import { isDeviceJwtActive } from "./device-jwt";
@@ -56,7 +57,7 @@ export async function saveAnonymousSession(
     }
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     webSessionMemoryFallback = serializedSession;
     return;
   }
@@ -76,7 +77,7 @@ export async function clearAnonymousSession(): Promise<void> {
     return;
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     webSessionMemoryFallback = null;
     return;
   }
@@ -97,7 +98,7 @@ async function readStoredSession(): Promise<string | null> {
     }
   }
 
-  if (typeof window !== "undefined") {
+  if (Platform.OS === "web") {
     return webSessionMemoryFallback;
   }
 
@@ -105,7 +106,7 @@ async function readStoredSession(): Promise<string | null> {
 }
 
 function getWebSessionStorage(): Storage | null {
-  if (typeof window === "undefined") {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
     return null;
   }
 
