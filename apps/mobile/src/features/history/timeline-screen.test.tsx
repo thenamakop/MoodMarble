@@ -1,10 +1,15 @@
 import { cleanup, render, waitFor } from "@testing-library/react-native";
 
+import { submitMoodSubmission } from "@/features/mood-submission/api";
 import { LocalMoodTimelineScreen } from "@/features/history/timeline-screen";
 import { loadGroupedLocalMoodHistory } from "@/features/history/storage";
 
 jest.mock("@/features/history/storage", () => ({
   loadGroupedLocalMoodHistory: jest.fn(),
+}));
+
+jest.mock("@/features/mood-submission/api", () => ({
+  submitMoodSubmission: jest.fn(),
 }));
 
 afterEach(() => {
@@ -27,6 +32,8 @@ describe("LocalMoodTimelineScreen", () => {
         "Share your first marble to start a private timeline on this device.",
       ),
     ).toBeTruthy();
+    expect(view.getByText("0 days")).toBeTruthy();
+    expect(view.getByText("Streak ending on your next marble")).toBeTruthy();
   });
 
   it("renders grouped days from stored local data", async () => {
@@ -69,6 +76,9 @@ describe("LocalMoodTimelineScreen", () => {
     expect(view.getByText("Calm")).toBeTruthy();
     expect(view.getByText("#team")).toBeTruthy();
     expect(view.getByText("#workload")).toBeTruthy();
+    expect(view.getByText("2 days")).toBeTruthy();
+    expect(view.getByText("Streak ending on 2026-06-16")).toBeTruthy();
+    expect(submitMoodSubmission).not.toHaveBeenCalled();
   });
 
   it("renders entries in newest-first chronological order within each day", async () => {
@@ -158,23 +168,51 @@ describe("LocalMoodTimelineScreen", () => {
     expect(view.getByText("#deadlines  #management")).toBeTruthy();
   });
 
-  it("loads only from local history storage and makes no backend request", async () => {
-    const originalFetch = globalThis.fetch;
-    const fetchSpy = jest.fn();
-    globalThis.fetch = fetchSpy as unknown as typeof fetch;
-    jest.mocked(loadGroupedLocalMoodHistory).mockResolvedValue([]);
+  it("shows the same streak after a reload from stored local data", async () => {
+    const storedTimeline = [
+      {
+        submission_date: "2026-06-16",
+        records: [
+          createRecord({
+            id: "history-1",
+            mood_type: "happy",
+            hour_of_day: 14,
+            tags: ["#team"],
+            submission_date: "2026-06-16",
+            recorded_at: "2026-06-16T14:00:00.000Z",
+          }),
+        ],
+      },
+      {
+        submission_date: "2026-06-15",
+        records: [
+          createRecord({
+            id: "history-2",
+            mood_type: "calm",
+            hour_of_day: 9,
+            tags: ["#workload"],
+            submission_date: "2026-06-15",
+            recorded_at: "2026-06-15T09:00:00.000Z",
+          }),
+        ],
+      },
+    ];
 
-    try {
-      const view = await render(<LocalMoodTimelineScreen />);
+    jest
+      .mocked(loadGroupedLocalMoodHistory)
+      .mockResolvedValueOnce(storedTimeline)
+      .mockResolvedValueOnce(storedTimeline);
 
-      await waitFor(() =>
-        expect(loadGroupedLocalMoodHistory).toHaveBeenCalledTimes(1),
-      );
-      expect(view.getByText("No mood history yet")).toBeTruthy();
-      expect(fetchSpy).not.toHaveBeenCalled();
-    } finally {
-      globalThis.fetch = originalFetch;
-    }
+    const firstView = await render(<LocalMoodTimelineScreen />);
+
+    await waitFor(() => expect(firstView.getByText("2 days")).toBeTruthy());
+    cleanup();
+
+    const reloadedView = await render(<LocalMoodTimelineScreen />);
+
+    await waitFor(() => expect(reloadedView.getByText("2 days")).toBeTruthy());
+    expect(reloadedView.getByText("Streak ending on 2026-06-16")).toBeTruthy();
+    expect(loadGroupedLocalMoodHistory).toHaveBeenCalledTimes(2);
   });
 });
 

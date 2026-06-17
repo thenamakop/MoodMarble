@@ -13,6 +13,7 @@ import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
 import type { LocalMoodHistoryDayGroup } from "@/features/history/model";
 import { normalizeLocalMoodHistoryRecords } from "@/features/history/model";
+import { calculateLocalMoodHistoryStreakFromDayKeys } from "@/features/history/streak";
 import { loadGroupedLocalMoodHistory } from "@/features/history/storage";
 import { MOOD_COLORS, MOOD_LABELS } from "@/contracts/mood-submission";
 import { useTheme } from "@/hooks/use-theme";
@@ -35,6 +36,13 @@ export function LocalMoodTimelineScreen({
 
     return BottomTabInset + Spacing.four;
   }, []);
+  const streak = useMemo(
+    () =>
+      calculateLocalMoodHistoryStreakFromDayKeys(
+        dayGroups.map((group) => group.submission_date),
+      ),
+    [dayGroups],
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -79,6 +87,19 @@ export function LocalMoodTimelineScreen({
               streaks, and steady stretches.
             </ThemedText>
           </View>
+
+          <ThemedView
+            type="backgroundElement"
+            style={styles.streakPanel}
+            testID="timeline-streak-panel"
+          >
+            <ThemedText type="subtitle" style={styles.streakValue}>
+              {streak.dayCount} day{streak.dayCount === 1 ? "" : "s"}
+            </ThemedText>
+            <ThemedText themeColor="textSecondary">
+              Streak ending on {streak.endDate ?? "your next marble"}
+            </ThemedText>
+          </ThemedView>
 
           {isLoading ? (
             <ThemedView type="backgroundElement" style={styles.loadingPanel}>
@@ -232,6 +253,15 @@ const styles = StyleSheet.create({
     padding: Spacing.four,
     gap: Spacing.two,
     alignItems: "center",
+  },
+  streakPanel: {
+    borderRadius: Spacing.four,
+    padding: Spacing.four,
+    gap: Spacing.one,
+  },
+  streakValue: {
+    fontSize: 24,
+    lineHeight: 30,
   },
   emptyPanel: {
     borderRadius: Spacing.four,
