@@ -1,3 +1,15 @@
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "web",
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  deleteItemAsync: jest.fn(),
+  getItemAsync: jest.fn(),
+  setItemAsync: jest.fn(),
+}));
+
 import {
   clearAnonymousSession,
   saveAnonymousSession,

@@ -11,6 +11,7 @@ import {
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
+import type { DashboardMetricVisibility } from "@/contracts/dashboard";
 import { Spacing } from "@/constants/theme";
 import type { ManagerDashboardViewModel } from "@/features/dashboard/chart-model";
 import { useTheme } from "@/hooks/use-theme";
@@ -22,6 +23,8 @@ interface ManagerDashboardChartsProps {
 export function ManagerDashboardCharts({
   viewModel,
 }: ManagerDashboardChartsProps) {
+  const chartTheme = VictoryTheme?.clean;
+
   return (
     <View style={styles.grid}>
       <ChartCard
@@ -37,7 +40,7 @@ export function ManagerDashboardCharts({
           height={220}
           padding={{ bottom: 48, left: 36, right: 24, top: 24 }}
           testID="manager-dashboard-daily-chart"
-          theme={VictoryTheme.clean}
+          theme={chartTheme}
           width={320}
         >
           <VictoryAxis
@@ -87,7 +90,7 @@ export function ManagerDashboardCharts({
           height={220}
           padding={{ bottom: 48, left: 40, right: 24, top: 24 }}
           testID="manager-dashboard-weekly-chart"
-          theme={VictoryTheme.clean}
+          theme={chartTheme}
           width={320}
         >
           <VictoryAxis
@@ -145,7 +148,7 @@ export function ManagerDashboardCharts({
             },
           }}
           testID="manager-dashboard-distribution-chart"
-          theme={VictoryTheme.clean}
+          theme={chartTheme}
           width={320}
         />
       </ChartCard>
@@ -163,7 +166,7 @@ export function ManagerDashboardCharts({
           height={220}
           padding={{ bottom: 48, left: 40, right: 24, top: 24 }}
           testID="manager-dashboard-volume-chart"
-          theme={VictoryTheme.clean}
+          theme={chartTheme}
           width={320}
         >
           <VictoryAxis
@@ -201,7 +204,7 @@ export function ManagerDashboardCharts({
           horizontal
           padding={{ bottom: 36, left: 96, right: 24, top: 24 }}
           testID="manager-dashboard-tags-chart"
-          theme={VictoryTheme.clean}
+          theme={chartTheme}
           width={320}
         >
           <VictoryAxis style={axisStyle} />

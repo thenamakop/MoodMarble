@@ -9,9 +9,7 @@ interface ManagerDateSelection {
   label: string;
 }
 
-function parseManagerTeams(
-  encodedManagerTeams: string | null,
-): ManagerTeamOption[] {
+function parseManagerTeams(encodedManagerTeams: string | null): ManagerTeamOption[] {
   if (!encodedManagerTeams) {
     return [];
   }
@@ -39,9 +37,7 @@ function resolveSelectedTeam(
   }
 
   return (
-    managerTeams.find((team) => team.teamId === teamIdParam) ??
-    managerTeams[0] ??
-    null
+    managerTeams.find((team) => team.teamId === teamIdParam) ?? managerTeams[0] ?? null
   );
 }
 
