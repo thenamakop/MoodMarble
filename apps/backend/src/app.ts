@@ -1,9 +1,14 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { registerDashboardDailyRoute } from "./routes/dashboard-daily";
 import { registerHealthRoutes } from "./routes/health";
 import { registerMoodRoute } from "./routes/mood";
 import { registerWorkspaceJoinRoute } from "./routes/workspace-join";
+import {
+  InMemoryDashboardAnalyticsSource,
+  type DashboardAnalyticsSource,
+} from "./services/dashboard-daily";
 import {
   InMemoryMoodSubmissionStore,
   type MoodSubmissionStore,
@@ -19,6 +24,7 @@ import {
 
 interface BuildAppOptions {
   jwtSecret?: string;
+  dashboardAnalyticsSource?: DashboardAnalyticsSource;
   moodSubmissionStore?: MoodSubmissionStore;
   workspaceDirectory?: WorkspaceDirectory;
   submissionRateLimiter?: SubmissionRateLimiter;
@@ -42,6 +48,14 @@ export async function buildApp(
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
     workspaceDirectory,
+  });
+  await registerDashboardDailyRoute(app, {
+    jwtSecret: options.jwtSecret,
+    analyticsSource:
+      options.dashboardAnalyticsSource ??
+      new InMemoryDashboardAnalyticsSource(),
+    workspaceDirectory,
+    now: options.now,
   });
   await registerMoodRoute(app, {
     jwtSecret: options.jwtSecret,
