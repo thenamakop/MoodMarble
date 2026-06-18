@@ -1,6 +1,8 @@
 import {
   buildLocalMoodCalendarMonth,
   getDominantMoodForDayGroup,
+  getCalendarMonthStart,
+  shiftCalendarMonth,
 } from "@/features/history/calendar";
 
 describe("local mood calendar helpers", () => {
@@ -95,6 +97,21 @@ describe("local mood calendar helpers", () => {
         ],
       }),
     ).toBe("calm");
+  });
+
+  it("normalizes a date to the start of its month", () => {
+    expect(getCalendarMonthStart(new Date(2026, 5, 16))).toEqual(
+      new Date(2026, 5, 1),
+    );
+  });
+
+  it("shifts month boundaries deterministically", () => {
+    expect(shiftCalendarMonth(new Date(2026, 5, 1), -1)).toEqual(
+      new Date(2026, 4, 1),
+    );
+    expect(shiftCalendarMonth(new Date(2026, 5, 1), 1)).toEqual(
+      new Date(2026, 6, 1),
+    );
   });
 });
 

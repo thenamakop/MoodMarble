@@ -1,3 +1,4 @@
+import type { ComponentProps } from "react";
 import { cleanup, render, waitFor } from "@testing-library/react-native";
 
 import { submitMoodSubmission } from "@/features/mood-submission/api";
@@ -24,7 +25,7 @@ describe("LocalMoodTimelineScreen", () => {
   it("shows an empty state when no local history exists", async () => {
     jest.mocked(loadGroupedLocalMoodHistory).mockResolvedValue([]);
 
-    const view = await render(<LocalMoodTimelineScreen />);
+    const view = await renderTimelineScreen();
 
     await waitFor(() =>
       expect(view.getByTestId("timeline-empty-state")).toBeTruthy(),
@@ -69,7 +70,7 @@ describe("LocalMoodTimelineScreen", () => {
       },
     ]);
 
-    const view = await render(<LocalMoodTimelineScreen />);
+    const view = await renderTimelineScreen();
 
     await waitFor(() =>
       expect(view.getByTestId("timeline-day-2026-06-16")).toBeTruthy(),
@@ -123,7 +124,7 @@ describe("LocalMoodTimelineScreen", () => {
       },
     ]);
 
-    const view = await render(<LocalMoodTimelineScreen />);
+    const view = await renderTimelineScreen();
 
     await waitFor(() =>
       expect(view.getByTestId("timeline-entry-history-late")).toBeTruthy(),
@@ -165,11 +166,40 @@ describe("LocalMoodTimelineScreen", () => {
       },
     ]);
 
-    const view = await render(<LocalMoodTimelineScreen />);
+    const view = await renderTimelineScreen({
+      formatRecordedAt: (recordedAt) =>
+        recordedAt === "2026-06-16T16:00:00.000Z" ? "4:37 PM" : recordedAt,
+    });
 
     await waitFor(() => expect(view.getByText("Stressed")).toBeTruthy());
-    expect(view.getByText("4:00 PM")).toBeTruthy();
+    expect(view.getByText("4:37 PM")).toBeTruthy();
     expect(view.getByText("#deadlines  #management")).toBeTruthy();
+  });
+
+  it("uses the exact local recorded timestamp for each entry", async () => {
+    const formatRecordedAt = jest.fn((recordedAt: string) =>
+      recordedAt === "2026-06-16T21:42:00.000Z" ? "9:42 PM" : recordedAt,
+    );
+    jest.mocked(loadGroupedLocalMoodHistory).mockResolvedValue([
+      {
+        submission_date: "2026-06-16",
+        records: [
+          createRecord({
+            id: "history-1",
+            mood_type: "focused",
+            hour_of_day: 21,
+            tags: ["#team"],
+            submission_date: "2026-06-16",
+            recorded_at: "2026-06-16T21:42:00.000Z",
+          }),
+        ],
+      },
+    ]);
+
+    const view = await renderTimelineScreen({ formatRecordedAt });
+
+    await waitFor(() => expect(view.getByText("9:42 PM")).toBeTruthy());
+    expect(formatRecordedAt).toHaveBeenCalledWith("2026-06-16T21:42:00.000Z");
   });
 
   it("shows the same streak after a reload from stored local data", async () => {
@@ -207,18 +237,36 @@ describe("LocalMoodTimelineScreen", () => {
       .mockResolvedValueOnce(storedTimeline)
       .mockResolvedValueOnce(storedTimeline);
 
-    const firstView = await render(<LocalMoodTimelineScreen />);
+    const firstView = await renderTimelineScreen({
+      formatRecordedAt: (recordedAt) =>
+        recordedAt === "2026-06-16T14:00:00.000Z" ? "2:00 PM" : "9:00 AM",
+    });
 
     await waitFor(() => expect(firstView.getByText("2 days")).toBeTruthy());
     cleanup();
 
-    const reloadedView = await render(<LocalMoodTimelineScreen />);
+    const reloadedView = await renderTimelineScreen({
+      formatRecordedAt: (recordedAt) =>
+        recordedAt === "2026-06-16T14:00:00.000Z" ? "2:00 PM" : "9:00 AM",
+    });
 
     await waitFor(() => expect(reloadedView.getByText("2 days")).toBeTruthy());
     expect(reloadedView.getByText("Streak ending on 2026-06-16")).toBeTruthy();
+    expect(reloadedView.getByText("2:00 PM")).toBeTruthy();
     expect(loadGroupedLocalMoodHistory).toHaveBeenCalledTimes(2);
   });
 });
+
+async function renderTimelineScreen(
+  overrides?: Partial<ComponentProps<typeof LocalMoodTimelineScreen>>,
+) {
+  return render(
+    <LocalMoodTimelineScreen
+      formatRecordedAt={(recordedAt) => recordedAt}
+      {...overrides}
+    />,
+  );
+}
 
 function createRecord(
   overrides: Partial<{

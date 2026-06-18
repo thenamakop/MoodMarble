@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   ScrollView,
   StyleSheet,
   View,
@@ -13,6 +14,8 @@ import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
 import {
   buildLocalMoodCalendarMonth,
+  getCalendarMonthStart,
+  shiftCalendarMonth,
   type LocalMoodCalendarMonth,
 } from "@/features/history/calendar";
 import type { LocalMoodHistoryDayGroup } from "@/features/history/model";
@@ -34,6 +37,9 @@ export function LocalMoodCalendarScreen({
   const theme = useTheme();
   const [dayGroups, setDayGroups] = useState<LocalMoodHistoryDayGroup[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [selectedMonth, setSelectedMonth] = useState(() =>
+    getCalendarMonthStart(getCurrentDate()),
+  );
 
   const safeBottomPadding = useMemo(() => {
     if (Platform.OS === "web") {
@@ -43,9 +49,15 @@ export function LocalMoodCalendarScreen({
     return BottomTabInset + Spacing.four;
   }, []);
   const month = useMemo<LocalMoodCalendarMonth>(
-    () => buildLocalMoodCalendarMonth(dayGroups, getCurrentDate()),
-    [dayGroups, getCurrentDate],
+    () => buildLocalMoodCalendarMonth(dayGroups, selectedMonth),
+    [dayGroups, selectedMonth],
   );
+  const handleSelectPreviousMonth = useCallback(() => {
+    setSelectedMonth((currentMonth) => shiftCalendarMonth(currentMonth, -1));
+  }, []);
+  const handleSelectNextMonth = useCallback(() => {
+    setSelectedMonth((currentMonth) => shiftCalendarMonth(currentMonth, 1));
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -105,13 +117,51 @@ export function LocalMoodCalendarScreen({
               testID="calendar-panel"
             >
               <View style={styles.calendarHeader}>
-                <ThemedText type="subtitle" style={styles.monthTitle}>
-                  {month.monthLabel}
-                </ThemedText>
-                <ThemedText themeColor="textSecondary">
-                  {month.markedDayCount} marked day
-                  {month.markedDayCount === 1 ? "" : "s"}
-                </ThemedText>
+                <View style={styles.monthHeaderRow}>
+                  <Pressable
+                    accessibilityLabel="Previous month"
+                    accessibilityRole="button"
+                    onPress={handleSelectPreviousMonth}
+                    style={({ pressed }) => [
+                      styles.monthNavButton,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.backgroundSelected,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                    testID="calendar-previous-month"
+                  >
+                    <ThemedText type="smallBold">Previous</ThemedText>
+                  </Pressable>
+
+                  <View style={styles.monthHeaderCopy}>
+                    <ThemedText type="subtitle" style={styles.monthTitle}>
+                      {month.monthLabel}
+                    </ThemedText>
+                    <ThemedText themeColor="textSecondary">
+                      {month.markedDayCount} marked day
+                      {month.markedDayCount === 1 ? "" : "s"}
+                    </ThemedText>
+                  </View>
+
+                  <Pressable
+                    accessibilityLabel="Next month"
+                    accessibilityRole="button"
+                    onPress={handleSelectNextMonth}
+                    style={({ pressed }) => [
+                      styles.monthNavButton,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.backgroundSelected,
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                    testID="calendar-next-month"
+                  >
+                    <ThemedText type="smallBold">Next</ThemedText>
+                  </Pressable>
+                </View>
               </View>
 
               <View style={styles.weekdayRow}>
@@ -263,9 +313,27 @@ const styles = StyleSheet.create({
   calendarHeader: {
     gap: Spacing.one,
   },
+  monthHeaderRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    gap: Spacing.two,
+  },
+  monthHeaderCopy: {
+    flex: 1,
+    gap: Spacing.one,
+    alignItems: "center",
+  },
   monthTitle: {
     fontSize: 24,
     lineHeight: 30,
+    textAlign: "center",
+  },
+  monthNavButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   weekdayRow: {
     flexDirection: "row",

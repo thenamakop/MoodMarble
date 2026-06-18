@@ -32,12 +32,21 @@ export interface LocalMoodCalendarMonth {
   markedDayCount: number;
 }
 
+export function getCalendarMonthStart(date: Date): Date {
+  return new Date(date.getFullYear(), date.getMonth(), 1);
+}
+
+export function shiftCalendarMonth(date: Date, monthOffset: number): Date {
+  return new Date(date.getFullYear(), date.getMonth() + monthOffset, 1);
+}
+
 export function buildLocalMoodCalendarMonth(
   dayGroups: LocalMoodHistoryDayGroup[],
   currentDate: Date,
 ): LocalMoodCalendarMonth {
-  const year = currentDate.getFullYear();
-  const monthIndex = currentDate.getMonth();
+  const monthDate = getCalendarMonthStart(currentDate);
+  const year = monthDate.getFullYear();
+  const monthIndex = monthDate.getMonth();
   const monthKey = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
   const firstDayOfMonth = new Date(year, monthIndex, 1);
   const daysInMonth = new Date(year, monthIndex + 1, 0).getDate();

@@ -102,6 +102,7 @@ describe("MarbleTrayScreen", () => {
       },
       "device-jwt-token",
     );
+    expect(onSubmitMood.mock.calls[0]?.[0]).not.toHaveProperty("recorded_at");
   });
 
   it("keeps submit disabled and explains the missing submission context", async () => {

@@ -1,4 +1,9 @@
-import { cleanup, render, waitFor } from "@testing-library/react-native";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  waitFor,
+} from "@testing-library/react-native";
 
 import { submitMoodSubmission } from "@/features/mood-submission/api";
 import { LocalMoodCalendarScreen } from "@/features/history/calendar-screen";
@@ -28,6 +33,82 @@ describe("LocalMoodCalendarScreen", () => {
     await waitFor(() => expect(view.getByText("June 2026")).toBeTruthy());
     expect(view.getByText("Sun")).toBeTruthy();
     expect(view.getByText("Sat")).toBeTruthy();
+  });
+
+  it("navigates to the previous month and updates day markers", async () => {
+    jest.mocked(loadGroupedLocalMoodHistory).mockResolvedValue([
+      {
+        submission_date: "2026-05-20",
+        records: [
+          createRecord({
+            id: "history-may",
+            mood_type: "focused",
+            submission_date: "2026-05-20",
+            recorded_at: "2026-05-20T14:00:00.000Z",
+          }),
+        ],
+      },
+      {
+        submission_date: "2026-06-16",
+        records: [
+          createRecord({
+            id: "history-june",
+            mood_type: "happy",
+            submission_date: "2026-06-16",
+            recorded_at: "2026-06-16T14:00:00.000Z",
+          }),
+        ],
+      },
+    ]);
+
+    const view = await render(
+      <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
+    );
+
+    await waitFor(() => expect(view.getByText("June 2026")).toBeTruthy());
+    fireEvent.press(view.getByTestId("calendar-previous-month"));
+
+    await waitFor(() => expect(view.getByText("May 2026")).toBeTruthy());
+    expect(view.getByTestId("calendar-marker-2026-05-20")).toBeTruthy();
+    expect(view.queryByTestId("calendar-marker-2026-06-16")).toBeNull();
+  });
+
+  it("navigates to the next month and updates day markers", async () => {
+    jest.mocked(loadGroupedLocalMoodHistory).mockResolvedValue([
+      {
+        submission_date: "2026-06-16",
+        records: [
+          createRecord({
+            id: "history-june",
+            mood_type: "happy",
+            submission_date: "2026-06-16",
+            recorded_at: "2026-06-16T14:00:00.000Z",
+          }),
+        ],
+      },
+      {
+        submission_date: "2026-07-04",
+        records: [
+          createRecord({
+            id: "history-july",
+            mood_type: "calm",
+            submission_date: "2026-07-04",
+            recorded_at: "2026-07-04T09:00:00.000Z",
+          }),
+        ],
+      },
+    ]);
+
+    const view = await render(
+      <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
+    );
+
+    await waitFor(() => expect(view.getByText("June 2026")).toBeTruthy());
+    fireEvent.press(view.getByTestId("calendar-next-month"));
+
+    await waitFor(() => expect(view.getByText("July 2026")).toBeTruthy());
+    expect(view.getByTestId("calendar-marker-2026-07-04")).toBeTruthy();
+    expect(view.queryByTestId("calendar-marker-2026-06-16")).toBeNull();
   });
 
   it("shows day markers for saved local entries", async () => {
@@ -123,6 +204,35 @@ describe("LocalMoodCalendarScreen", () => {
         "No marbles saved this month yet. The calendar will light up as you log a few private check-ins.",
       ),
     ).toBeTruthy();
+  });
+
+  it("shows an empty month state after navigating to a month without entries", async () => {
+    jest.mocked(loadGroupedLocalMoodHistory).mockResolvedValue([
+      {
+        submission_date: "2026-06-16",
+        records: [
+          createRecord({
+            id: "history-1",
+            mood_type: "happy",
+            submission_date: "2026-06-16",
+            recorded_at: "2026-06-16T14:00:00.000Z",
+          }),
+        ],
+      },
+    ]);
+
+    const view = await render(
+      <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
+    );
+
+    await waitFor(() =>
+      expect(view.getByTestId("calendar-marker-2026-06-16")).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("calendar-next-month"));
+
+    await waitFor(() => expect(view.getByText("July 2026")).toBeTruthy());
+    expect(view.getByTestId("calendar-empty-state")).toBeTruthy();
   });
 
   it("shows a sparse state when only a few days are marked", async () => {

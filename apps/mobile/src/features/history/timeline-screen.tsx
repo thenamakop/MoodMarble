@@ -26,12 +26,14 @@ interface LocalMoodTimelineScreenProps {
   initialTimeline?: LocalMoodHistoryDayGroup[] | null;
   loadTimeline?: () => Promise<LocalMoodHistoryDayGroup[]>;
   clearHistory?: () => Promise<void>;
+  formatRecordedAt?: (recordedAt: string) => string;
 }
 
 export function LocalMoodTimelineScreen({
   initialTimeline = null,
   loadTimeline = loadGroupedLocalMoodHistory,
   clearHistory = clearLocalMoodHistory,
+  formatRecordedAt = formatLocalRecordedTime,
 }: LocalMoodTimelineScreenProps) {
   const theme = useTheme();
   const [dayGroups, setDayGroups] = useState<LocalMoodHistoryDayGroup[]>(
@@ -222,7 +224,7 @@ export function LocalMoodTimelineScreen({
                           </ThemedText>
                         </View>
                         <ThemedText themeColor="textSecondary" type="small">
-                          {formatHourOfDay(record.hour_of_day)}
+                          {formatRecordedAt(record.recorded_at)}
                         </ThemedText>
                       </View>
 
@@ -260,20 +262,13 @@ function normalizeTimelineGroups(
     }));
 }
 
-function formatHourOfDay(hourOfDay: number): string {
-  if (hourOfDay === 0) {
-    return "12:00 AM";
-  }
+function formatLocalRecordedTime(recordedAt: string): string {
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 
-  if (hourOfDay === 12) {
-    return "12:00 PM";
-  }
-
-  if (hourOfDay > 12) {
-    return `${hourOfDay - 12}:00 PM`;
-  }
-
-  return `${hourOfDay}:00 AM`;
+  return formatter.format(new Date(recordedAt));
 }
 
 const styles = StyleSheet.create({

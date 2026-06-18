@@ -31,18 +31,20 @@ MoodMarble helps teams understand collective sentiment without exposing individu
 
 ---
 
-# MVP Features
+# Current Product Scope
 
 ### Team Member Features
 
 - Anonymous mood submissions
 - Mood tagging
 - Optional mood notes
-- Personal mood history
-- Mood streak tracking
-- Daily check-in reminders
+- Personal mood history on the current device
+- Mood streak tracking on the current device
+- Personal mood calendar on the current device
+- Month-to-month calendar navigation on the current device
+- Exact local timestamp display in personal history on the current device
 
-### Manager Features
+### Planned Manager Features
 
 - Daily mood overview
 - Weekly trend analysis
@@ -50,7 +52,7 @@ MoodMarble helps teams understand collective sentiment without exposing individu
 - Common workplace sentiment tags
 - Team wellbeing alerts
 
-### Admin Features
+### Planned Admin Features
 
 - Workspace creation
 - Team management
@@ -64,15 +66,11 @@ MoodMarble helps teams understand collective sentiment without exposing individu
 ## Mobile Application
 
 - React Native
-- Expo
+- Expo SDK 54
 - Expo Router
 - TypeScript
-- Zustand
-- NativeWind
-- React Native Reanimated
-- Victory Native
-- Expo Notifications
 - Expo Secure Store
+- React Native Safe Area Context
 
 ## Backend API
 
@@ -421,11 +419,21 @@ Open using:
 
 ---
 
+## Local-Only QoL Addendum
+
+- The personal mood calendar now supports previous and next month navigation using already-saved local device history only.
+- The personal mood timeline now shows the exact local upload time for each saved marble as a secondary UI detail.
+- These quality-of-life features remain device-local only.
+- They do not add backend fields, backend API calls, manager visibility, or dashboard exposure.
+- They do not change the anonymous join model, device session model, rate limiting, or `submission_date` local-day semantics.
+
+---
+
 # Development Status
 
 ## Current Phase
 
-**Week 3 complete - ready for Week 4 Personal Mood History**
+**Week 3 and Week 4 local personal history foundations are implemented**
 
 ### Completed
 
@@ -442,7 +450,15 @@ Open using:
 - Per-device daily rate limiting
 - Marble tray submission UI
 - Confirmation flow
+- Local-device-day submission semantics
+- Local-only history storage
+- Local-only history timeline screen
+- Local-only streak tracking
+- Local-only mood calendar screen
+- Local-only month navigation for the mood calendar
+- Exact local timestamp display in personal history
 - Backend and mobile verification coverage for the Week 3 flow
+- Backend and mobile verification coverage for the Week 4 local history flow
 - Docker infrastructure
 
 ### Stable for Week 4
@@ -452,12 +468,16 @@ Open using:
 - Device JWT issuance and validation
 - Secure mobile session restore and fallback to onboarding
 - Privacy-safe join and submission error handling
+- Local-only timeline, streak, and monthly calendar history
+- Exact local timestamp display stored only on-device
+- Android emulator, web, and physical-device local development paths
 
 ### Upcoming
 
-- Week 4 local-only personal mood history storage
-- Week 4 history timeline screen
-- Week 4 streak and mood calendar work after local storage is in place
+- Manager dashboard routes and privacy-threshold logic
+- Admin-managed workspace and team setup
+- Notification scheduling UI
+- Export flows and later-phase integrations
 
 ---
 
