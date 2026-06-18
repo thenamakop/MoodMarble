@@ -1,7 +1,7 @@
 import jwt from "jsonwebtoken";
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { DashboardDailySchema } from "../../../../packages/shared";
+import { DashboardWeeklySchema } from "../../../../packages/shared";
 
 import { buildApp } from "../../src/app";
 import { createManagerJwt } from "../../src/auth/manager-jwt";
@@ -13,30 +13,13 @@ const JWT_SECRET = "test-jwt-secret";
 const TEST_WORKSPACE_ID = "ws_test";
 const TEST_TEAM_ID = "tm_product";
 const OTHER_TEAM_ID = "tm_other";
-const TEST_DATE = "2026-06-18";
+const TEST_START_DATE = "2026-06-15";
 
-describe("GET /dashboard/team/:teamId/daily", () => {
+describe("GET /dashboard/team/:teamId/weekly", () => {
   let app: Awaited<ReturnType<typeof buildApp>>;
   let dashboardAnalyticsSource: DashboardAnalyticsSource;
 
   beforeEach(async () => {
-    const moodSubmissionStore: MoodSubmissionStore = {
-      async createSubmission() {
-        // Daily dashboard tests do not mutate the submission pipeline.
-      },
-    };
-    const workspaceDirectory: WorkspaceDirectory = {
-      async findByJoinCode() {
-        return null;
-      },
-      async hasTeamInWorkspace(workspaceId, teamId) {
-        return (
-          workspaceId === TEST_WORKSPACE_ID &&
-          [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId)
-        );
-      },
-    };
-
     dashboardAnalyticsSource = createDashboardAnalyticsSource({
       teamMemberCounts: {
         [TEST_TEAM_ID]: 6,
@@ -45,36 +28,29 @@ describe("GET /dashboard/team/:teamId/daily", () => {
       submissions: [],
     });
 
-    app = await buildApp({
-      jwtSecret: JWT_SECRET,
-      dashboardAnalyticsSource,
-      moodSubmissionStore,
-      workspaceDirectory,
-      now: () => new Date(`${TEST_DATE}T10:00:00.000Z`),
-    });
+    app = await createTestApp(dashboardAnalyticsSource);
   });
 
-  it("returns chart-ready daily aggregation for a manager", async () => {
+  it("returns trend-ready weekly aggregation for a manager", async () => {
     dashboardAnalyticsSource = createDashboardAnalyticsSource({
       teamMemberCounts: {
         [TEST_TEAM_ID]: 6,
       },
       submissions: [
-        createSubmission({ moodType: "happy", hourOfDay: 9 }),
-        createSubmission({ moodType: "happy", hourOfDay: 9 }),
-        createSubmission({ moodType: "focused", hourOfDay: 9 }),
-        createSubmission({ moodType: "stressed", hourOfDay: 14 }),
-        createSubmission({ moodType: "stressed", hourOfDay: 14 }),
+        createSubmission({ submissionDate: "2026-06-15", moodType: "happy" }),
+        createSubmission({ submissionDate: "2026-06-15", moodType: "focused" }),
         createSubmission({
-          teamId: TEST_TEAM_ID,
-          submissionDate: "2026-06-17",
-          moodType: "sad",
-          hourOfDay: 9,
+          submissionDate: "2026-06-16",
+          moodType: "stressed",
         }),
+        createSubmission({ submissionDate: "2026-06-17", moodType: "calm" }),
+        createSubmission({ submissionDate: "2026-06-18", moodType: "happy" }),
+        createSubmission({ submissionDate: "2026-06-20", moodType: "tired" }),
+        createSubmission({ submissionDate: "2026-06-22", moodType: "sad" }),
         createSubmission({
           teamId: OTHER_TEAM_ID,
+          submissionDate: "2026-06-17",
           moodType: "happy",
-          hourOfDay: 9,
         }),
       ],
     });
@@ -82,49 +58,54 @@ describe("GET /dashboard/team/:teamId/daily", () => {
 
     const response = await app.inject({
       method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
         authorization: createManagerAuthorizationHeader(),
       },
     });
 
     expect(response.statusCode).toBe(200);
-    expect(() => DashboardDailySchema.parse(response.json())).not.toThrow();
+    expect(() => DashboardWeeklySchema.parse(response.json())).not.toThrow();
 
     const body = response.json();
     expect(body.team_id).toBe(TEST_TEAM_ID);
-    expect(body.date).toBe(TEST_DATE);
+    expect(body.window).toEqual({
+      start_date: "2026-06-15",
+      end_date: "2026-06-21",
+    });
     expect(body.privacy.visibility).toBe("visible");
     expect(body.summary.total_submissions).toEqual({
       kind: "exact",
-      value: 5,
+      value: 6,
     });
-    expect(body.hourly_buckets).toHaveLength(24);
-    expect(body.hourly_buckets[9]).toMatchObject({
-      hour_of_day: 9,
-      privacy: {
-        visibility: "visible",
-      },
+    expect(body.daily_points).toHaveLength(7);
+    expect(
+      body.daily_points.map((point: { date: string }) => point.date),
+    ).toEqual([
+      "2026-06-15",
+      "2026-06-16",
+      "2026-06-17",
+      "2026-06-18",
+      "2026-06-19",
+      "2026-06-20",
+      "2026-06-21",
+    ]);
+    expect(body.daily_points[0]).toMatchObject({
+      date: "2026-06-15",
       total_submissions: {
-        kind: "exact",
-        value: 3,
-      },
-    });
-    expect(body.hourly_buckets[9].mood_counts).toContainEqual({
-      mood_type: "happy",
-      count: {
         kind: "exact",
         value: 2,
       },
-    });
-    expect(body.hourly_buckets[14]).toMatchObject({
-      hour_of_day: 14,
-      privacy: {
-        visibility: "hidden",
-        reasons: ["minimum_hourly_submissions"],
+      average_mood_score: {
+        kind: "exact",
+        value: 7,
       },
+    });
+    expect(body.daily_points[4]).toMatchObject({
+      date: "2026-06-19",
       total_submissions: {
-        kind: "hidden",
+        kind: "exact",
+        value: 0,
       },
     });
   });
@@ -132,7 +113,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
   it("rejects requests without a valid manager jwt", async () => {
     const missingJwtResponse = await app.inject({
       method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
     });
 
     const invalidRoleJwt = jwt.sign(
@@ -148,7 +129,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     );
     const wrongRoleResponse = await app.inject({
       method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
         authorization: `Bearer ${invalidRoleJwt}`,
       },
@@ -164,40 +145,26 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     });
   });
 
-  it("forbids access when the manager token is scoped to a different team", async () => {
-    const response = await app.inject({
-      method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
-      headers: {
-        authorization: createManagerAuthorizationHeader({
-          teamId: OTHER_TEAM_ID,
-        }),
-      },
-    });
-
-    expect(response.statusCode).toBe(403);
-    expect(response.json()).toEqual({
-      message: "Forbidden",
-    });
-  });
-
-  it("returns hidden output when the submission threshold is not met", async () => {
+  it("returns hidden output when the weekly submission threshold is not met", async () => {
     dashboardAnalyticsSource = createDashboardAnalyticsSource({
       teamMemberCounts: {
         [TEST_TEAM_ID]: 6,
       },
       submissions: [
-        createSubmission({ moodType: "happy", hourOfDay: 9 }),
-        createSubmission({ moodType: "happy", hourOfDay: 9 }),
-        createSubmission({ moodType: "focused", hourOfDay: 9 }),
-        createSubmission({ moodType: "stressed", hourOfDay: 14 }),
+        createSubmission({ submissionDate: "2026-06-15", moodType: "happy" }),
+        createSubmission({ submissionDate: "2026-06-16", moodType: "happy" }),
+        createSubmission({ submissionDate: "2026-06-17", moodType: "focused" }),
+        createSubmission({
+          submissionDate: "2026-06-18",
+          moodType: "stressed",
+        }),
       ],
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
     const response = await app.inject({
       method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
         authorization: createManagerAuthorizationHeader(),
       },
@@ -219,14 +186,52 @@ describe("GET /dashboard/team/:teamId/daily", () => {
         },
       },
     });
-    expect(response.json().hourly_buckets[9]).toMatchObject({
-      privacy: {
-        visibility: "hidden",
-      },
+    expect(response.json().daily_points[0]).toMatchObject({
       total_submissions: {
         kind: "hidden",
       },
+      average_mood_score: {
+        kind: "hidden",
+      },
     });
+  });
+
+  it("returns deterministic chart-ready output for the same week window", async () => {
+    dashboardAnalyticsSource = createDashboardAnalyticsSource({
+      teamMemberCounts: {
+        [TEST_TEAM_ID]: 6,
+      },
+      submissions: [
+        createSubmission({ submissionDate: "2026-06-16", moodType: "happy" }),
+        createSubmission({
+          submissionDate: "2026-06-16",
+          moodType: "stressed",
+        }),
+        createSubmission({ submissionDate: "2026-06-20", moodType: "calm" }),
+        createSubmission({ submissionDate: "2026-06-20", moodType: "focused" }),
+        createSubmission({ submissionDate: "2026-06-21", moodType: "happy" }),
+      ],
+    });
+    app = await createTestApp(dashboardAnalyticsSource);
+
+    const firstResponse = await app.inject({
+      method: "GET",
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
+      headers: {
+        authorization: createManagerAuthorizationHeader(),
+      },
+    });
+    const secondResponse = await app.inject({
+      method: "GET",
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
+      headers: {
+        authorization: createManagerAuthorizationHeader(),
+      },
+    });
+
+    expect(firstResponse.statusCode).toBe(200);
+    expect(secondResponse.statusCode).toBe(200);
+    expect(firstResponse.json()).toEqual(secondResponse.json());
   });
 
   it("returns blurred aggregate ranges when the team is too small", async () => {
@@ -235,19 +240,25 @@ describe("GET /dashboard/team/:teamId/daily", () => {
         [TEST_TEAM_ID]: 4,
       },
       submissions: [
-        createSubmission({ moodType: "happy", hourOfDay: 9 }),
-        createSubmission({ moodType: "happy", hourOfDay: 9 }),
-        createSubmission({ moodType: "focused", hourOfDay: 9 }),
-        createSubmission({ moodType: "stressed", hourOfDay: 9 }),
-        createSubmission({ moodType: "stressed", hourOfDay: 9 }),
-        createSubmission({ moodType: "sad", hourOfDay: 9 }),
+        createSubmission({ submissionDate: "2026-06-15", moodType: "happy" }),
+        createSubmission({ submissionDate: "2026-06-15", moodType: "happy" }),
+        createSubmission({ submissionDate: "2026-06-16", moodType: "focused" }),
+        createSubmission({
+          submissionDate: "2026-06-17",
+          moodType: "stressed",
+        }),
+        createSubmission({
+          submissionDate: "2026-06-18",
+          moodType: "stressed",
+        }),
+        createSubmission({ submissionDate: "2026-06-20", moodType: "sad" }),
       ],
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
     const response = await app.inject({
       method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
         authorization: createManagerAuthorizationHeader(),
       },
@@ -267,50 +278,45 @@ describe("GET /dashboard/team/:teamId/daily", () => {
         },
       },
     });
-    expect(response.json().hourly_buckets[9]).toMatchObject({
-      privacy: {
-        visibility: "blurred",
-        reasons: ["minimum_members_for_precise_values"],
-      },
-      total_submissions: {
-        kind: "range",
-        min: 5,
-        max: 9,
-      },
+    expect(response.json().daily_points[0]).toMatchObject({
       average_mood_score: {
         kind: "range",
-        min: 4,
-        max: 6,
+        min: 7,
+        max: 9,
       },
     });
   });
 
-  it("does not leak individual-level fields in the daily response", async () => {
+  it("does not leak personal or per-entry data in the weekly response", async () => {
     dashboardAnalyticsSource = createDashboardAnalyticsSource({
       teamMemberCounts: {
         [TEST_TEAM_ID]: 6,
       },
       submissions: [
-        createSubmission({ moodType: "happy", hourOfDay: 9, tags: ["#team"] }),
         createSubmission({
+          submissionDate: "2026-06-15",
           moodType: "happy",
-          hourOfDay: 9,
-          tags: ["#management"],
+          tags: ["#team"],
         }),
         createSubmission({
+          submissionDate: "2026-06-16",
           moodType: "focused",
-          hourOfDay: 9,
           tags: ["#workload"],
         }),
-        createSubmission({ moodType: "stressed", hourOfDay: 14 }),
-        createSubmission({ moodType: "sad", hourOfDay: 15 }),
+        createSubmission({
+          submissionDate: "2026-06-17",
+          moodType: "stressed",
+          tags: ["#management"],
+        }),
+        createSubmission({ submissionDate: "2026-06-18", moodType: "calm" }),
+        createSubmission({ submissionDate: "2026-06-20", moodType: "sad" }),
       ],
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
     const response = await app.inject({
       method: "GET",
-      url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
+      url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
         authorization: createManagerAuthorizationHeader(),
       },
@@ -321,38 +327,40 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     expect(response.body).not.toContain("noteHash");
     expect(response.body).not.toContain("note_hash");
     expect(response.body).not.toContain('"tags"');
+    expect(response.body).not.toContain('"hour_of_day"');
     expect(response.body).not.toContain('"id"');
     expect(response.body).not.toContain("mr_");
   });
-
-  async function createTestApp(
-    analyticsSource: DashboardAnalyticsSource,
-  ): Promise<Awaited<ReturnType<typeof buildApp>>> {
-    const workspaceDirectory: WorkspaceDirectory = {
-      async findByJoinCode() {
-        return null;
-      },
-      async hasTeamInWorkspace(workspaceId, teamId) {
-        return (
-          workspaceId === TEST_WORKSPACE_ID &&
-          [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId)
-        );
-      },
-    };
-
-    return buildApp({
-      jwtSecret: JWT_SECRET,
-      dashboardAnalyticsSource: analyticsSource,
-      moodSubmissionStore: {
-        async createSubmission() {
-          // Not used in dashboard route tests.
-        },
-      },
-      workspaceDirectory,
-      now: () => new Date(`${TEST_DATE}T10:00:00.000Z`),
-    });
-  }
 });
+
+async function createTestApp(
+  analyticsSource: DashboardAnalyticsSource,
+): Promise<Awaited<ReturnType<typeof buildApp>>> {
+  const workspaceDirectory: WorkspaceDirectory = {
+    async findByJoinCode() {
+      return null;
+    },
+    async hasTeamInWorkspace(workspaceId, teamId) {
+      return (
+        workspaceId === TEST_WORKSPACE_ID &&
+        [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId)
+      );
+    },
+  };
+  const moodSubmissionStore: MoodSubmissionStore = {
+    async createSubmission() {
+      // Weekly dashboard tests do not mutate the submission pipeline.
+    },
+  };
+
+  return buildApp({
+    jwtSecret: JWT_SECRET,
+    dashboardAnalyticsSource: analyticsSource,
+    moodSubmissionStore,
+    workspaceDirectory,
+    now: () => new Date("2026-06-18T10:00:00.000Z"),
+  });
+}
 
 function createManagerAuthorizationHeader(
   options: {
@@ -396,7 +404,7 @@ function createSubmission(
 ) {
   return {
     teamId: overrides.teamId ?? TEST_TEAM_ID,
-    submissionDate: overrides.submissionDate ?? TEST_DATE,
+    submissionDate: overrides.submissionDate ?? TEST_START_DATE,
     moodType: overrides.moodType ?? "happy",
     hourOfDay: overrides.hourOfDay ?? 9,
     tags: overrides.tags ?? [],

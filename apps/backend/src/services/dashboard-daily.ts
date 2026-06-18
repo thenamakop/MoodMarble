@@ -1,4 +1,4 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, gte, lte } from "drizzle-orm";
 
 import {
   DashboardDailySchema,
@@ -43,6 +43,11 @@ export interface DashboardAnalyticsSource {
     teamId: string,
     submissionDate: string,
   ): Promise<DashboardAnalyticsSubmission[]>;
+  listSubmissionsInDateRange(
+    teamId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<DashboardAnalyticsSubmission[]>;
   getTeamMemberCount(teamId: string): Promise<number>;
 }
 
@@ -60,6 +65,19 @@ export class InMemoryDashboardAnalyticsSource implements DashboardAnalyticsSourc
       (submission) =>
         submission.teamId === teamId &&
         submission.submissionDate === submissionDate,
+    );
+  }
+
+  async listSubmissionsInDateRange(
+    teamId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<DashboardAnalyticsSubmission[]> {
+    return this.submissions.filter(
+      (submission) =>
+        submission.teamId === teamId &&
+        submission.submissionDate >= startDate &&
+        submission.submissionDate <= endDate,
     );
   }
 
@@ -82,6 +100,34 @@ export class PostgresDashboardAnalyticsSource implements DashboardAnalyticsSourc
           eq(moodSubmissions.submissionDate, submissionDate),
         ),
         orderBy: (submissionTable, { asc }) => [
+          asc(submissionTable.hourOfDay),
+          asc(submissionTable.id),
+        ],
+      });
+
+    return submissionRecords.map((submissionRecord) => ({
+      teamId: submissionRecord.teamId,
+      moodType: submissionRecord.moodType,
+      tags: submissionRecord.tags as Tag[],
+      hourOfDay: submissionRecord.hourOfDay,
+      submissionDate: submissionRecord.submissionDate,
+    }));
+  }
+
+  async listSubmissionsInDateRange(
+    teamId: string,
+    startDate: string,
+    endDate: string,
+  ): Promise<DashboardAnalyticsSubmission[]> {
+    const submissionRecords =
+      await this.databaseClient.db.query.moodSubmissions.findMany({
+        where: and(
+          eq(moodSubmissions.teamId, teamId),
+          gte(moodSubmissions.submissionDate, startDate),
+          lte(moodSubmissions.submissionDate, endDate),
+        ),
+        orderBy: (submissionTable, { asc }) => [
+          asc(submissionTable.submissionDate),
           asc(submissionTable.hourOfDay),
           asc(submissionTable.id),
         ],
@@ -189,7 +235,7 @@ export class DailyDashboardService {
   }
 }
 
-function buildMoodDistribution(
+export function buildMoodDistribution(
   submissions: DashboardAnalyticsSubmission[],
   privacy: ReturnType<typeof createDashboardPrivacyState>,
 ) {
@@ -214,7 +260,7 @@ function createEmptyMoodCountMap(): Record<Mood, number> {
   >;
 }
 
-function calculateAverageMoodScore(
+export function calculateAverageMoodScore(
   submissions: DashboardAnalyticsSubmission[],
 ): number {
   if (submissions.length === 0) {
@@ -228,6 +274,6 @@ function calculateAverageMoodScore(
   return Number((totalScore / submissions.length).toFixed(2));
 }
 
-function getUtcDateKey(date: Date): string {
+export function getUtcDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
