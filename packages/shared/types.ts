@@ -1,12 +1,21 @@
 import { z } from "zod";
 import {
+  DashboardAlertStateSchema,
+  DashboardCountValueSchema,
+  DashboardDateWindowSchema,
   DashboardDailySchema,
+  DashboardMetricVisibilitySchema,
+  DashboardPrivacyStateSchema,
+  DashboardScoreValueSchema,
+  DashboardThresholdReasonSchema,
+  DashboardThresholdsSchema,
   DashboardTagsSchema,
   DashboardWeeklySchema,
   DeviceTokenSchema,
   HourOfDaySchema,
   HourlyMoodBucketSchema,
   JoinCodeSchema,
+  ManagerJwtPayloadSchema,
   MarbleIdSchema,
   MoodCountSchema,
   MoodSubmissionNoteSchema,
@@ -18,6 +27,7 @@ import {
   TagCountSchema,
   TagSchema,
   TeamSummarySchema,
+  TeamRoleSchema,
   TeamIdSchema,
   WorkspaceJoinRequestSchema,
   WorkspaceIdSchema,
@@ -29,12 +39,14 @@ export type Mood = z.infer<typeof MoodSchema>;
 export type Tag = z.infer<typeof TagSchema>;
 export type JoinCode = z.infer<typeof JoinCodeSchema>;
 export type DeviceToken = z.infer<typeof DeviceTokenSchema>;
+export type TeamRole = z.infer<typeof TeamRoleSchema>;
 export type WorkspaceId = z.infer<typeof WorkspaceIdSchema>;
 export type TeamId = z.infer<typeof TeamIdSchema>;
 export type HourOfDay = z.infer<typeof HourOfDaySchema>;
 export type SubmissionDate = z.infer<typeof SubmissionDateSchema>;
 export type MoodSubmissionTags = z.infer<typeof MoodSubmissionTagsSchema>;
 export type MoodSubmissionNote = z.infer<typeof MoodSubmissionNoteSchema>;
+export type ManagerJwtPayload = z.infer<typeof ManagerJwtPayloadSchema>;
 
 export type MoodSubmission = z.infer<typeof MoodSubmissionSchema>;
 export type MoodSubmissionResponse = z.infer<
@@ -45,6 +57,18 @@ export type TeamSummary = z.infer<typeof TeamSummarySchema>;
 export type WorkspaceJoinRequest = z.infer<typeof WorkspaceJoinRequestSchema>;
 export type WorkspaceJoinResponse = z.infer<typeof WorkspaceJoinResponseSchema>;
 
+export type DashboardMetricVisibility = z.infer<
+  typeof DashboardMetricVisibilitySchema
+>;
+export type DashboardThresholdReason = z.infer<
+  typeof DashboardThresholdReasonSchema
+>;
+export type DashboardCountValue = z.infer<typeof DashboardCountValueSchema>;
+export type DashboardScoreValue = z.infer<typeof DashboardScoreValueSchema>;
+export type DashboardAlertState = z.infer<typeof DashboardAlertStateSchema>;
+export type DashboardThresholds = z.infer<typeof DashboardThresholdsSchema>;
+export type DashboardPrivacyState = z.infer<typeof DashboardPrivacyStateSchema>;
+export type DashboardDateWindow = z.infer<typeof DashboardDateWindowSchema>;
 export type MoodCount = z.infer<typeof MoodCountSchema>;
 export type HourlyMoodBucket = z.infer<typeof HourlyMoodBucketSchema>;
 export type WeeklyMoodPoint = z.infer<typeof WeeklyMoodPointSchema>;

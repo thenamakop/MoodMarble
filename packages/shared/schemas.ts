@@ -13,6 +13,7 @@ export const JoinCodeSchema = z
   });
 
 export const DeviceTokenSchema = z.string().uuid();
+export const TeamRoleSchema = z.enum(["member", "manager", "admin"]);
 
 export const WorkspaceIdSchema = z.string().min(1, "workspace_id is required");
 export const TeamIdSchema = z.string().min(1, "team_id is required");
@@ -100,49 +101,188 @@ export const WorkspaceJoinResponseSchema = z
   })
   .strict();
 
+export const ManagerJwtPayloadSchema = z
+  .object({
+    workspace_id: WorkspaceIdSchema,
+    team_id: TeamIdSchema,
+    role: z.literal("manager"),
+  })
+  .strict();
+
+export const DashboardMetricVisibilitySchema = z.enum([
+  "visible",
+  "blurred",
+  "hidden",
+]);
+
+export const DashboardThresholdReasonSchema = z.enum([
+  "minimum_submissions",
+  "minimum_members_for_precise_values",
+  "minimum_hourly_submissions",
+]);
+
+export const DashboardCountValueSchema = z
+  .discriminatedUnion("kind", [
+    z
+      .object({
+        kind: z.literal("exact"),
+        value: z.number().int().nonnegative(),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("range"),
+        min: z.number().int().nonnegative(),
+        max: z.number().int().nonnegative(),
+      })
+      .strict()
+      .refine((value) => value.max >= value.min, {
+        message: "range max must be greater than or equal to range min",
+      }),
+    z
+      .object({
+        kind: z.literal("hidden"),
+      })
+      .strict(),
+  ])
+  .describe("Exact count, blurred range, or fully hidden metric.");
+
+export const DashboardScoreValueSchema = z
+  .discriminatedUnion("kind", [
+    z
+      .object({
+        kind: z.literal("exact"),
+        value: z.number().min(1).max(9),
+      })
+      .strict(),
+    z
+      .object({
+        kind: z.literal("range"),
+        min: z.number().min(1).max(9),
+        max: z.number().min(1).max(9),
+      })
+      .strict()
+      .refine((value) => value.max >= value.min, {
+        message: "range max must be greater than or equal to range min",
+      }),
+    z
+      .object({
+        kind: z.literal("hidden"),
+      })
+      .strict(),
+  ])
+  .describe("Exact score, blurred score range, or fully hidden score.");
+
 export const MoodCountSchema = z.object({
   mood_type: MoodSchema,
-  count: z.number().int().nonnegative(),
+  count: DashboardCountValueSchema,
 });
 
-export const HourlyMoodBucketSchema = z.object({
-  hour_of_day: z.number().int().min(0).max(23),
-  total_submissions: z.number().int().nonnegative(),
-  average_mood_score: z.number().min(1).max(9).nullable().optional(),
-  mood_counts: z.array(MoodCountSchema),
-});
+export const DashboardAlertStateSchema = z
+  .object({
+    status: z.enum(["hidden", "inactive", "active"]),
+    message: z.string().trim().min(1).nullable(),
+  })
+  .strict()
+  .superRefine((value, context) => {
+    if (value.status === "active" && !value.message) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "active alert state requires a message",
+        path: ["message"],
+      });
+    }
 
-export const WeeklyMoodPointSchema = z.object({
-  date: z.string().min(1),
-  average_mood_score: z.number().min(1).max(9),
-  total_submissions: z.number().int().nonnegative(),
-});
+    if (value.status !== "active" && value.message !== null) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "inactive or hidden alert state must not include a message",
+        path: ["message"],
+      });
+    }
+  });
+
+export const DashboardThresholdsSchema = z
+  .object({
+    minimum_submissions: z.literal(5),
+    minimum_members_for_precise_values: z.literal(5),
+    minimum_hourly_submissions: z.literal(3),
+  })
+  .strict();
+
+export const DashboardPrivacyStateSchema = z
+  .object({
+    visibility: DashboardMetricVisibilitySchema,
+    reasons: z.array(DashboardThresholdReasonSchema),
+    thresholds: DashboardThresholdsSchema,
+  })
+  .strict();
+
+export const DashboardWidgetSummarySchema = z
+  .object({
+    total_submissions: DashboardCountValueSchema,
+    mood_distribution: z.array(MoodCountSchema),
+    alert_state: DashboardAlertStateSchema,
+  })
+  .strict();
+
+export const HourlyMoodBucketSchema = z
+  .object({
+    hour_of_day: z.number().int().min(0).max(23),
+    privacy: DashboardPrivacyStateSchema,
+    total_submissions: DashboardCountValueSchema,
+    average_mood_score: DashboardScoreValueSchema,
+    mood_counts: z.array(MoodCountSchema),
+  })
+  .strict();
+
+export const WeeklyMoodPointSchema = z
+  .object({
+    date: SubmissionDateSchema,
+    privacy: DashboardPrivacyStateSchema,
+    total_submissions: DashboardCountValueSchema,
+    average_mood_score: DashboardScoreValueSchema,
+  })
+  .strict();
 
 export const TagCountSchema = z.object({
   tag: TagSchema,
-  count: z.number().int().nonnegative(),
+  count: DashboardCountValueSchema,
 });
 
-export const DashboardDailySchema = z.object({
-  team_id: TeamIdSchema,
-  date: z.string().min(1),
-  total_submissions: z.number().int().nonnegative(),
-  blurred: z.boolean(),
-  buckets: z.array(HourlyMoodBucketSchema),
-});
+export const DashboardDateWindowSchema = z
+  .object({
+    start_date: SubmissionDateSchema,
+    end_date: SubmissionDateSchema,
+  })
+  .strict();
 
-export const DashboardWeeklySchema = z.object({
-  team_id: TeamIdSchema,
-  week_start: z.string().min(1),
-  total_submissions: z.number().int().nonnegative(),
-  blurred: z.boolean(),
-  points: z.array(WeeklyMoodPointSchema),
-});
+export const DashboardDailySchema = z
+  .object({
+    team_id: TeamIdSchema,
+    date: SubmissionDateSchema,
+    privacy: DashboardPrivacyStateSchema,
+    summary: DashboardWidgetSummarySchema,
+    hourly_buckets: z.array(HourlyMoodBucketSchema).length(24),
+  })
+  .strict();
 
-export const DashboardTagsSchema = z.object({
-  team_id: TeamIdSchema,
-  week_start: z.string().min(1),
-  total_submissions: z.number().int().nonnegative(),
-  blurred: z.boolean(),
-  tags: z.array(TagCountSchema),
-});
+export const DashboardWeeklySchema = z
+  .object({
+    team_id: TeamIdSchema,
+    window: DashboardDateWindowSchema,
+    privacy: DashboardPrivacyStateSchema,
+    summary: DashboardWidgetSummarySchema,
+    daily_points: z.array(WeeklyMoodPointSchema).length(7),
+  })
+  .strict();
+
+export const DashboardTagsSchema = z
+  .object({
+    team_id: TeamIdSchema,
+    window: DashboardDateWindowSchema,
+    privacy: DashboardPrivacyStateSchema,
+    summary: DashboardWidgetSummarySchema,
+    tag_counts: z.array(TagCountSchema),
+  })
+  .strict();
