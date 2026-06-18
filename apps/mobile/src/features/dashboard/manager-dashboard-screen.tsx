@@ -18,6 +18,9 @@ type ManagerDashboardContentState =
       kind: "loading";
     }
   | {
+      kind: "guarded";
+    }
+  | {
       kind: "empty";
     }
   | {
@@ -33,6 +36,11 @@ interface ManagerDashboardScreenProps {
   selectedTeamLabel?: string;
   contentState?: ManagerDashboardContentState;
   viewModel?: ManagerDashboardViewModel | null;
+  canChangeDate?: boolean;
+  canChangeTeam?: boolean;
+  onSelectDate?: () => void;
+  onSelectTeam?: () => void;
+  onReturnHome?: () => void;
 }
 
 export function ManagerDashboardScreen({
@@ -40,6 +48,11 @@ export function ManagerDashboardScreen({
   selectedTeamLabel = "Current team",
   contentState = { kind: "ready" },
   viewModel = null,
+  canChangeDate = false,
+  canChangeTeam = false,
+  onSelectDate,
+  onSelectTeam,
+  onReturnHome,
 }: ManagerDashboardScreenProps) {
   const theme = useTheme();
 
@@ -64,13 +77,17 @@ export function ManagerDashboardScreen({
 
             <View style={styles.controlRow}>
               <DashboardControl
+                disabled={!canChangeDate}
                 label="Date window"
+                onPress={onSelectDate}
                 testID="manager-dashboard-date-picker"
                 theme={theme}
                 value={selectedDateLabel}
               />
               <DashboardControl
+                disabled={!canChangeTeam}
                 label="Team"
+                onPress={onSelectTeam}
                 testID="manager-dashboard-team-selector"
                 theme={theme}
                 value={selectedTeamLabel}
@@ -84,6 +101,33 @@ export function ManagerDashboardScreen({
               />
             </View>
           </View>
+
+          {contentState.kind === "guarded" ? (
+            <ThemedView
+              style={styles.statePanel}
+              testID="manager-dashboard-guarded-state"
+              type="backgroundElement"
+            >
+              <ThemedText type="subtitle">Manager access required</ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
+                Open this route from a manager dashboard link with team access.
+                Anonymous member sessions cannot view manager analytics.
+              </ThemedText>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onReturnHome}
+                style={[
+                  styles.returnButton,
+                  {
+                    backgroundColor: theme.backgroundSelected,
+                  },
+                ]}
+                testID="manager-dashboard-return-home"
+              >
+                <ThemedText type="smallBold">Return to app</ThemedText>
+              </Pressable>
+            </ThemedView>
+          ) : null}
 
           {contentState.kind === "loading" ? (
             <ThemedView
@@ -199,12 +243,14 @@ function DashboardControl({
   value,
   testID,
   disabled = false,
+  onPress,
   theme,
 }: {
   label: string;
   value: string;
   testID: string;
   disabled?: boolean;
+  onPress?: () => void;
   theme: ReturnType<typeof useTheme>;
 }) {
   return (
@@ -212,6 +258,7 @@ function DashboardControl({
       accessibilityRole="button"
       accessibilityState={{ disabled }}
       disabled={disabled}
+      onPress={onPress}
       style={({ pressed }) => [
         styles.controlButton,
         {
@@ -304,6 +351,11 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     padding: Spacing.four,
     gap: Spacing.two,
+  },
+  returnButton: {
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   banner: {
     borderRadius: Spacing.four,
