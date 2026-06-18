@@ -70,6 +70,13 @@ void (async () => {
     },
     {
       teamId: "tm_product",
+      moodType: "neutral",
+      tags: ["#workload"],
+      hourOfDay: 14,
+      submissionDate: "2026-06-18",
+    },
+    {
+      teamId: "tm_product",
       moodType: "stressed",
       tags: ["#management"],
       hourOfDay: 10,
