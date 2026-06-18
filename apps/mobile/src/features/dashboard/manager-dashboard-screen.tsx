@@ -9,6 +9,8 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
+import { ManagerDashboardCharts } from "@/features/dashboard/dashboard-charts";
+import type { ManagerDashboardViewModel } from "@/features/dashboard/chart-model";
 import { useTheme } from "@/hooks/use-theme";
 
 type ManagerDashboardContentState =
@@ -30,12 +32,14 @@ interface ManagerDashboardScreenProps {
   selectedDateLabel?: string;
   selectedTeamLabel?: string;
   contentState?: ManagerDashboardContentState;
+  viewModel?: ManagerDashboardViewModel | null;
 }
 
 export function ManagerDashboardScreen({
   selectedDateLabel = "This week",
   selectedTeamLabel = "Current team",
   contentState = { kind: "ready" },
+  viewModel = null,
 }: ManagerDashboardScreenProps) {
   const theme = useTheme();
 
@@ -133,29 +137,55 @@ export function ManagerDashboardScreen({
               <ThemedView style={styles.summaryPanel} type="backgroundElement">
                 <ThemedText type="smallBold">Dashboard summary</ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
-                  Aggregate data is ready for the selected team and date window.
-                  Charts will connect to the daily, weekly, and tag endpoints in
-                  the next step.
+                  {viewModel
+                    ? `Selected window: ${viewModel.summary.windowLabel}. Aggregate submissions: ${viewModel.summary.totalSubmissionsLabel}.`
+                    : "Aggregate data is ready for the selected team and date window."}
                 </ThemedText>
               </ThemedView>
 
-              <View style={styles.cardGrid}>
-                <DashboardSlotCard
-                  description="Chart-ready daily buckets and privacy state."
-                  testID="manager-dashboard-daily-slot"
-                  title="Daily heatmap"
-                />
-                <DashboardSlotCard
-                  description="Seven-day trend points with aggregate totals."
-                  testID="manager-dashboard-weekly-slot"
-                  title="Weekly trend"
-                />
-                <DashboardSlotCard
-                  description="Weekly tag-frequency counts and alert support."
-                  testID="manager-dashboard-tags-slot"
-                  title="Tag analytics"
-                />
-              </View>
+              {viewModel?.banner ? (
+                <ThemedView
+                  style={styles.banner}
+                  testID={
+                    viewModel.banner.kind === "alert"
+                      ? "manager-dashboard-alert-banner"
+                      : "manager-dashboard-privacy-banner"
+                  }
+                  type="backgroundElement"
+                >
+                  <ThemedText type="smallBold">
+                    {viewModel.banner.title}
+                  </ThemedText>
+                  <ThemedText
+                    themeColor="textSecondary"
+                    style={styles.stateCopy}
+                  >
+                    {viewModel.banner.message}
+                  </ThemedText>
+                </ThemedView>
+              ) : null}
+
+              {viewModel ? (
+                <ManagerDashboardCharts viewModel={viewModel} />
+              ) : (
+                <View style={styles.cardGrid}>
+                  <DashboardSlotCard
+                    description="Chart-ready daily buckets and privacy state."
+                    testID="manager-dashboard-daily-slot"
+                    title="Daily heatmap"
+                  />
+                  <DashboardSlotCard
+                    description="Seven-day trend points with aggregate totals."
+                    testID="manager-dashboard-weekly-slot"
+                    title="Weekly trend"
+                  />
+                  <DashboardSlotCard
+                    description="Weekly tag-frequency counts and alert support."
+                    testID="manager-dashboard-tags-slot"
+                    title="Tag analytics"
+                  />
+                </View>
+              )}
             </View>
           ) : null}
         </View>
@@ -271,6 +301,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   summaryPanel: {
+    borderRadius: Spacing.four,
+    padding: Spacing.four,
+    gap: Spacing.two,
+  },
+  banner: {
     borderRadius: Spacing.four,
     padding: Spacing.four,
     gap: Spacing.two,
