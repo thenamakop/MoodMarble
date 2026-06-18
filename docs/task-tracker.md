@@ -118,25 +118,32 @@ If repository docs conflict with the `.docx`, the `.docx` wins.
 - open risks are documented
 - the handoff to Week 4 is unambiguous
 
-## Week 4 handoff
+## Week 4 complete and Week 5 handoff
 
-Week 4 may now begin from this stable Week 3 base:
+Week 4 is implemented and stable in the current repository:
 
-- onboarding, join-code entry, and team selection are implemented and verified
-- the anonymous device-token and device JWT session model are implemented and verified
-- secure session persistence and restart recovery are implemented and verified
-- unsupported routes redirect back to the anonymous member flow
-- the Week 3 privacy audit confirms that no email, password, profile, dashboard, history, notification, or admin product flow is active in the shipped Week 3 path
+- onboarding, join-code entry, and team selection remain implemented and verified
+- the anonymous device-token and device JWT session model remain implemented and verified
+- secure session persistence and restart recovery remain implemented and verified
+- local-only history route, timeline, calendar, and streak logic now exist on mobile
+- personal history remains device-only and separate from backend mood submissions
 
-Week 4 should begin with `MM-W4-01` only:
+Week 5 starts from this stable Week 4 base with a narrow dashboard-only scope:
 
-- keep personal history local-only and device-only
-- do not add backend identifiers or new auth models
-- do not start dashboard, notification, manager, or admin work during the first Week 4 increment
+- member onboarding, session recovery, mood submission, and local personal history stay unchanged
+- next work is limited to manager-facing aggregate analytics, backend dashboard endpoints, privacy thresholds, and the dashboard UI shell
+- manager-visible data must remain aggregated only with the specification's threshold rules enforced exactly
+- notifications, admin tooling, exports, offline queueing, and any new identity model stay out of scope unless a defect forces a minimal fix
+
+The intended Week 5 touch points are limited to:
+
+- backend dashboard route registration plus new aggregate analytics services and tests
+- shared dashboard response contracts
+- mobile dashboard shell routes, components, and tests only
 
 ### MM-W4-01 - Implement local-only personal mood history storage
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `medium`
 - Dependencies: `MM-W3-05`
@@ -149,7 +156,7 @@ Week 4 should begin with `MM-W4-01` only:
 
 ### MM-W4-02 - Build the history timeline screen
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P2`
 - Estimated effort: `medium`
 - Dependencies: `MM-W4-01`
@@ -161,7 +168,7 @@ Week 4 should begin with `MM-W4-01` only:
 
 ### MM-W4-03 - Add streak tracking and mood calendar
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P2`
 - Estimated effort: `medium`
 - Dependencies: `MM-W4-01`
