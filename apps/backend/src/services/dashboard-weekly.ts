@@ -94,7 +94,7 @@ export class WeeklyDashboardService {
   }
 }
 
-function getWeekWindow(startDate: string | undefined, now: Date) {
+export function getWeekWindow(startDate: string | undefined, now: Date) {
   const start = startDate
     ? parseDateKey(startDate)
     : getStartOfWeek(parseDateKey(getUtcDateKey(now)));

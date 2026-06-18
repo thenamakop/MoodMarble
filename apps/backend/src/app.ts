@@ -2,6 +2,7 @@ import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
 import { registerDashboardDailyRoute } from "./routes/dashboard-daily";
+import { registerDashboardTagsRoute } from "./routes/dashboard-tags";
 import { registerDashboardWeeklyRoute } from "./routes/dashboard-weekly";
 import { registerHealthRoutes } from "./routes/health";
 import { registerMoodRoute } from "./routes/mood";
@@ -59,6 +60,14 @@ export async function buildApp(
     now: options.now,
   });
   await registerDashboardWeeklyRoute(app, {
+    jwtSecret: options.jwtSecret,
+    analyticsSource:
+      options.dashboardAnalyticsSource ??
+      new InMemoryDashboardAnalyticsSource(),
+    workspaceDirectory,
+    now: options.now,
+  });
+  await registerDashboardTagsRoute(app, {
     jwtSecret: options.jwtSecret,
     analyticsSource:
       options.dashboardAnalyticsSource ??
