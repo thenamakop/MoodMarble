@@ -1,8 +1,11 @@
 import {
   ANONYMOUS_MEMBER_HISTORY_ROUTE,
   ANONYMOUS_MEMBER_HOME_ROUTE,
+  MANAGER_DASHBOARD_ROUTE,
+  getManagerRouteRedirect,
   getProtectedRouteRedirect,
   isAllowedAnonymousMemberRoute,
+  isAllowedManagerRoute,
   resolveAnonymousHomeState,
 } from "@/features/onboarding/route-boundary";
 
@@ -33,6 +36,14 @@ describe("anonymous route boundary", () => {
     expect(
       getProtectedRouteRedirect(ANONYMOUS_MEMBER_HISTORY_ROUTE),
     ).toBeNull();
+  });
+
+  it("allows the manager dashboard route only under the manager flow boundary", () => {
+    expect(isAllowedManagerRoute("/manager")).toBe(true);
+    expect(getManagerRouteRedirect("/manager")).toBeNull();
+    expect(getManagerRouteRedirect("/manager/reports")).toBe(
+      MANAGER_DASHBOARD_ROUTE,
+    );
   });
 
   it("falls back to onboarding when the anonymous session is missing", () => {

@@ -47,6 +47,7 @@ describe("AppTabs native", () => {
     ).toEqual([
       { hidden: false, name: "index" },
       { hidden: true, name: "history" },
+      { hidden: true, name: "manager" },
     ]);
   });
 });

@@ -57,6 +57,7 @@ describe("AppTabs web", () => {
     ).toEqual([
       { href: "/", name: "home" },
       { href: "/history", name: "history" },
+      { href: "/manager", name: "manager" },
     ]);
   });
 });

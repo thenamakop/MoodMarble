@@ -25,6 +25,9 @@ export default function AppTabs() {
           <TabTrigger name="history" href="/history" asChild>
             <HiddenTabRegistration />
           </TabTrigger>
+          <TabTrigger name="manager" href="/manager" asChild>
+            <HiddenTabRegistration />
+          </TabTrigger>
         </CustomTabList>
       </TabList>
     </Tabs>
