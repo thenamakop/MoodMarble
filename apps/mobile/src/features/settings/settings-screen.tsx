@@ -14,15 +14,14 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, Spacing } from "@/constants/theme";
 import {
-  createDefaultLocalSettings,
   setReminderOptIn,
   setReminderTimes,
   type LocalSettings,
 } from "@/features/settings/model";
+import { persistLocalReminderSettings } from "@/features/settings/actions";
 import {
   loadLocalSettings,
   requestStoredOnboardingReplay,
-  saveLocalSettings,
 } from "@/features/settings/storage";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -43,7 +42,7 @@ export function SettingsScreen({
   onClearLocalData = clearLocalDeviceData,
   onRequestOnboardingReplay = requestStoredOnboardingReplay,
   onReturnHome,
-  saveSettings = saveLocalSettings,
+  saveSettings = persistLocalReminderSettings,
 }: SettingsScreenProps) {
   const theme = useTheme();
   const [settings, setSettings] = useState<LocalSettings | null>(null);
@@ -98,17 +97,25 @@ export function SettingsScreen({
       return;
     }
 
-    const savedSettings = await saveSettings(
-      setReminderOptIn(settings, enabled),
-    );
-    setSettings(savedSettings);
-    setDraftReminderTimes(savedSettings.reminderTimes);
-    setErrorMessage(null);
-    setStatusMessage(
-      enabled
-        ? "Daily reminders are on for this device."
-        : "Daily reminders are off. Your saved times stay on this device.",
-    );
+    try {
+      const savedSettings = await saveSettings(
+        setReminderOptIn(settings, enabled),
+      );
+      setSettings(savedSettings);
+      setDraftReminderTimes(savedSettings.reminderTimes);
+      setErrorMessage(null);
+      setStatusMessage(
+        enabled
+          ? "Daily reminders are on for this device."
+          : "Daily reminders are off. Your saved times stay on this device.",
+      );
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to update reminder preferences right now.",
+      );
+    }
   }
 
   async function handleApplyReminderTimes() {
@@ -143,6 +150,10 @@ export function SettingsScreen({
   async function handleConfirmClearLocalData() {
     await onClearLocalData();
     setIsClearPromptVisible(false);
+    const defaultSettings = await loadSettings();
+    setSettings(defaultSettings);
+    setDraftReminderTimes(defaultSettings.reminderTimes);
+    setErrorMessage(null);
     setStatusMessage("Local data was cleared from this device.");
   }
 

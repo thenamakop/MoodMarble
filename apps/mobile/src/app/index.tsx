@@ -13,6 +13,10 @@ import {
   restoreAnonymousSession,
 } from "@/features/onboarding/session-boundary";
 import type { AnonymousSession } from "@/features/onboarding/types";
+import {
+  clearStoredOnboardingReplayRequest,
+  loadLocalSettings,
+} from "@/features/settings/storage";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function HomeScreen() {
@@ -40,6 +44,21 @@ export default function HomeScreen() {
     async function syncAnonymousSession() {
       const nextContext = getAnonymousSessionFromParams(params);
       const nextSession = await restoreAnonymousSession(params);
+      const localSettings = await loadLocalSettings();
+      const shouldReplayOnboarding =
+        !nextContext && nextSession && localSettings.replayOnboarding;
+
+      if (shouldReplayOnboarding) {
+        await clearStoredOnboardingReplayRequest();
+
+        if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+          setSession(null);
+          setIsLoadingSession(false);
+          setActiveNativeScreen("marbles");
+        }
+
+        return;
+      }
 
       if (nextContext) {
         if (!cancelled && sessionSyncVersionRef.current === syncVersion) {

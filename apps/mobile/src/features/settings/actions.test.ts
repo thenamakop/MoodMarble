@@ -1,0 +1,271 @@
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "web",
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  deleteItemAsync: jest.fn(async () => undefined),
+  getItemAsync: jest.fn(async () => null),
+  setItemAsync: jest.fn(async () => undefined),
+}));
+
+const scheduledRequestsStore = new Map<string, ScheduledRequestRecord>();
+const mockSetNotificationChannelAsync = jest.fn(async () => undefined);
+const mockGetAllScheduledNotificationsAsync = jest.fn(async () =>
+  Array.from(scheduledRequestsStore.values()),
+);
+const mockScheduleNotificationAsync = jest.fn(
+  async (request: ScheduledRequestInput) => {
+    const identifier =
+      request.identifier ?? `generated-${scheduledRequestsStore.size + 1}`;
+
+    scheduledRequestsStore.set(identifier, {
+      identifier,
+      content: {
+        data: request.content.data ?? {},
+      },
+      trigger: request.trigger,
+    });
+
+    return identifier;
+  },
+);
+const mockCancelScheduledNotificationAsync = jest.fn(
+  async (identifier: string) => {
+    scheduledRequestsStore.delete(identifier);
+  },
+);
+const mockNotificationSchedulerModule = {
+  cancelScheduledNotificationAsync: mockCancelScheduledNotificationAsync,
+  getAllScheduledNotificationsAsync: mockGetAllScheduledNotificationsAsync,
+  scheduleNotificationAsync: mockScheduleNotificationAsync,
+};
+const mockPlatformModule = {
+  AndroidImportance: {
+    DEFAULT: "default",
+  },
+  AndroidNotificationVisibility: {
+    PUBLIC: "public",
+  },
+  setNotificationChannelAsync: mockSetNotificationChannelAsync,
+};
+
+jest.mock("expo-notifications", () => ({
+  AndroidImportance: {
+    DEFAULT: "default",
+  },
+  AndroidNotificationVisibility: {
+    PUBLIC: "public",
+  },
+  cancelScheduledNotificationAsync: mockCancelScheduledNotificationAsync,
+  getAllScheduledNotificationsAsync: mockGetAllScheduledNotificationsAsync,
+  scheduleNotificationAsync: mockScheduleNotificationAsync,
+  setNotificationChannelAsync: mockSetNotificationChannelAsync,
+}));
+
+jest.mock("@/features/history/storage", () => ({
+  clearLocalMoodHistory: jest.fn(async () => undefined),
+}));
+
+jest.mock("@/features/onboarding/session", () => ({
+  clearAnonymousSession: jest.fn(async () => undefined),
+}));
+
+import { clearLocalMoodHistory } from "@/features/history/storage";
+import { clearAnonymousSession } from "@/features/onboarding/session";
+import { buildReminderScheduleIdentifier } from "@/features/notifications/scheduler";
+import { persistLocalReminderSettings } from "@/features/settings/actions";
+import { createDefaultLocalSettings } from "@/features/settings/model";
+import { clearLocalDeviceData } from "@/features/settings/local-data";
+import {
+  clearLocalSettings,
+  loadLocalSettings,
+  requestStoredOnboardingReplay,
+} from "@/features/settings/storage";
+
+describe("settings local actions", () => {
+  const originalWindow = globalThis.window;
+
+  beforeEach(() => {
+    installStorageMocks();
+    scheduledRequestsStore.clear();
+  });
+
+  afterEach(async () => {
+    if (typeof window !== "undefined") {
+      window.localStorage.clear();
+      window.sessionStorage.clear();
+    }
+
+    await clearLocalSettings();
+    scheduledRequestsStore.clear();
+    jest.clearAllMocks();
+
+    if (originalWindow) {
+      Object.defineProperty(globalThis, "window", {
+        configurable: true,
+        value: originalWindow,
+      });
+    }
+  });
+
+  it("persists reminder preferences to local storage and reloads them consistently", async () => {
+    const persistedSettings = await persistLocalReminderSettings(
+      {
+        version: 1,
+        remindersEnabled: true,
+        reminderTimes: ["09:00", "18:00"],
+        replayOnboarding: false,
+      },
+      {
+        notificationsModule: mockNotificationSchedulerModule,
+        platformModule: mockPlatformModule,
+        platformOs: "android",
+      },
+    );
+
+    expect(persistedSettings).toEqual({
+      version: 1,
+      remindersEnabled: true,
+      reminderTimes: ["09:00", "18:00"],
+      replayOnboarding: false,
+    });
+    await expect(loadLocalSettings()).resolves.toEqual(persistedSettings);
+    expect(Array.from(scheduledRequestsStore.keys()).sort()).toEqual([
+      buildReminderScheduleIdentifier("09:00"),
+      buildReminderScheduleIdentifier("18:00"),
+    ]);
+  });
+
+  it("cancels reminders when the saved opt-out state is disabled", async () => {
+    await persistLocalReminderSettings(
+      {
+        version: 1,
+        remindersEnabled: true,
+        reminderTimes: ["09:00", "18:00"],
+        replayOnboarding: false,
+      },
+      {
+        notificationsModule: mockNotificationSchedulerModule,
+        platformModule: mockPlatformModule,
+        platformOs: "android",
+      },
+    );
+
+    const persistedSettings = await persistLocalReminderSettings(
+      {
+        version: 1,
+        remindersEnabled: false,
+        reminderTimes: ["09:00", "18:00"],
+        replayOnboarding: false,
+      },
+      {
+        notificationsModule: mockNotificationSchedulerModule,
+        platformModule: mockPlatformModule,
+        platformOs: "android",
+      },
+    );
+
+    expect(persistedSettings).toEqual({
+      version: 1,
+      remindersEnabled: false,
+      reminderTimes: ["09:00", "18:00"],
+      replayOnboarding: false,
+    });
+    expect(scheduledRequestsStore.size).toBe(0);
+    await expect(loadLocalSettings()).resolves.toEqual(persistedSettings);
+  });
+
+  it("stores the onboarding replay request locally until the home route consumes it", async () => {
+    await requestStoredOnboardingReplay();
+
+    await expect(loadLocalSettings()).resolves.toEqual({
+      version: 1,
+      remindersEnabled: false,
+      reminderTimes: ["18:00"],
+      replayOnboarding: true,
+    });
+  });
+
+  it("clears local settings and scheduled reminders when device data is deleted", async () => {
+    await persistLocalReminderSettings(
+      {
+        version: 1,
+        remindersEnabled: true,
+        reminderTimes: ["13:00"],
+        replayOnboarding: false,
+      },
+      {
+        notificationsModule: mockNotificationSchedulerModule,
+        platformModule: mockPlatformModule,
+        platformOs: "android",
+      },
+    );
+
+    await clearLocalDeviceData({
+      cancelReminderNotifications: async () => {
+        scheduledRequestsStore.clear();
+      },
+    });
+
+    await expect(loadLocalSettings()).resolves.toEqual(
+      createDefaultLocalSettings(),
+    );
+    expect(scheduledRequestsStore.size).toBe(0);
+    expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
+    expect(clearAnonymousSession).toHaveBeenCalledTimes(1);
+  });
+});
+
+function installStorageMocks() {
+  Object.defineProperty(window, "localStorage", {
+    configurable: true,
+    value: createStorageMock(),
+  });
+  Object.defineProperty(window, "sessionStorage", {
+    configurable: true,
+    value: createStorageMock(),
+  });
+}
+
+function createStorageMock(): Storage {
+  const storageMap = new Map<string, string>();
+
+  return {
+    get length() {
+      return storageMap.size;
+    },
+    clear() {
+      storageMap.clear();
+    },
+    getItem(key: string) {
+      return storageMap.get(key) ?? null;
+    },
+    key(index: number) {
+      return Array.from(storageMap.keys())[index] ?? null;
+    },
+    removeItem(key: string) {
+      storageMap.delete(key);
+    },
+    setItem(key: string, value: string) {
+      storageMap.set(key, value);
+    },
+  };
+}
+
+interface ScheduledRequestRecord {
+  identifier: string;
+  content: {
+    data?: Record<string, unknown>;
+  };
+  trigger: unknown;
+}
+
+interface ScheduledRequestInput {
+  identifier?: string;
+  content: {
+    data?: Record<string, unknown>;
+  };
+  trigger: unknown;
+}

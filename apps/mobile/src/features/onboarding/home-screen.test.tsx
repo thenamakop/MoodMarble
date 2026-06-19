@@ -9,6 +9,10 @@ import HomeScreen from "@/app/index";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
 import { saveAnonymousSession } from "@/features/onboarding/session";
 import { restoreAnonymousSession } from "@/features/onboarding/session-boundary";
+import {
+  clearStoredOnboardingReplayRequest,
+  loadLocalSettings,
+} from "@/features/settings/storage";
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
@@ -35,6 +39,21 @@ jest.mock("@/features/onboarding/session", () => ({
 jest.mock("@/features/onboarding/session-boundary", () => ({
   getAnonymousSessionFromParams: jest.fn(() => null),
   restoreAnonymousSession: jest.fn(),
+}));
+
+jest.mock("@/features/settings/storage", () => ({
+  clearStoredOnboardingReplayRequest: jest.fn(async () => ({
+    version: 1,
+    remindersEnabled: false,
+    reminderTimes: ["18:00"],
+    replayOnboarding: false,
+  })),
+  loadLocalSettings: jest.fn(async () => ({
+    version: 1,
+    remindersEnabled: false,
+    reminderTimes: ["18:00"],
+    replayOnboarding: false,
+  })),
 }));
 
 jest.mock("@/features/onboarding/onboarding-screen", () => {
@@ -128,6 +147,12 @@ describe("HomeScreen", () => {
       .mockImplementation((session) =>
         session ? "member-home" : "onboarding",
       );
+    jest.mocked(loadLocalSettings).mockResolvedValue({
+      version: 1,
+      remindersEnabled: false,
+      reminderTimes: ["18:00"],
+      replayOnboarding: false,
+    });
   });
 
   afterEach(() => {
@@ -252,6 +277,32 @@ describe("HomeScreen", () => {
         ),
       ).toBeTruthy(),
     );
+  });
+
+  it("replays onboarding when a local replay request is waiting", async () => {
+    jest.mocked(restoreAnonymousSession).mockResolvedValue({
+      workspaceId: "ws_localdemo",
+      teamId: "tm_engineering",
+      deviceJwt: "active-device-jwt",
+    });
+    jest.mocked(loadLocalSettings).mockResolvedValue({
+      version: 1,
+      remindersEnabled: false,
+      reminderTimes: ["18:00"],
+      replayOnboarding: true,
+    });
+
+    const view = await render(<HomeScreen />);
+
+    await waitFor(() =>
+      expect(view.getByText("onboarding-screen")).toBeTruthy(),
+    );
+    expect(clearStoredOnboardingReplayRequest).toHaveBeenCalledTimes(1);
+    expect(
+      view.queryByText(
+        "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
+      ),
+    ).toBeNull();
   });
 });
 

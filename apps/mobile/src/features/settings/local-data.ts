@@ -4,8 +4,16 @@ import { cancelScheduledReminderNotifications } from "@/features/notifications/s
 
 import { clearLocalSettings } from "./storage";
 
-export async function clearLocalDeviceData(): Promise<void> {
-  await cancelScheduledReminderNotifications();
+interface ClearLocalDeviceDataOptions {
+  cancelReminderNotifications?: () => Promise<unknown>;
+}
+
+export async function clearLocalDeviceData(
+  options: ClearLocalDeviceDataOptions = {},
+): Promise<void> {
+  await (
+    options.cancelReminderNotifications ?? cancelScheduledReminderNotifications
+  )();
   await clearLocalSettings();
   await clearLocalMoodHistory();
   await clearAnonymousSession();
