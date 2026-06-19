@@ -35,7 +35,7 @@ describe("AppTabs native", () => {
     jest.clearAllMocks();
   });
 
-  it("keeps the marbles tab visible and registers the history route as hidden", async () => {
+  it("keeps the marbles tab visible and registers the member utility routes as hidden", async () => {
     const { getByText } = await render(<AppTabs />);
 
     expect(getByText("Marbles")).toBeTruthy();
@@ -47,6 +47,7 @@ describe("AppTabs native", () => {
     ).toEqual([
       { hidden: false, name: "index" },
       { hidden: true, name: "history" },
+      { hidden: true, name: "settings" },
       { hidden: true, name: "manager" },
     ]);
   });

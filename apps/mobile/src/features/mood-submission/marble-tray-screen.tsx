@@ -47,6 +47,7 @@ interface MarbleTrayScreenProps {
   teamId?: string;
   deviceJwt?: string;
   onOpenHistory?: () => void;
+  onOpenSettings?: () => void;
   onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<void>;
   getCurrentHour?: () => number;
   getCurrentSubmissionDate?: () => string;
@@ -57,6 +58,7 @@ export function MarbleTrayScreen({
   teamId,
   deviceJwt,
   onOpenHistory,
+  onOpenSettings,
   onSubmitMood = submitMoodSubmission,
   getCurrentHour = () => new Date().getHours(),
   getCurrentSubmissionDate = () => getLocalSubmissionDate(),
@@ -96,6 +98,14 @@ export function MarbleTrayScreen({
 
     router.push("/history");
   }, [onOpenHistory, router]);
+  const handleOpenSettings = useCallback(() => {
+    if (onOpenSettings) {
+      onOpenSettings();
+      return;
+    }
+
+    router.push("/settings");
+  }, [onOpenSettings, router]);
 
   function toggleTag(tag: TagValue) {
     setSelectedTags((currentTags) => {
@@ -192,21 +202,38 @@ export function MarbleTrayScreen({
               Share a private snapshot of your day. No names. No public feed.
               Just one anonymous signal.
             </ThemedText>
-            <Pressable
-              accessibilityRole="button"
-              onPress={handleOpenHistory}
-              style={({ pressed }) => [
-                styles.historyButton,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.backgroundSelected,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-              testID="open-history-button"
-            >
-              <ThemedText type="smallBold">View history</ThemedText>
-            </Pressable>
+            <View style={styles.heroActions}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={handleOpenHistory}
+                style={({ pressed }) => [
+                  styles.historyButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="open-history-button"
+              >
+                <ThemedText type="smallBold">View history</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={handleOpenSettings}
+                style={({ pressed }) => [
+                  styles.historyButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="open-settings-button"
+              >
+                <ThemedText type="smallBold">Settings</ThemedText>
+              </Pressable>
+            </View>
           </View>
 
           <ThemedView type="backgroundElement" style={styles.panel}>
@@ -409,6 +436,11 @@ const styles = StyleSheet.create({
   heroSection: {
     gap: Spacing.two,
     paddingVertical: Spacing.three,
+  },
+  heroActions: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.two,
   },
   title: {
     fontSize: 40,

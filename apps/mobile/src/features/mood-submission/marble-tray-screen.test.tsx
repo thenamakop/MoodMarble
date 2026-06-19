@@ -346,6 +346,23 @@ describe("MarbleTrayScreen", () => {
 
     expect(push).toHaveBeenCalledWith("/history");
   });
+
+  it("opens the settings flow from the member home screen", async () => {
+    const onOpenSettings = jest.fn();
+    const { findByTestId } = await renderScreen({ onOpenSettings });
+
+    fireEvent.press(await findByTestId("open-settings-button"));
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+  });
+
+  it("navigates to settings when no custom settings handler is provided", async () => {
+    const { findByTestId } = await renderScreen();
+
+    fireEvent.press(await findByTestId("open-settings-button"));
+
+    expect(push).toHaveBeenCalledWith("/settings");
+  });
 });
 
 async function renderScreen(

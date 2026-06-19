@@ -2,11 +2,13 @@ import type { AnonymousSession } from "@/features/onboarding/types";
 
 export const ANONYMOUS_MEMBER_HOME_ROUTE = "/";
 export const ANONYMOUS_MEMBER_HISTORY_ROUTE = "/history";
+export const ANONYMOUS_MEMBER_SETTINGS_ROUTE = "/settings";
 export const MANAGER_DASHBOARD_ROUTE = "/manager";
 
 const ALLOWED_ANONYMOUS_MEMBER_ROUTES = new Set([
   ANONYMOUS_MEMBER_HOME_ROUTE,
   ANONYMOUS_MEMBER_HISTORY_ROUTE,
+  ANONYMOUS_MEMBER_SETTINGS_ROUTE,
 ]);
 
 const ALLOWED_MANAGER_ROUTES = new Set([MANAGER_DASHBOARD_ROUTE]);

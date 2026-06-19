@@ -1,6 +1,7 @@
 import {
   ANONYMOUS_MEMBER_HISTORY_ROUTE,
   ANONYMOUS_MEMBER_HOME_ROUTE,
+  ANONYMOUS_MEMBER_SETTINGS_ROUTE,
   MANAGER_DASHBOARD_ROUTE,
   getManagerRouteRedirect,
   getProtectedRouteRedirect,
@@ -14,6 +15,7 @@ describe("anonymous route boundary", () => {
     expect(isAllowedAnonymousMemberRoute("/")).toBe(true);
     expect(isAllowedAnonymousMemberRoute("")).toBe(true);
     expect(isAllowedAnonymousMemberRoute("/history")).toBe(true);
+    expect(isAllowedAnonymousMemberRoute("/settings")).toBe(true);
   });
 
   it("blocks unsupported role and future-feature routes", () => {
@@ -35,6 +37,9 @@ describe("anonymous route boundary", () => {
     expect(getProtectedRouteRedirect("/")).toBeNull();
     expect(
       getProtectedRouteRedirect(ANONYMOUS_MEMBER_HISTORY_ROUTE),
+    ).toBeNull();
+    expect(
+      getProtectedRouteRedirect(ANONYMOUS_MEMBER_SETTINGS_ROUTE),
     ).toBeNull();
   });
 
