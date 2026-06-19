@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, StyleSheet, View } from "react-native";
 
 import type { MoodValue } from "@/contracts/mood-submission";
@@ -19,15 +19,15 @@ export function SubmissionConfirmation({
   mood,
   onDismiss,
 }: SubmissionConfirmationProps) {
-  const dropTranslateY = useRef(
-    new Animated.Value(ANIMATIONS_ENABLED ? -120 : 0),
-  ).current;
-  const dropScale = useRef(
-    new Animated.Value(ANIMATIONS_ENABLED ? 0.75 : 1),
-  ).current;
-  const fadeOpacity = useRef(
-    new Animated.Value(ANIMATIONS_ENABLED ? 0 : 1),
-  ).current;
+  const [dropTranslateY] = useState(
+    () => new Animated.Value(ANIMATIONS_ENABLED ? -120 : 0),
+  );
+  const [dropScale] = useState(
+    () => new Animated.Value(ANIMATIONS_ENABLED ? 0.75 : 1),
+  );
+  const [fadeOpacity] = useState(
+    () => new Animated.Value(ANIMATIONS_ENABLED ? 0 : 1),
+  );
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
