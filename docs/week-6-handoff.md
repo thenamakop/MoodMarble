@@ -131,3 +131,48 @@ The repository is ready for Week 6 when the following remain green after this fr
 - the existing mobile tests for manager route protection and dashboard rendering
 - the existing backend dashboard route and privacy tests
 - the worktree is clean apart from the intentional Week 6 freeze documentation change
+
+## Final Week 6 verification
+
+The final Week 6 verification pass confirms the implemented reminder layer stays local-first and does not widen the existing product scope.
+
+Automated verification completed successfully for:
+
+- reminder settings model normalization and local persistence
+- reminder scheduling, cancellation, and restart-safe reconciliation
+- onboarding replay request handling and local data deletion behavior
+- settings route coverage and member-side navigation back to the main app
+- the anonymous member flow, local history flow, and manager dashboard chart layer
+- backend dashboard privacy routes and manager-only aggregate protections
+
+Manual verification in the current environment produced these results:
+
+- the member flow at `/` rendered and remained interactive
+- the local history route at `/history` rendered and remained interactive
+- the guarded manager route at `/manager` rendered as expected without manager params
+- the seeded manager dashboard route rendered with a valid manual manager token
+- direct browser verification of `/settings` remained blocked by an Expo web runtime issue in the dev tooling layer
+
+The browser console for `/settings` showed the same Expo web `LogBoxInspectorContainer` failure observed during prior verification attempts:
+
+- `TypeError: Cannot read properties of undefined (reading 'map')`
+
+This issue occurs in Expo's web error overlay rather than in the Week 6 test suite. Because of that tooling failure, the final browser-only checks for changing reminder settings, confirming persistence after reopen, replaying onboarding from the settings screen, and deleting local data from the live web route could not be completed in this environment.
+
+## Ready for next phase
+
+The repository is ready to move forward with Week 6 considered feature-complete at the code and automated regression level:
+
+- the reminder settings contract is locked and covered by focused tests
+- local reminder scheduling stays device-only and privacy-safe
+- onboarding replay and local data deletion stay local-only
+- Week 3 anonymous flow, Week 4 local history, and Week 5 dashboard behavior remain covered and green
+
+## Do not start yet
+
+The next phase should not begin any of the following without a new explicit task:
+
+- dashboard expansion or manager tooling changes
+- backend reminder persistence, analytics, sync, or export work
+- new identity or account models
+- cross-device restore or any non-local reminder feature
