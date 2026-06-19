@@ -18,7 +18,7 @@ export default function SettingsRoute() {
         router.replace("/");
       }}
       onReturnHome={() => {
-        router.push("/");
+        router.replace("/");
       }}
     />
   );
