@@ -1,11 +1,4 @@
-import {
-  Tabs,
-  TabList,
-  TabTrigger,
-  TabSlot,
-  TabTriggerSlotProps,
-  TabListProps,
-} from "expo-router/ui";
+import { Slot, usePathname, useRouter } from "expo-router";
 import { Pressable, useColorScheme, View, StyleSheet } from "react-native";
 
 import { ThemedText } from "./themed-text";
@@ -14,40 +7,43 @@ import { ThemedView } from "./themed-view";
 import { Colors, MaxContentWidth, Spacing } from "@/constants/theme";
 
 export default function AppTabs() {
-  return (
-    <Tabs>
-      <TabSlot style={{ height: "100%" }} />
-      <TabList asChild>
-        <CustomTabList>
-          <TabTrigger name="home" href="/" asChild>
-            <TabButton>Marbles</TabButton>
-          </TabTrigger>
-          <TabTrigger name="history" href="/history" asChild>
-            <HiddenTabRegistration />
-          </TabTrigger>
-          <TabTrigger name="manager" href="/manager" asChild>
-            <HiddenTabRegistration />
-          </TabTrigger>
-        </CustomTabList>
-      </TabList>
-    </Tabs>
-  );
-}
+  const router = useRouter();
+  const pathname = usePathname();
 
-function HiddenTabRegistration() {
-  return <View aria-hidden style={styles.hiddenTabTrigger} />;
+  return (
+    <View style={styles.layout}>
+      <Slot />
+      <CustomTabList>
+        <TabButton
+          isFocused={pathname === "/"}
+          onPress={() => {
+            router.push("/");
+          }}
+        >
+          Marbles
+        </TabButton>
+      </CustomTabList>
+    </View>
+  );
 }
 
 export function TabButton({
   children,
   isFocused,
-  ...props
-}: TabTriggerSlotProps) {
+  onPress,
+}: {
+  children: React.ReactNode;
+  isFocused?: boolean;
+  onPress: () => void;
+}) {
   return (
     <Pressable
-      {...props}
-      onPress={props.onPress}
-      style={({ pressed }) => pressed && styles.pressed}
+      accessibilityRole="link"
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.tabButtonPressable,
+        pressed && styles.pressed,
+      ]}
     >
       <ThemedView
         type={isFocused ? "backgroundSelected" : "backgroundElement"}
@@ -64,24 +60,35 @@ export function TabButton({
   );
 }
 
-export function CustomTabList(props: TabListProps) {
+export function CustomTabList({ children }: { children: React.ReactNode }) {
   const scheme = useColorScheme();
-  const colors = Colors[scheme === "unspecified" ? "light" : scheme];
+  const colorPalette = Colors[scheme === "unspecified" ? "light" : scheme];
 
   return (
-    <View {...props} style={styles.tabListContainer}>
-      <ThemedView type="backgroundElement" style={styles.innerContainer}>
+    <View style={styles.tabListContainer}>
+      <ThemedView
+        style={[
+          styles.innerContainer,
+          {
+            borderColor: colorPalette.border,
+          },
+        ]}
+        type="backgroundElement"
+      >
         <ThemedText type="smallBold" style={styles.brandText}>
           MoodMarble
         </ThemedText>
 
-        {props.children}
+        {children}
       </ThemedView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  layout: {
+    flex: 1,
+  },
   tabListContainer: {
     position: "absolute",
     width: "100%",
@@ -99,9 +106,13 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     gap: Spacing.two,
     maxWidth: MaxContentWidth,
+    borderWidth: 1,
   },
   brandText: {
     marginRight: "auto",
+  },
+  tabButtonPressable: {
+    borderRadius: Spacing.three,
   },
   pressed: {
     opacity: 0.7,
@@ -110,8 +121,5 @@ const styles = StyleSheet.create({
     paddingVertical: Spacing.one,
     paddingHorizontal: Spacing.three,
     borderRadius: Spacing.three,
-  },
-  hiddenTabTrigger: {
-    display: "none",
   },
 });

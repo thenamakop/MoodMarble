@@ -1,21 +1,18 @@
 import { render } from "@testing-library/react-native";
 import { View } from "react-native";
 
-jest.mock("expo-router/ui", () => {
+const mockPush = jest.fn();
+
+jest.mock("expo-router", () => {
   const React = require("react");
   const { View } = require("react-native");
 
   return {
-    Tabs: ({ children }: { children: React.ReactNode }) => (
-      <View>{children}</View>
-    ),
-    TabSlot: () => <View testID="tab-slot" />,
-    TabList: ({ children }: { children: React.ReactNode }) => (
-      <View testID="tab-list">{children}</View>
-    ),
-    TabTrigger: jest.fn(({ children }: { children?: React.ReactNode }) => (
-      <View>{children}</View>
-    )),
+    Slot: () => <View testID="tab-slot" />,
+    usePathname: () => "/manager",
+    useRouter: () => ({
+      push: mockPush,
+    }),
   };
 });
 
@@ -35,29 +32,17 @@ jest.mock("@/components/themed-view", () => ({
 
 import AppTabs from "@/components/app-tabs.web";
 
-const { TabTrigger } = jest.requireMock("expo-router/ui") as {
-  TabTrigger: jest.Mock;
-};
-
 describe("AppTabs web", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("registers the marbles and history routes without adding a second visible tab", async () => {
-    const { getByText, queryByText } = await render(<AppTabs />);
+  it("renders the active route slot with a single visible marbles navigation button", async () => {
+    const { getByTestId, getByText, queryByText } = await render(<AppTabs />);
 
+    expect(getByTestId("tab-slot")).toBeTruthy();
     expect(getByText("Marbles")).toBeTruthy();
     expect(queryByText("History")).toBeNull();
-    expect(
-      TabTrigger.mock.calls.map(([props]) => ({
-        href: props.href,
-        name: props.name,
-      })),
-    ).toEqual([
-      { href: "/", name: "home" },
-      { href: "/history", name: "history" },
-      { href: "/manager", name: "manager" },
-    ]);
+    expect(queryByText("Manager")).toBeNull();
   });
 });
