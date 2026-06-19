@@ -10,6 +10,19 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(async () => undefined),
 }));
 
+jest.mock("expo-notifications", () => ({
+  AndroidImportance: {
+    DEFAULT: "default",
+  },
+  AndroidNotificationVisibility: {
+    PUBLIC: "public",
+  },
+  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
+  getAllScheduledNotificationsAsync: jest.fn(async () => []),
+  scheduleNotificationAsync: jest.fn(async () => "scheduled-id"),
+  setNotificationChannelAsync: jest.fn(async () => undefined),
+}));
+
 import {
   clearAnonymousSession,
   loadAnonymousSession,
@@ -27,6 +40,7 @@ import {
   requestStoredOnboardingReplay,
   saveLocalSettings,
 } from "@/features/settings/storage";
+import { clearLocalDeviceData } from "@/features/settings/local-data";
 
 describe("local settings storage", () => {
   const originalWindow = globalThis.window;
@@ -100,6 +114,46 @@ describe("local settings storage", () => {
     });
   });
 
+  it("replays onboarding without clearing the existing anonymous session or local history", async () => {
+    const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
+
+    await saveAnonymousSession({
+      workspaceId: "ws_test",
+      teamId: "tm_product",
+      deviceJwt: activeDeviceJwt,
+    });
+    await appendLocalMoodHistoryRecord(
+      createHistoryRecord({
+        id: "history-1",
+        mood_type: "happy",
+        submission_date: "2026-06-15",
+        recorded_at: "2026-06-15T08:00:00.000Z",
+      }),
+    );
+
+    await requestStoredOnboardingReplay();
+
+    await expect(loadAnonymousSession()).resolves.toEqual({
+      workspaceId: "ws_test",
+      teamId: "tm_product",
+      deviceJwt: activeDeviceJwt,
+    });
+    await expect(loadLocalMoodHistory()).resolves.toEqual([
+      createHistoryRecord({
+        id: "history-1",
+        mood_type: "happy",
+        submission_date: "2026-06-15",
+        recorded_at: "2026-06-15T08:00:00.000Z",
+      }),
+    ]);
+    await expect(loadLocalSettings()).resolves.toEqual({
+      version: 1,
+      remindersEnabled: false,
+      reminderTimes: ["18:00"],
+      replayOnboarding: true,
+    });
+  });
+
   it("clears invalid stored settings and falls back to defaults", async () => {
     window.localStorage.setItem("moodmarble.local-settings", "{not-json");
 
@@ -157,6 +211,43 @@ describe("local settings storage", () => {
         recorded_at: "2026-06-15T08:00:00.000Z",
       }),
     ]);
+  });
+
+  it("clears all device-local state and returns to a safe post-clear baseline", async () => {
+    const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
+
+    await saveAnonymousSession({
+      workspaceId: "ws_test",
+      teamId: "tm_product",
+      deviceJwt: activeDeviceJwt,
+    });
+    await appendLocalMoodHistoryRecord(
+      createHistoryRecord({
+        id: "history-1",
+        mood_type: "happy",
+        submission_date: "2026-06-15",
+        recorded_at: "2026-06-15T08:00:00.000Z",
+      }),
+    );
+    await saveLocalSettings({
+      version: 1,
+      remindersEnabled: true,
+      reminderTimes: ["09:00", "18:00"],
+      replayOnboarding: true,
+    });
+
+    await clearLocalDeviceData({
+      cancelReminderNotifications: jest.fn(async () => undefined),
+    });
+
+    await expect(loadAnonymousSession()).resolves.toBeNull();
+    await expect(loadLocalMoodHistory()).resolves.toEqual([]);
+    await expect(loadLocalSettings()).resolves.toEqual({
+      version: 1,
+      remindersEnabled: false,
+      reminderTimes: ["18:00"],
+      replayOnboarding: false,
+    });
   });
 });
 

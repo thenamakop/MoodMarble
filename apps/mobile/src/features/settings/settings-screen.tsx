@@ -442,6 +442,7 @@ export function SettingsScreen({
                 <ThemedText themeColor="textSecondary">
                   This removes the anonymous session, local history, saved
                   reminder settings, and scheduled reminders from this device.
+                  Server submissions and manager analytics stay unchanged.
                 </ThemedText>
 
                 <View style={styles.actionRow}>

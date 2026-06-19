@@ -72,7 +72,25 @@ jest.mock("@/features/onboarding/session", () => ({
   clearAnonymousSession: jest.fn(async () => undefined),
 }));
 
+jest.mock("@/features/onboarding/api", () => ({
+  joinWorkspace: jest.fn(async () => {
+    throw new Error(
+      "joinWorkspace should not be called by local settings actions",
+    );
+  }),
+}));
+
+jest.mock("@/features/mood-submission/api", () => ({
+  submitMoodSubmission: jest.fn(async () => {
+    throw new Error(
+      "submitMoodSubmission should not be called by local settings actions",
+    );
+  }),
+}));
+
 import { clearLocalMoodHistory } from "@/features/history/storage";
+import { submitMoodSubmission } from "@/features/mood-submission/api";
+import { joinWorkspace } from "@/features/onboarding/api";
 import { clearAnonymousSession } from "@/features/onboarding/session";
 import { buildReminderScheduleIdentifier } from "@/features/notifications/scheduler";
 import { persistLocalReminderSettings } from "@/features/settings/actions";
@@ -186,6 +204,10 @@ describe("settings local actions", () => {
       reminderTimes: ["18:00"],
       replayOnboarding: true,
     });
+    expect(clearAnonymousSession).not.toHaveBeenCalled();
+    expect(clearLocalMoodHistory).not.toHaveBeenCalled();
+    expect(joinWorkspace).not.toHaveBeenCalled();
+    expect(submitMoodSubmission).not.toHaveBeenCalled();
   });
 
   it("clears local settings and scheduled reminders when device data is deleted", async () => {
@@ -215,6 +237,8 @@ describe("settings local actions", () => {
     expect(scheduledRequestsStore.size).toBe(0);
     expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
     expect(clearAnonymousSession).toHaveBeenCalledTimes(1);
+    expect(joinWorkspace).not.toHaveBeenCalled();
+    expect(submitMoodSubmission).not.toHaveBeenCalled();
   });
 });
 
