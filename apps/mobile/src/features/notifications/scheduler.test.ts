@@ -67,6 +67,7 @@ jest.mock("expo-notifications", () => ({
 
 import {
   buildReminderScheduleIdentifier,
+  cancelScheduledReminderNotifications,
   syncReminderSchedule,
   syncStoredReminderSchedule,
 } from "@/features/notifications/scheduler";
@@ -293,6 +294,12 @@ describe("local reminder scheduler", () => {
     });
     expect(mockGetAllScheduledNotificationsAsync).not.toHaveBeenCalled();
     expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(mockCancelScheduledNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("skips reminder cancellation work on web when notifications are unavailable", async () => {
+    await expect(cancelScheduledReminderNotifications()).resolves.toEqual([]);
+    expect(mockGetAllScheduledNotificationsAsync).not.toHaveBeenCalled();
     expect(mockCancelScheduledNotificationAsync).not.toHaveBeenCalled();
   });
 });

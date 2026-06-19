@@ -57,8 +57,10 @@ export async function syncReminderSchedule(
   const notificationsModule = options.notificationsModule ?? Notifications;
 
   if (!settings.remindersEnabled) {
-    const cancelledIdentifiers =
-      await cancelScheduledReminderNotifications(notificationsModule);
+    const cancelledIdentifiers = await cancelScheduledReminderNotifications(
+      notificationsModule,
+      platformOs,
+    );
 
     return {
       status: "disabled",
@@ -123,7 +125,12 @@ export async function syncReminderSchedule(
 
 export async function cancelScheduledReminderNotifications(
   notificationsModule: NotificationSchedulerModule = Notifications,
+  platformOs: string = Platform.OS,
 ): Promise<string[]> {
+  if (!supportsLocalNotifications(platformOs)) {
+    return [];
+  }
+
   const scheduledRequests =
     await notificationsModule.getAllScheduledNotificationsAsync();
   const cancelledIdentifiers: string[] = [];
