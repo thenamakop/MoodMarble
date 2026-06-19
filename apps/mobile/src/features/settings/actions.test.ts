@@ -234,11 +234,23 @@ describe("settings local actions", () => {
     await expect(loadLocalSettings()).resolves.toEqual(
       createDefaultLocalSettings(),
     );
-    expect(scheduledRequestsStore.size).toBe(0);
+    expect(scheduledRequestsStore.size).toBe(1);
     expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
     expect(clearAnonymousSession).toHaveBeenCalledTimes(1);
     expect(joinWorkspace).not.toHaveBeenCalled();
     expect(submitMoodSubmission).not.toHaveBeenCalled();
+  });
+
+  it("skips reminder cancellation on web when local notifications are unsupported", async () => {
+    const cancelReminderNotifications = jest.fn(async () => undefined);
+
+    await clearLocalDeviceData({
+      cancelReminderNotifications,
+    });
+
+    expect(cancelReminderNotifications).not.toHaveBeenCalled();
+    expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
+    expect(clearAnonymousSession).toHaveBeenCalledTimes(1);
   });
 });
 
