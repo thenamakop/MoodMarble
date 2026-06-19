@@ -5,6 +5,7 @@ import { InMemoryDashboardAnalyticsSource } from "../src/services/dashboard-dail
 import { InMemoryWorkspaceDirectory } from "../src/services/workspace-directory";
 
 void (async () => {
+  const port = Number(process.env.PORT ?? "3001");
   const tokenPayload = {
     workspace_id: "ws_localdemo",
     team_id: "tm_product",
@@ -107,10 +108,13 @@ void (async () => {
 
   const address = await app.listen({
     host: "0.0.0.0",
-    port: 3000,
+    port,
   });
 
   console.log(`MANUAL_SERVER_LISTENING=${address}`);
+  console.log(
+    "MANUAL_SERVER_NOTE=Dashboard demo only. Use the real backend on port 3000 for joined-device mood submissions and PostgreSQL writes.",
+  );
   console.log(`MANUAL_MANAGER_JWT=${managerJwt}`);
   console.log(
     "MANUAL_MANAGER_ROUTE=http://localhost:8081/manager" +
