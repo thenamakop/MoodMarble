@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, Spacing } from "@/constants/theme";
+import { getReminderRuntimeSupport } from "@/features/notifications/platform";
 import {
   setReminderOptIn,
   setReminderTimes,
@@ -45,6 +46,7 @@ export function SettingsScreen({
   saveSettings = persistLocalReminderSettings,
 }: SettingsScreenProps) {
   const theme = useTheme();
+  const reminderRuntimeSupport = getReminderRuntimeSupport();
   const [settings, setSettings] = useState<LocalSettings | null>(null);
   const [draftReminderTimes, setDraftReminderTimes] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -106,7 +108,8 @@ export function SettingsScreen({
       setErrorMessage(null);
       setStatusMessage(
         enabled
-          ? "Daily reminders are on for this device."
+          ? (reminderRuntimeSupport.notice ??
+              "Daily reminders are on for this device.")
           : "Daily reminders are off. Your saved times stay on this device.",
       );
     } catch (error) {
@@ -130,7 +133,9 @@ export function SettingsScreen({
       setSettings(savedSettings);
       setDraftReminderTimes(savedSettings.reminderTimes);
       setErrorMessage(null);
-      setStatusMessage("Reminder times saved on this device.");
+      setStatusMessage(
+        reminderRuntimeSupport.notice ?? "Reminder times saved on this device.",
+      );
     } catch (error) {
       setErrorMessage(
         error instanceof Error
@@ -262,6 +267,15 @@ export function SettingsScreen({
               Saved reminder times stay on this device even when reminders are
               turned off.
             </ThemedText>
+            {reminderRuntimeSupport.notice ? (
+              <ThemedText
+                testID="settings-reminder-runtime-notice"
+                themeColor="textSecondary"
+                type="small"
+              >
+                {reminderRuntimeSupport.notice}
+              </ThemedText>
+            ) : null}
           </ThemedView>
 
           <ThemedView type="backgroundElement" style={styles.panel}>

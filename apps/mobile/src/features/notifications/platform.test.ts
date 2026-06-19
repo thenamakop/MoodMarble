@@ -1,3 +1,8 @@
+jest.mock("expo-constants", () => ({
+  executionEnvironment: null,
+  appOwnership: null,
+}));
+
 jest.mock("expo-notifications", () => ({
   AndroidImportance: {
     DEFAULT: "default",
@@ -11,6 +16,8 @@ jest.mock("expo-notifications", () => ({
 import * as Notifications from "expo-notifications";
 
 import {
+  EXPO_GO_ANDROID_REMINDER_NOTICE,
+  getReminderRuntimeSupport,
   prepareReminderNotificationPlatformAsync,
   REMINDER_NOTIFICATION_CHANNEL_ID,
   supportsLocalNotifications,
@@ -25,6 +32,36 @@ describe("notification platform setup", () => {
     expect(supportsLocalNotifications("ios")).toBe(true);
     expect(supportsLocalNotifications("android")).toBe(true);
     expect(supportsLocalNotifications("web")).toBe(false);
+  });
+
+  it("marks Android Expo Go as local-only and development-build-required", () => {
+    expect(
+      getReminderRuntimeSupport({
+        platformOs: "android",
+        executionEnvironment: "storeClient",
+        appOwnership: "expo",
+      }),
+    ).toEqual({
+      supportsLocalNotifications: true,
+      canManageSchedules: false,
+      requiresDevelopmentBuild: true,
+      notice: EXPO_GO_ANDROID_REMINDER_NOTICE,
+    });
+  });
+
+  it("keeps native reminder scheduling enabled for Android development builds", () => {
+    expect(
+      getReminderRuntimeSupport({
+        platformOs: "android",
+        executionEnvironment: "standalone",
+        appOwnership: null,
+      }),
+    ).toEqual({
+      supportsLocalNotifications: true,
+      canManageSchedules: true,
+      requiresDevelopmentBuild: false,
+      notice: null,
+    });
   });
 
   it("creates the Android reminder channel with low-friction defaults", async () => {

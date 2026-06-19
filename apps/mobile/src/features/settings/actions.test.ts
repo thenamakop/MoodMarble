@@ -10,6 +10,11 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(async () => undefined),
 }));
 
+jest.mock("expo-constants", () => ({
+  executionEnvironment: null,
+  appOwnership: null,
+}));
+
 const scheduledRequestsStore = new Map<string, ScheduledRequestRecord>();
 const mockSetNotificationChannelAsync = jest.fn(async () => undefined);
 const mockGetAllScheduledNotificationsAsync = jest.fn(async () =>
@@ -208,6 +213,37 @@ describe("settings local actions", () => {
     expect(clearLocalMoodHistory).not.toHaveBeenCalled();
     expect(joinWorkspace).not.toHaveBeenCalled();
     expect(submitMoodSubmission).not.toHaveBeenCalled();
+  });
+
+  it("keeps reminder settings local on Android Expo Go without loading the scheduler module", async () => {
+    const loadNotificationsModule = jest.fn(async () => {
+      throw new Error("scheduler module should stay lazy in Expo Go");
+    });
+
+    const persistedSettings = await persistLocalReminderSettings(
+      {
+        version: 1,
+        remindersEnabled: true,
+        reminderTimes: ["09:00", "18:00"],
+        replayOnboarding: false,
+      },
+      {
+        platformOs: "android",
+        executionEnvironment: "storeClient",
+        appOwnership: "expo",
+        loadNotificationsModule,
+      },
+    );
+
+    expect(persistedSettings).toEqual({
+      version: 1,
+      remindersEnabled: true,
+      reminderTimes: ["09:00", "18:00"],
+      replayOnboarding: false,
+    });
+    await expect(loadLocalSettings()).resolves.toEqual(persistedSettings);
+    expect(loadNotificationsModule).not.toHaveBeenCalled();
+    expect(scheduledRequestsStore.size).toBe(0);
   });
 
   it("clears local settings and scheduled reminders when device data is deleted", async () => {

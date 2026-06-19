@@ -1,13 +1,13 @@
-import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
 
 import type { LocalSettings, ReminderTime } from "@/features/settings/model";
 import { loadLocalSettings } from "@/features/settings/storage";
 
 import {
+  getReminderRuntimeSupport,
   prepareReminderNotificationPlatformAsync,
   REMINDER_NOTIFICATION_CHANNEL_ID,
-  supportsLocalNotifications,
+  type ReminderNotificationPlatformModule,
 } from "./platform";
 
 const REMINDER_NOTIFICATION_NAMESPACE = "moodmarble.local-reminder";
@@ -21,16 +21,46 @@ export interface ReminderScheduleSyncResult {
   cancelledIdentifiers: string[];
 }
 
+export interface ReminderSchedulerOptions {
+  notificationsModule?: NotificationSchedulerModule;
+  platformModule?: ReminderNotificationPlatformModule;
+  platformOs?: string;
+  executionEnvironment?: string | null;
+  appOwnership?: string | null;
+  loadNotificationsModule?: () => Promise<ReminderNotificationsModule>;
+}
+
 type NotificationRequest = Awaited<
-  ReturnType<typeof Notifications.getAllScheduledNotificationsAsync>
+  ReturnType<NotificationSchedulerModule["getAllScheduledNotificationsAsync"]>
 >[number];
 
-type NotificationSchedulerModule = Pick<
-  typeof Notifications,
-  | "cancelScheduledNotificationAsync"
-  | "getAllScheduledNotificationsAsync"
-  | "scheduleNotificationAsync"
->;
+export interface NotificationSchedulerModule {
+  cancelScheduledNotificationAsync: (identifier: string) => Promise<unknown>;
+  getAllScheduledNotificationsAsync: () => Promise<
+    {
+      identifier: string;
+      content: {
+        data?: Record<string, unknown> | null;
+      };
+    }[]
+  >;
+  scheduleNotificationAsync: (request: {
+    identifier?: string;
+    content: {
+      title: string;
+      body: string;
+      sound: boolean;
+      data: {
+        reminderTime: ReminderTime;
+        source: string;
+      };
+    };
+    trigger: ReturnType<typeof buildReminderTrigger>;
+  }) => Promise<string>;
+}
+
+type ReminderNotificationsModule = NotificationSchedulerModule &
+  ReminderNotificationPlatformModule;
 
 export async function syncStoredReminderSchedule(
   options: ReminderSchedulerOptions = {},
@@ -43,8 +73,16 @@ export async function syncReminderSchedule(
   options: ReminderSchedulerOptions = {},
 ): Promise<ReminderScheduleSyncResult> {
   const platformOs = options.platformOs ?? Platform.OS;
+  const runtimeSupport = getReminderRuntimeSupport({
+    platformOs,
+    executionEnvironment: options.executionEnvironment,
+    appOwnership: options.appOwnership,
+  });
 
-  if (!supportsLocalNotifications(platformOs)) {
+  if (
+    !runtimeSupport.supportsLocalNotifications ||
+    !runtimeSupport.canManageSchedules
+  ) {
     return {
       status: "unsupported",
       scheduledTimes: [],
@@ -54,13 +92,16 @@ export async function syncReminderSchedule(
     };
   }
 
-  const notificationsModule = options.notificationsModule ?? Notifications;
+  const notificationsModule =
+    options.notificationsModule ??
+    (await (options.loadNotificationsModule ?? loadNotificationsModule)());
+  const platformModule = options.platformModule ?? notificationsModule;
 
   if (!settings.remindersEnabled) {
-    const cancelledIdentifiers = await cancelScheduledReminderNotifications(
+    const cancelledIdentifiers = await cancelScheduledReminderNotifications({
       notificationsModule,
       platformOs,
-    );
+    });
 
     return {
       status: "disabled",
@@ -71,10 +112,7 @@ export async function syncReminderSchedule(
     };
   }
 
-  await prepareReminderNotificationPlatformAsync(
-    options.platformModule ?? Notifications,
-    platformOs,
-  );
+  await prepareReminderNotificationPlatformAsync(platformModule, platformOs);
 
   const scheduledRequests =
     await notificationsModule.getAllScheduledNotificationsAsync();
@@ -124,13 +162,31 @@ export async function syncReminderSchedule(
 }
 
 export async function cancelScheduledReminderNotifications(
-  notificationsModule: NotificationSchedulerModule = Notifications,
-  platformOs: string = Platform.OS,
+  options: {
+    notificationsModule?: NotificationSchedulerModule;
+    platformOs?: string;
+    executionEnvironment?: string | null;
+    appOwnership?: string | null;
+    loadNotificationsModule?: () => Promise<ReminderNotificationsModule>;
+  } = {},
 ): Promise<string[]> {
-  if (!supportsLocalNotifications(platformOs)) {
+  const platformOs = options.platformOs ?? Platform.OS;
+  const runtimeSupport = getReminderRuntimeSupport({
+    platformOs,
+    executionEnvironment: options.executionEnvironment,
+    appOwnership: options.appOwnership,
+  });
+
+  if (
+    !runtimeSupport.supportsLocalNotifications ||
+    !runtimeSupport.canManageSchedules
+  ) {
     return [];
   }
 
+  const notificationsModule =
+    options.notificationsModule ??
+    (await (options.loadNotificationsModule ?? loadNotificationsModule)());
   const scheduledRequests =
     await notificationsModule.getAllScheduledNotificationsAsync();
   const cancelledIdentifiers: string[] = [];
@@ -200,10 +256,6 @@ function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
   );
 }
 
-interface ReminderSchedulerOptions {
-  notificationsModule?: NotificationSchedulerModule;
-  platformModule?: Parameters<
-    typeof prepareReminderNotificationPlatformAsync
-  >[0];
-  platformOs?: string;
+async function loadNotificationsModule(): Promise<ReminderNotificationsModule> {
+  return require("expo-notifications");
 }

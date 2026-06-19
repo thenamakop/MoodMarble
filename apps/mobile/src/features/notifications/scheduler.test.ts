@@ -10,6 +10,11 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(async () => undefined),
 }));
 
+jest.mock("expo-constants", () => ({
+  executionEnvironment: null,
+  appOwnership: null,
+}));
+
 const scheduledRequestsStore = new Map<string, ScheduledRequestRecord>();
 const mockSetNotificationChannelAsync = jest.fn(async () => undefined);
 const mockGetAllScheduledNotificationsAsync = jest.fn(async () =>
@@ -292,6 +297,32 @@ describe("local reminder scheduler", () => {
       createdIdentifiers: [],
       cancelledIdentifiers: [],
     });
+    expect(mockGetAllScheduledNotificationsAsync).not.toHaveBeenCalled();
+    expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
+    expect(mockCancelScheduledNotificationAsync).not.toHaveBeenCalled();
+  });
+
+  it("skips Android Expo Go scheduling without loading expo-notifications", async () => {
+    const loadNotificationsModule = jest.fn(async () => {
+      throw new Error("expo-notifications should stay lazy in Expo Go");
+    });
+    const settings = setReminderOptIn(createDefaultLocalSettings(), true);
+
+    const result = await syncReminderSchedule(settings, {
+      platformOs: "android",
+      executionEnvironment: "storeClient",
+      appOwnership: "expo",
+      loadNotificationsModule,
+    });
+
+    expect(result).toEqual({
+      status: "unsupported",
+      scheduledTimes: [],
+      activeIdentifiers: [],
+      createdIdentifiers: [],
+      cancelledIdentifiers: [],
+    });
+    expect(loadNotificationsModule).not.toHaveBeenCalled();
     expect(mockGetAllScheduledNotificationsAsync).not.toHaveBeenCalled();
     expect(mockScheduleNotificationAsync).not.toHaveBeenCalled();
     expect(mockCancelScheduledNotificationAsync).not.toHaveBeenCalled();

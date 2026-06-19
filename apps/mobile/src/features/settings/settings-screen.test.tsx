@@ -8,18 +8,20 @@ import type { ComponentProps } from "react";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
 
-jest.mock("expo-notifications", () => ({
-  AndroidImportance: {
-    DEFAULT: "default",
-  },
-  AndroidNotificationVisibility: {
-    PUBLIC: "public",
-  },
-  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
-  getAllScheduledNotificationsAsync: jest.fn(async () => []),
-  scheduleNotificationAsync: jest.fn(async () => "scheduled-id"),
-  setNotificationChannelAsync: jest.fn(async () => undefined),
+jest.mock("@/features/notifications/platform", () => ({
+  getReminderRuntimeSupport: jest.fn(() => ({
+    supportsLocalNotifications: true,
+    canManageSchedules: true,
+    requiresDevelopmentBuild: false,
+    notice: null,
+  })),
 }));
+
+const { getReminderRuntimeSupport } = jest.requireMock(
+  "@/features/notifications/platform",
+) as {
+  getReminderRuntimeSupport: jest.Mock;
+};
 
 const defaultSettings = {
   version: 1 as const,
@@ -29,6 +31,15 @@ const defaultSettings = {
 };
 
 describe("SettingsScreen", () => {
+  beforeEach(() => {
+    getReminderRuntimeSupport.mockReturnValue({
+      supportsLocalNotifications: true,
+      canManageSchedules: true,
+      requiresDevelopmentBuild: false,
+      notice: null,
+    });
+  });
+
   afterEach(() => {
     cleanup();
     jest.clearAllMocks();
