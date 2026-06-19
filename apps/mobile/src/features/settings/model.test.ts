@@ -38,6 +38,14 @@ describe("local settings model", () => {
     expect(MAX_REMINDER_TIMES).toBe(3);
   });
 
+  it("accepts exactly three reminder times as the supported upper limit", () => {
+    expect(normalizeReminderTimes(["21:00", "09:00", "13:30"])).toEqual([
+      "09:00",
+      "13:30",
+      "21:00",
+    ]);
+  });
+
   it("rejects invalid local reminder times", () => {
     expect(() => normalizeReminderTimes(["25:00"])).toThrow(
       "Reminder times must use HH:MM 24-hour local format.",

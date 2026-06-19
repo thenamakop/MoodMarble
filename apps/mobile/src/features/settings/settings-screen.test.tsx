@@ -84,6 +84,38 @@ describe("SettingsScreen", () => {
     ).toBeTruthy();
   });
 
+  it("turns reminders off without losing the saved local reminder times", async () => {
+    const enabledSettings = {
+      version: 1 as const,
+      remindersEnabled: true,
+      reminderTimes: ["09:00", "18:00"],
+      replayOnboarding: false,
+    };
+    const saveSettings = jest.fn(async (settings) => settings);
+    const view = await renderScreen({
+      loadSettings: jest.fn().mockResolvedValue(enabledSettings),
+      saveSettings,
+    });
+
+    fireEvent(
+      view.getByTestId("settings-reminders-switch"),
+      "valueChange",
+      false,
+    );
+
+    await waitFor(() =>
+      expect(saveSettings).toHaveBeenCalledWith({
+        ...enabledSettings,
+        remindersEnabled: false,
+      }),
+    );
+    expect(
+      view.getByText(
+        "Daily reminders are off. Your saved times stay on this device.",
+      ),
+    ).toBeTruthy();
+  });
+
   it("lets the user edit 1 to 3 reminder times and apply the saved schedule", async () => {
     const saveSettings = jest.fn(async (settings) => settings);
     const view = await renderScreen({ saveSettings });
