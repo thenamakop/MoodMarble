@@ -90,6 +90,34 @@ describe("OnboardingScreen", () => {
     ).toBeTruthy();
   });
 
+  it("replays only the intro when an existing anonymous session is provided", async () => {
+    const onSessionReady = jest.fn().mockResolvedValue(undefined);
+    const view = await renderScreen({
+      onSessionReady,
+      replaySession: {
+        workspaceId: "ws_localdemo",
+        teamId: "tm_engineering",
+        deviceJwt: "active-device-jwt",
+      },
+    });
+
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+
+    expect(await view.findByText("Back to marbles")).toBeTruthy();
+
+    fireEvent.press(await view.findByTestId("next-onboarding-button"));
+
+    await waitFor(() =>
+      expect(onSessionReady).toHaveBeenCalledWith({
+        workspaceId: "ws_localdemo",
+        teamId: "tm_engineering",
+        deviceJwt: "active-device-jwt",
+      }),
+    );
+    expect(view.queryByTestId("join-code-input")).toBeNull();
+  });
+
   it("validates the join code before calling the API", async () => {
     const onJoinWorkspace = jest.fn();
     const view = await renderScreen({

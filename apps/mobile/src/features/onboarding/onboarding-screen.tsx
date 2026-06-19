@@ -44,11 +44,13 @@ const ONBOARDING_SLIDES = [
 interface OnboardingScreenProps {
   onSessionReady: (session: AnonymousSession) => Promise<void> | void;
   onJoinWorkspace?: (joinCode: string) => Promise<WorkspaceJoinResponse>;
+  replaySession?: AnonymousSession;
 }
 
 export function OnboardingScreen({
   onSessionReady,
   onJoinWorkspace = joinWorkspace,
+  replaySession,
 }: OnboardingScreenProps) {
   const theme = useTheme();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
@@ -62,6 +64,7 @@ export function OnboardingScreen({
 
   const isShowingIntro = currentSlideIndex < ONBOARDING_SLIDES.length;
   const currentSlide = ONBOARDING_SLIDES[currentSlideIndex];
+  const isReplayOnly = Boolean(replaySession);
   const normalizedJoinCode = useMemo(
     () => joinCode.trim().toUpperCase(),
     [joinCode],
@@ -134,7 +137,24 @@ export function OnboardingScreen({
     setErrorMessage(null);
   }
 
-  function handleSkipToJoin() {
+  async function handleCompleteIntro() {
+    if (replaySession) {
+      setIsSavingSession(true);
+      setErrorMessage(null);
+
+      try {
+        await onSessionReady(replaySession);
+      } catch (error) {
+        setErrorMessage(
+          getErrorMessage(error, "Unable to return to marbles right now."),
+        );
+      } finally {
+        setIsSavingSession(false);
+      }
+
+      return;
+    }
+
     setCurrentSlideIndex(ONBOARDING_SLIDES.length);
     setErrorMessage(null);
   }
@@ -152,7 +172,7 @@ export function OnboardingScreen({
                 <ThemedText type="smallBold">{currentSlide.accent}</ThemedText>
                 {currentSlideIndex < ONBOARDING_SLIDES.length - 1 ? (
                   <Pressable
-                    onPress={handleSkipToJoin}
+                    onPress={() => void handleCompleteIntro()}
                     testID="skip-onboarding-button"
                   >
                     <ThemedText type="linkPrimary">Skip</ThemedText>
@@ -224,7 +244,7 @@ export function OnboardingScreen({
                   accessibilityRole="button"
                   onPress={
                     currentSlideIndex === ONBOARDING_SLIDES.length - 1
-                      ? handleSkipToJoin
+                      ? () => void handleCompleteIntro()
                       : handleNextSlide
                   }
                   style={({ pressed }) => [
@@ -240,7 +260,9 @@ export function OnboardingScreen({
                 >
                   <ThemedText type="smallBold">
                     {currentSlideIndex === ONBOARDING_SLIDES.length - 1
-                      ? "Enter join code"
+                      ? isReplayOnly
+                        ? "Back to marbles"
+                        : "Enter join code"
                       : "Next"}
                   </ThemedText>
                 </Pressable>

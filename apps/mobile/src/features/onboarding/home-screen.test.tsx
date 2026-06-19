@@ -63,25 +63,40 @@ jest.mock("@/features/onboarding/onboarding-screen", () => {
   return {
     OnboardingScreen: ({
       onSessionReady,
+      replaySession,
     }: {
       onSessionReady: (session: {
         workspaceId: string;
         teamId: string;
         deviceJwt: string;
       }) => Promise<void> | void;
+      replaySession?: {
+        workspaceId: string;
+        teamId: string;
+        deviceJwt: string;
+      };
     }) => (
-      <Pressable
-        onPress={() =>
-          onSessionReady({
-            workspaceId: "ws_joined",
-            teamId: "tm_product",
-            deviceJwt: "joined-device-jwt",
-          })
-        }
-        testID="complete-onboarding"
-      >
-        <Text>onboarding-screen</Text>
-      </Pressable>
+      <>
+        <Text>
+          {replaySession ? "onboarding-replay-screen" : "onboarding-screen"}
+        </Text>
+        <Pressable
+          onPress={() =>
+            onSessionReady(
+              replaySession ?? {
+                workspaceId: "ws_joined",
+                teamId: "tm_product",
+                deviceJwt: "joined-device-jwt",
+              },
+            )
+          }
+          testID={replaySession ? "complete-replay" : "complete-onboarding"}
+        >
+          <Text>
+            {replaySession ? "complete-replay" : "complete-onboarding"}
+          </Text>
+        </Pressable>
+      </>
     ),
   };
 });
@@ -279,7 +294,7 @@ describe("HomeScreen", () => {
     );
   });
 
-  it("replays onboarding when a local replay request is waiting", async () => {
+  it("replays onboarding and restores the same anonymous session", async () => {
     jest.mocked(restoreAnonymousSession).mockResolvedValue({
       workspaceId: "ws_localdemo",
       teamId: "tm_engineering",
@@ -295,14 +310,24 @@ describe("HomeScreen", () => {
     const view = await render(<HomeScreen />);
 
     await waitFor(() =>
-      expect(view.getByText("onboarding-screen")).toBeTruthy(),
+      expect(view.getByText("onboarding-replay-screen")).toBeTruthy(),
     );
     expect(clearStoredOnboardingReplayRequest).toHaveBeenCalledTimes(1);
-    expect(
-      view.queryByText(
-        "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-      ),
-    ).toBeNull();
+
+    fireEvent.press(await view.findByTestId("complete-replay"));
+
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
+        ),
+      ).toBeTruthy(),
+    );
+    expect(saveAnonymousSession).toHaveBeenCalledWith({
+      workspaceId: "ws_localdemo",
+      teamId: "tm_engineering",
+      deviceJwt: "active-device-jwt",
+    });
   });
 });
 

@@ -31,6 +31,9 @@ export default function HomeScreen() {
   const teamIdParamKey = getParamDependencyKey(params.team_id);
   const deviceJwtParamKey = getParamDependencyKey(params.device_jwt);
   const [session, setSession] = useState<AnonymousSession | null>(null);
+  const [replaySession, setReplaySession] = useState<AnonymousSession | null>(
+    null,
+  );
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [activeNativeScreen, setActiveNativeScreen] = useState<
     "marbles" | "history"
@@ -52,6 +55,7 @@ export default function HomeScreen() {
         await clearStoredOnboardingReplayRequest();
 
         if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+          setReplaySession(nextSession);
           setSession(null);
           setIsLoadingSession(false);
           setActiveNativeScreen("marbles");
@@ -62,6 +66,7 @@ export default function HomeScreen() {
 
       if (nextContext) {
         if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+          setReplaySession(null);
           setSession(nextSession);
           setIsLoadingSession(false);
         }
@@ -71,6 +76,7 @@ export default function HomeScreen() {
       }
 
       if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+        setReplaySession(null);
         setSession(nextSession);
         setIsLoadingSession(false);
       }
@@ -86,6 +92,7 @@ export default function HomeScreen() {
   async function handleSessionReady(nextSession: AnonymousSession) {
     sessionSyncVersionRef.current += 1;
     await saveAnonymousSession(nextSession);
+    setReplaySession(null);
     setSession(nextSession);
     setIsLoadingSession(false);
     setActiveNativeScreen("marbles");
@@ -110,7 +117,12 @@ export default function HomeScreen() {
   }
 
   if (resolveAnonymousHomeState(session) === "onboarding") {
-    return <OnboardingScreen onSessionReady={handleSessionReady} />;
+    return (
+      <OnboardingScreen
+        onSessionReady={handleSessionReady}
+        replaySession={replaySession ?? undefined}
+      />
+    );
   }
 
   if (Platform.OS !== "web" && activeNativeScreen === "history") {
