@@ -401,10 +401,31 @@ pnpm start
 
 Open using:
 
-- Expo Go (Android)
+- Expo Go (Android) for onboarding, join, mood submission, history, dashboard, and local settings UI
 - Expo Go (iOS)
 - Android Emulator
 - iOS Simulator
+
+### Reminder Runtime Notes
+
+- Reminder settings always save locally on the current device.
+- Android Expo Go can open the app and settings screen, but Android reminder scheduling requires a development build.
+- Android development builds can schedule and cancel local reminder notifications.
+- iOS supports local reminder scheduling in supported native runtimes.
+- Web keeps reminder settings local-only and does not schedule notifications.
+
+### Android Development Build
+
+If you need to verify Android reminder scheduling instead of the Expo Go local-only path:
+
+```bash
+cd apps/mobile
+
+npx expo run:android
+npx expo start --dev-client
+```
+
+Use the installed development build on the emulator or device to open the project after the native client is created.
 
 ### Physical Device Setup
 
@@ -433,7 +454,7 @@ Open using:
 
 ## Current Phase
 
-**Week 3 and Week 4 local personal history foundations are implemented**
+**Week 6 local settings and reminder foundations are implemented**
 
 ### Completed
 
@@ -457,11 +478,18 @@ Open using:
 - Local-only mood calendar screen
 - Local-only month navigation for the mood calendar
 - Exact local timestamp display in personal history
+- Local-only reminder settings and reminder-time persistence
+- Settings screen for reminder preferences, onboarding replay, and local data deletion
+- Android Expo Go-safe reminder runtime boundary
+- Development-build reminder scheduling and cancellation support
+- Local onboarding replay without creating a new identity
+- Device-local data deletion for session, history, and reminder state
 - Backend and mobile verification coverage for the Week 3 flow
 - Backend and mobile verification coverage for the Week 4 local history flow
+- Focused Week 6 settings and reminder regression coverage
 - Docker infrastructure
 
-### Stable for Week 4
+### Stable for Week 6
 
 - Anonymous onboarding and join flow
 - Workspace-scoped team selection
@@ -470,13 +498,15 @@ Open using:
 - Privacy-safe join and submission error handling
 - Local-only timeline, streak, and monthly calendar history
 - Exact local timestamp display stored only on-device
+- Local reminder preferences stored only on-device
+- Onboarding replay request handling stored only on-device
+- Local data deletion for anonymous member state
 - Android emulator, web, and physical-device local development paths
 
 ### Upcoming
 
 - Manager dashboard routes and privacy-threshold logic
 - Admin-managed workspace and team setup
-- Notification scheduling UI
 - Export flows and later-phase integrations
 
 ---

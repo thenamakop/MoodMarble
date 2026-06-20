@@ -146,20 +146,39 @@ export function SettingsScreen({
   }
 
   async function handleRequestOnboardingReplay() {
-    await onRequestOnboardingReplay();
-    setStatusMessage(
-      "Onboarding replay is ready the next time you return home.",
-    );
+    try {
+      await onRequestOnboardingReplay();
+      setErrorMessage(null);
+      setStatusMessage(
+        "Onboarding replay is ready the next time you return home.",
+      );
+    } catch (error) {
+      setStatusMessage(null);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to prepare onboarding replay right now.",
+      );
+    }
   }
 
   async function handleConfirmClearLocalData() {
-    await onClearLocalData();
-    setIsClearPromptVisible(false);
-    const defaultSettings = await loadSettings();
-    setSettings(defaultSettings);
-    setDraftReminderTimes(defaultSettings.reminderTimes);
-    setErrorMessage(null);
-    setStatusMessage("Local data was cleared from this device.");
+    try {
+      await onClearLocalData();
+      setIsClearPromptVisible(false);
+      const defaultSettings = await loadSettings();
+      setSettings(defaultSettings);
+      setDraftReminderTimes(defaultSettings.reminderTimes);
+      setErrorMessage(null);
+      setStatusMessage("Local data was cleared from this device.");
+    } catch (error) {
+      setStatusMessage(null);
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to clear local data right now.",
+      );
+    }
   }
 
   function handleAddReminderTime() {

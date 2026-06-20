@@ -13,6 +13,7 @@ import {
   clearStoredOnboardingReplayRequest,
   loadLocalSettings,
 } from "@/features/settings/storage";
+import { syncStoredReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
@@ -53,6 +54,16 @@ jest.mock("@/features/settings/storage", () => ({
     remindersEnabled: false,
     reminderTimes: ["18:00"],
     replayOnboarding: false,
+  })),
+}));
+
+jest.mock("@/features/notifications/scheduler-bridge", () => ({
+  syncStoredReminderScheduleForRuntime: jest.fn(async () => ({
+    status: "unsupported",
+    scheduledTimes: [],
+    activeIdentifiers: [],
+    createdIdentifiers: [],
+    cancelledIdentifiers: [],
   })),
 }));
 
@@ -189,6 +200,7 @@ describe("HomeScreen", () => {
         view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt"),
       ).toBeTruthy(),
     );
+    expect(syncStoredReminderScheduleForRuntime).toHaveBeenCalledTimes(1);
 
     expect(saveAnonymousSession).toHaveBeenCalledWith({
       workspaceId: "ws_joined",
@@ -219,6 +231,7 @@ describe("HomeScreen", () => {
     await waitFor(() =>
       expect(restoreAnonymousSession).toHaveBeenCalledTimes(1),
     );
+    expect(syncStoredReminderScheduleForRuntime).toHaveBeenCalledTimes(1);
   });
 
   it("does not let a late restore overwrite a session that was just created", async () => {

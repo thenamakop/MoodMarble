@@ -107,12 +107,23 @@ import {
   requestStoredOnboardingReplay,
 } from "@/features/settings/storage";
 
+const { Platform } = jest.requireMock("react-native") as {
+  Platform: { OS: string };
+};
+const expoConstants = jest.requireMock("expo-constants") as {
+  executionEnvironment: string | null;
+  appOwnership: string | null;
+};
+
 describe("settings local actions", () => {
   const originalWindow = globalThis.window;
 
   beforeEach(() => {
     installStorageMocks();
     scheduledRequestsStore.clear();
+    Platform.OS = "web";
+    expoConstants.executionEnvironment = null;
+    expoConstants.appOwnership = null;
   });
 
   afterEach(async () => {
@@ -246,7 +257,9 @@ describe("settings local actions", () => {
     expect(scheduledRequestsStore.size).toBe(0);
   });
 
-  it("clears local settings and scheduled reminders when device data is deleted", async () => {
+  it("clears local settings and scheduled reminders when device data is deleted on a supported runtime", async () => {
+    Platform.OS = "android";
+
     await persistLocalReminderSettings(
       {
         version: 1,
@@ -261,20 +274,31 @@ describe("settings local actions", () => {
       },
     );
 
-    await clearLocalDeviceData({
-      cancelReminderNotifications: async () => {
-        scheduledRequestsStore.clear();
-      },
-    });
+    await clearLocalDeviceData();
 
     await expect(loadLocalSettings()).resolves.toEqual(
       createDefaultLocalSettings(),
     );
-    expect(scheduledRequestsStore.size).toBe(1);
+    expect(scheduledRequestsStore.size).toBe(0);
     expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
     expect(clearAnonymousSession).toHaveBeenCalledTimes(1);
     expect(joinWorkspace).not.toHaveBeenCalled();
     expect(submitMoodSubmission).not.toHaveBeenCalled();
+  });
+
+  it("skips reminder cancellation on Android Expo Go when scheduling is unsupported", async () => {
+    Platform.OS = "android";
+    expoConstants.executionEnvironment = "storeClient";
+    expoConstants.appOwnership = "expo";
+    const cancelReminderNotifications = jest.fn(async () => undefined);
+
+    await clearLocalDeviceData({
+      cancelReminderNotifications,
+    });
+
+    expect(cancelReminderNotifications).not.toHaveBeenCalled();
+    expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
+    expect(clearAnonymousSession).toHaveBeenCalledTimes(1);
   });
 
   it("skips reminder cancellation on web when local notifications are unsupported", async () => {

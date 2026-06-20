@@ -17,6 +17,7 @@ import {
   clearStoredOnboardingReplayRequest,
   loadLocalSettings,
 } from "@/features/settings/storage";
+import { syncStoredReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 import { useTheme } from "@/hooks/use-theme";
 
 export default function HomeScreen() {
@@ -88,6 +89,12 @@ export default function HomeScreen() {
       cancelled = true;
     };
   }, [deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
+
+  useEffect(() => {
+    // Keep persisted reminder schedules aligned after app restarts without
+    // blocking startup or bundling native notifications in unsupported runtimes.
+    void syncStoredReminderScheduleForRuntime().catch(() => undefined);
+  }, []);
 
   async function handleSessionReady(nextSession: AnonymousSession) {
     sessionSyncVersionRef.current += 1;
