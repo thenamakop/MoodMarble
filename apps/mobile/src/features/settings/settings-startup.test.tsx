@@ -18,6 +18,10 @@ jest.mock("expo-notifications", () => {
   );
 });
 
+jest.mock("@/features/notifications/scheduler", () => {
+  throw new Error("scheduler should stay lazy during settings route startup");
+});
+
 jest.mock("@/features/notifications/platform", () => ({
   getReminderRuntimeSupport: jest.fn(() => ({
     supportsLocalNotifications: true,
@@ -35,7 +39,7 @@ describe("settings startup safety", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the settings route without importing expo-notifications on startup", async () => {
+  it("renders the settings route without importing scheduler or expo-notifications on startup", async () => {
     const view = await render(<SettingsRoute />);
 
     await waitFor(() => expect(view.getByText("Settings")).toBeTruthy());

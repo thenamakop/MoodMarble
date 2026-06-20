@@ -1,5 +1,6 @@
 import type { LocalSettings } from "@/features/settings/model";
 import type { ReminderSchedulerOptions } from "@/features/notifications/scheduler";
+import { syncReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 
 import { saveLocalSettings } from "./storage";
 
@@ -8,9 +9,6 @@ export async function persistLocalReminderSettings(
   syncOptions?: ReminderSchedulerOptions,
 ): Promise<LocalSettings> {
   const savedSettings = await saveLocalSettings(settings);
-  const {
-    syncReminderSchedule,
-  } = require("@/features/notifications/scheduler");
-  await syncReminderSchedule(savedSettings, syncOptions);
+  await syncReminderScheduleForRuntime(savedSettings, syncOptions);
   return savedSettings;
 }

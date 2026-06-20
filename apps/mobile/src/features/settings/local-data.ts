@@ -1,5 +1,6 @@
 import { clearLocalMoodHistory } from "@/features/history/storage";
 import { clearAnonymousSession } from "@/features/onboarding/session";
+import { cancelReminderNotificationsForRuntime } from "@/features/notifications/scheduler-bridge";
 import { getReminderRuntimeSupport } from "@/features/notifications/platform";
 
 import { clearLocalSettings } from "./storage";
@@ -14,12 +15,9 @@ export async function clearLocalDeviceData(
   const reminderRuntimeSupport = getReminderRuntimeSupport();
 
   if (reminderRuntimeSupport.canManageSchedules) {
-    const {
-      cancelScheduledReminderNotifications,
-    } = require("@/features/notifications/scheduler");
     await (
       options.cancelReminderNotifications ??
-      cancelScheduledReminderNotifications
+      cancelReminderNotificationsForRuntime
     )();
   }
   await clearLocalSettings();

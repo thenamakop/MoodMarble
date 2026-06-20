@@ -257,5 +257,8 @@ function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
 }
 
 async function loadNotificationsModule(): Promise<ReminderNotificationsModule> {
-  return require("expo-notifications");
+  // Avoid a static Metro dependency on expo-notifications during Expo Go startup.
+  return (
+    eval("require") as (moduleName: string) => ReminderNotificationsModule
+  )("expo-notifications");
 }
