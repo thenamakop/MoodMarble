@@ -261,9 +261,12 @@ describe("admin workspace creation integration", () => {
     expect(exportResponse.headers["content-disposition"]).toBe(
       `attachment; filename="moodmarble-${createWorkspaceResponse.json().workspace.id}-2026-06-01-to-2026-06-30.csv"`,
     );
-    expect(exportResponse.body).toContain(
+    const [headerRow, firstDataRow] = exportResponse.body.trim().split("\n");
+
+    expect(headerRow).toBe(
       "team_id,team_name,mood_type,tags,note_hash,hour_of_day,submission_date",
     );
+    expect(firstDataRow).toBeTruthy();
     expect(exportResponse.body).toContain(
       `"${createTeamResponse.json().team.id}","Product","focused","[""#workload"",""#deadlines""]",`,
     );
@@ -277,8 +280,13 @@ describe("admin workspace creation integration", () => {
     expect(exportResponse.body).not.toContain(
       "550e8400-e29b-41d4-a716-446655440010",
     );
+    expect(exportResponse.body).not.toContain("mr_001");
+    expect(exportResponse.body).not.toContain("device_jwt");
     expect(exportResponse.body).not.toContain("device_token");
+    expect(exportResponse.body).not.toContain("member_id");
     expect(exportResponse.body).not.toContain("email");
+    expect(exportResponse.body).not.toContain("personal_history");
+    expect(exportResponse.body).not.toContain("history");
     expect(exportResponse.body).not.toContain("2026-07-02");
 
     const rejoinResponse = await app.inject({

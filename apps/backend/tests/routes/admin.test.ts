@@ -203,27 +203,103 @@ describe("admin routes", () => {
     });
   });
 
-  it("rejects manager tokens on admin routes", async () => {
+  it("requires a valid scoped admin token on protected admin endpoints", async () => {
+    const protectedRequests = [
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/teams`,
+      },
+      {
+        method: "POST" as const,
+        url: "/admin/team",
+        payload: {
+          name: "Product",
+        },
+      },
+      {
+        method: "PATCH" as const,
+        url: `/admin/team/${TEST_TEAM_ID}`,
+        payload: {
+          name: "Engineering",
+        },
+      },
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
+      },
+      {
+        method: "POST" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
+      },
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/export?start_date=2026-06-01&end_date=2026-06-30`,
+      },
+    ];
+
+    for (const request of protectedRequests) {
+      const response = await app.inject(request);
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toEqual({
+        message: "Unauthorized",
+      });
+    }
+  });
+
+  it("rejects manager tokens on all protected admin endpoints", async () => {
     const { managerJwt } = createManagerJwt(JWT_SECRET, {
       workspace_id: TEST_WORKSPACE_ID,
       team_id: TEST_TEAM_ID,
       role: "manager",
     });
-    const response = await app.inject({
-      method: "POST",
-      url: "/admin/team",
-      headers: {
-        authorization: `Bearer ${managerJwt}`,
-      },
-      payload: {
-        name: "Product",
-      },
-    });
 
-    expect(response.statusCode).toBe(401);
-    expect(response.json()).toEqual({
-      message: "Unauthorized",
-    });
+    const protectedRequests = [
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/teams`,
+      },
+      {
+        method: "POST" as const,
+        url: "/admin/team",
+        payload: {
+          name: "Product",
+        },
+      },
+      {
+        method: "PATCH" as const,
+        url: `/admin/team/${TEST_TEAM_ID}`,
+        payload: {
+          name: "Engineering",
+        },
+      },
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
+      },
+      {
+        method: "POST" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
+      },
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/export?start_date=2026-06-01&end_date=2026-06-30`,
+      },
+    ];
+
+    for (const request of protectedRequests) {
+      const response = await app.inject({
+        ...request,
+        headers: {
+          authorization: `Bearer ${managerJwt}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toEqual({
+        message: "Unauthorized",
+      });
+    }
   });
 
   it("forbids admin workspace routes outside the token workspace scope", async () => {
@@ -310,13 +386,20 @@ describe("admin routes", () => {
     expect(exportResponse.headers["content-disposition"]).toBe(
       'attachment; filename="moodmarble-ws_admin-2026-06-01-to-2026-06-30.csv"',
     );
-    expect(exportResponse.body).toContain(
+    const [headerRow, dataRow] = exportResponse.body.trim().split("\n");
+
+    expect(headerRow).toBe(
       "team_id,team_name,mood_type,tags,note_hash,hour_of_day,submission_date",
     );
+    expect(dataRow).toBeTruthy();
     expect(exportResponse.body).toContain('"tm_product","Product","focused"');
     expect(exportResponse.body).not.toContain("device_token");
+    expect(exportResponse.body).not.toContain("device_jwt");
+    expect(exportResponse.body).not.toContain("member_id");
+    expect(exportResponse.body).not.toContain("personal_history");
     expect(exportResponse.body).not.toContain("note,");
     expect(exportResponse.body).not.toContain("email");
+    expect(exportResponse.body).not.toContain("history");
   });
 
   it("rejects invalid admin payloads and export date ranges", async () => {
