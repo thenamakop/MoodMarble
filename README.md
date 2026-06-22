@@ -472,11 +472,63 @@ npx expo start --dev-client --clear --host localhost
 
 Use the installed development build on the emulator or device to open the project after the native client is created.
 
+### Basic Detox E2E
+
+Week 8 includes a basic Detox layer for the highest-value journeys:
+
+- anonymous onboarding -> join code entry -> team selection -> mood submission -> history
+- manager deep link -> dashboard view
+
+The checked-in Detox path is Android-emulator focused and uses the existing Expo development-build flow.
+
+Prerequisites:
+
+- Android SDK and an emulator available locally
+- one Android AVD named `Pixel_6_API_35`, or set `DETOX_AVD_NAME` to your emulator name
+- the backend running on `http://127.0.0.1:3000`
+- the local demo data seeded so join code `ABC123` and team `tm_product` exist
+- if you changed the backend JWT secret from the default local value, export `JWT_SECRET` before the manager Detox test so the deep link token matches your backend
+
+Backend prep:
+
+```bash
+cd apps/backend
+
+pnpm db:seed
+pnpm dev
+```
+
+Mobile E2E flow:
+
+```bash
+cd apps/mobile
+
+pnpm e2e:android:metro
+```
+
+In a second terminal:
+
+```bash
+cd apps/mobile
+
+pnpm e2e:android:build
+pnpm e2e:android:test
+```
+
+Notes:
+
+- `pnpm e2e:android:build` runs Expo prebuild for Android if the generated native project does not exist yet, then builds the app and Detox test APKs.
+- On Windows, the Detox Android build script temporarily maps the repo to a short drive path to avoid native build path-length failures. Override the drive letter with `DETOX_SUBST_DRIVE` if `M:` is already in use.
+- The debug app under test uses the emulator-safe backend URL logic already in the app, so Android emulator traffic targets `http://10.0.2.2:3000`.
+- The member journey clears local device data through the existing settings flow when needed so repeated runs can return to onboarding without inventing new reset logic.
+- The manager journey launches the existing `/manager` route using the app scheme `moodmarble://`.
+- These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic Week 8 task.
+
 ### Android And Windows Notes
 
 - Clear any stale listeners on ports `3000` and `8081` before restarting local development servers.
-- Windows native Android builds may require a short pnpm virtual store directory such as `C:\mmvs` to avoid path-length failures.
-- Metro is configured to resolve symlinked packages correctly for the Windows short-store setup.
+- Windows native Android builds can still hit path-length limits in some environments during Expo/Gradle native compilation.
+- Metro is configured to resolve workspace packages correctly on Windows.
 - Avoid eager top-level imports of `expo-notifications` in startup route paths so Expo Go remains stable.
 
 ### Physical Device Setup

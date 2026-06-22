@@ -41,9 +41,13 @@
     "@testing-library/react-native": "^14.0.0",
     "@types/jest": "^29.5.14",
     "@types/react": "~19.1.17",
+    "detox": "^20.41.0",
     "eslint": "^9.39.4",
     "eslint-config-expo": "^56.0.4",
+    "expect": "^29.7.0",
+    "jest": "^29.7.0",
     "jest-expo": "~54.0.17",
+    "jsonwebtoken": "^9.0.3",
     "react-test-renderer": "^19.2.3",
     "typescript": "~5.9.3"
   },
@@ -53,7 +57,10 @@
     "ios": "expo start --clear --host localhost --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "e2e:android:metro": "expo start --dev-client --clear --host localhost",
+    "e2e:android:build": "detox build -c android.emu.debug",
+    "e2e:android:test": "detox test -c android.emu.debug --headless"
   },
   "jest": {
     "preset": "jest-expo",
