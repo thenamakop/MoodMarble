@@ -9,5 +9,9 @@ const config = getDefaultConfig(projectRoot);
 config.watchFolders = [
   ...new Set([...(config.watchFolders ?? []), workspaceRoot]),
 ];
+config.resolver = {
+  ...(config.resolver ?? {}),
+  unstable_enableSymlinks: true,
+};
 
 module.exports = config;
