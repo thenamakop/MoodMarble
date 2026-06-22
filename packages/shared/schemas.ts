@@ -18,6 +18,11 @@ export const TeamRoleSchema = z.enum(["member", "manager", "admin"]);
 export const WorkspaceIdSchema = z.string().min(1, "workspace_id is required");
 export const TeamIdSchema = z.string().min(1, "team_id is required");
 export const MarbleIdSchema = z.string().min(1, "marble_id is required");
+export const WorkspaceNameSchema = z
+  .string()
+  .trim()
+  .min(1, "workspace name is required");
+export const TeamNameSchema = z.string().trim().min(1, "team name is required");
 export const HourOfDaySchema = z
   .number()
   .int()
@@ -98,6 +103,76 @@ export const WorkspaceJoinResponseSchema = z
       .strict(),
     teams: z.array(TeamSummarySchema),
     device_jwt: z.string().min(1),
+  })
+  .strict();
+
+export const AdminWorkspaceSchema = z
+  .object({
+    id: WorkspaceIdSchema,
+    name: WorkspaceNameSchema,
+    join_code: JoinCodeSchema,
+  })
+  .strict();
+
+export const AdminTeamSchema = z
+  .object({
+    id: TeamIdSchema,
+    workspace_id: WorkspaceIdSchema,
+    name: TeamNameSchema,
+  })
+  .strict();
+
+export const AdminWorkspaceCreateRequestSchema = z
+  .object({
+    name: WorkspaceNameSchema,
+  })
+  .strict();
+
+export const AdminWorkspaceCreateResponseSchema = z
+  .object({
+    workspace: AdminWorkspaceSchema,
+    admin_jwt: z.string().min(1),
+  })
+  .strict();
+
+export const AdminTeamCreateRequestSchema = z
+  .object({
+    name: TeamNameSchema,
+  })
+  .strict();
+
+export const AdminTeamUpdateRequestSchema = z
+  .object({
+    name: TeamNameSchema,
+  })
+  .strict();
+
+export const AdminTeamResponseSchema = z
+  .object({
+    team: AdminTeamSchema,
+  })
+  .strict();
+
+export const AdminJoinCodeResponseSchema = z
+  .object({
+    workspace: z
+      .object({
+        id: WorkspaceIdSchema,
+        join_code: JoinCodeSchema,
+      })
+      .strict(),
+  })
+  .strict();
+
+export const AdminExportRecordSchema = z
+  .object({
+    team_id: TeamIdSchema,
+    team_name: TeamNameSchema,
+    mood_type: MoodSchema,
+    tags: MoodSubmissionTagsSchema,
+    note_hash: z.string().min(1).nullable(),
+    hour_of_day: HourOfDaySchema,
+    submission_date: SubmissionDateSchema,
   })
   .strict();
 
@@ -263,6 +338,17 @@ export const DashboardDateWindowSchema = z
     end_date: SubmissionDateSchema,
   })
   .strict();
+
+export const AdminExportQuerySchema = z
+  .object({
+    start_date: SubmissionDateSchema,
+    end_date: SubmissionDateSchema,
+  })
+  .strict()
+  .refine((value) => value.start_date <= value.end_date, {
+    message: "start_date must be less than or equal to end_date",
+    path: ["end_date"],
+  });
 
 export const DashboardDailySchema = z
   .object({

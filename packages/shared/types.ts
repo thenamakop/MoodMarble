@@ -1,6 +1,16 @@
 import { z } from "zod";
 import {
+  AdminExportQuerySchema,
+  AdminExportRecordSchema,
   AdminJwtPayloadSchema,
+  AdminJoinCodeResponseSchema,
+  AdminTeamCreateRequestSchema,
+  AdminTeamResponseSchema,
+  AdminTeamSchema,
+  AdminTeamUpdateRequestSchema,
+  AdminWorkspaceCreateRequestSchema,
+  AdminWorkspaceCreateResponseSchema,
+  AdminWorkspaceSchema,
   DashboardAlertStateSchema,
   DashboardCountValueSchema,
   DashboardDateWindowSchema,
@@ -27,12 +37,14 @@ import {
   SubmissionDateSchema,
   TagCountSchema,
   TagSchema,
+  TeamNameSchema,
   TeamSummarySchema,
   TeamRoleSchema,
   TeamIdSchema,
   WorkspaceJoinRequestSchema,
   WorkspaceIdSchema,
   WorkspaceJoinResponseSchema,
+  WorkspaceNameSchema,
   WeeklyMoodPointSchema,
 } from "./schemas";
 
@@ -43,10 +55,30 @@ export type DeviceToken = z.infer<typeof DeviceTokenSchema>;
 export type TeamRole = z.infer<typeof TeamRoleSchema>;
 export type WorkspaceId = z.infer<typeof WorkspaceIdSchema>;
 export type TeamId = z.infer<typeof TeamIdSchema>;
+export type WorkspaceName = z.infer<typeof WorkspaceNameSchema>;
+export type TeamName = z.infer<typeof TeamNameSchema>;
 export type HourOfDay = z.infer<typeof HourOfDaySchema>;
 export type SubmissionDate = z.infer<typeof SubmissionDateSchema>;
 export type MoodSubmissionTags = z.infer<typeof MoodSubmissionTagsSchema>;
 export type MoodSubmissionNote = z.infer<typeof MoodSubmissionNoteSchema>;
+export type AdminWorkspace = z.infer<typeof AdminWorkspaceSchema>;
+export type AdminTeam = z.infer<typeof AdminTeamSchema>;
+export type AdminWorkspaceCreateRequest = z.infer<
+  typeof AdminWorkspaceCreateRequestSchema
+>;
+export type AdminWorkspaceCreateResponse = z.infer<
+  typeof AdminWorkspaceCreateResponseSchema
+>;
+export type AdminTeamCreateRequest = z.infer<
+  typeof AdminTeamCreateRequestSchema
+>;
+export type AdminTeamUpdateRequest = z.infer<
+  typeof AdminTeamUpdateRequestSchema
+>;
+export type AdminTeamResponse = z.infer<typeof AdminTeamResponseSchema>;
+export type AdminJoinCodeResponse = z.infer<typeof AdminJoinCodeResponseSchema>;
+export type AdminExportQuery = z.infer<typeof AdminExportQuerySchema>;
+export type AdminExportRecord = z.infer<typeof AdminExportRecordSchema>;
 export type AdminJwtPayload = z.infer<typeof AdminJwtPayloadSchema>;
 export type ManagerJwtPayload = z.infer<typeof ManagerJwtPayloadSchema>;
 
