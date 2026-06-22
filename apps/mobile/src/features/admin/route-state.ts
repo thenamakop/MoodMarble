@@ -5,6 +5,11 @@ type AdminSectionFocus =
   | "join-code"
   | "export";
 
+interface AdminTeamOption {
+  teamId: string;
+  label: string;
+}
+
 function parseAdminTeams(encodedAdminTeams: string | null): string[] {
   if (!encodedAdminTeams) {
     return [];
@@ -28,4 +33,31 @@ function hasAdminAccess(
   return Boolean(adminJwt && workspaceId);
 }
 
-export { hasAdminAccess, parseAdminTeams, type AdminSectionFocus };
+function parseAdminTeamOptions(
+  encodedAdminTeams: string | null,
+): AdminTeamOption[] {
+  if (!encodedAdminTeams) {
+    return [];
+  }
+
+  return encodedAdminTeams
+    .split("|")
+    .map((entry) => entry.trim())
+    .filter(Boolean)
+    .map((entry) => {
+      const [teamId, ...labelParts] = entry.split(":");
+      return {
+        teamId: teamId?.trim() ?? "",
+        label: labelParts.join(":").trim() || (teamId?.trim() ?? ""),
+      };
+    })
+    .filter((entry) => entry.teamId.length > 0);
+}
+
+export {
+  hasAdminAccess,
+  parseAdminTeamOptions,
+  parseAdminTeams,
+  type AdminSectionFocus,
+  type AdminTeamOption,
+};

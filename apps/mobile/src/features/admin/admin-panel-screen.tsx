@@ -1,8 +1,10 @@
+import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
+  TextInput,
   View,
 } from "react-native";
 
@@ -12,6 +14,7 @@ import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 
 import type { AdminSectionFocus } from "./route-state";
+import type { AdminTeam } from "@/contracts/admin";
 
 type AdminPanelContentState =
   | { kind: "guarded" }
@@ -24,15 +27,35 @@ interface AdminPanelViewModel {
   workspaceId: string;
   workspaceName: string | null;
   joinCode: string | null;
-  teamNames: string[];
+  teams: AdminTeam[];
 }
 
 interface AdminPanelScreenProps {
   contentState?: AdminPanelContentState;
+  feedbackState?: {
+    kind: "success" | "error";
+    message: string;
+  } | null;
+  isActionPending?: boolean;
   sectionFocus?: AdminSectionFocus;
   viewModel?: AdminPanelViewModel | null;
+  onCopyJoinCode?: (joinCode: string) => void | Promise<void>;
+  onCreateTeam?: (name: string) => void | Promise<void>;
+  onCreateWorkspace?: (input: {
+    bootstrapSecret: string;
+    name: string;
+  }) => void | Promise<void>;
+  onExport?: (input: {
+    endDate: string;
+    startDate: string;
+  }) => void | Promise<void>;
   onReturnHome?: () => void;
+  onRotateJoinCode?: () => void | Promise<void>;
   onRetry?: () => void;
+  onUpdateTeam?: (input: {
+    name: string;
+    teamId: string;
+  }) => void | Promise<void>;
 }
 
 const SECTION_ORDER: Array<{
@@ -48,16 +71,59 @@ const SECTION_ORDER: Array<{
 
 export function AdminPanelScreen({
   contentState = { kind: "ready" },
+  feedbackState = null,
+  isActionPending = false,
   sectionFocus = "overview",
   viewModel = null,
+  onCopyJoinCode,
+  onCreateTeam,
+  onCreateWorkspace,
+  onExport,
   onReturnHome,
+  onRotateJoinCode,
   onRetry,
+  onUpdateTeam,
 }: AdminPanelScreenProps) {
   const theme = useTheme();
+  const [workspaceNameDraft, setWorkspaceNameDraft] = useState("");
+  const [bootstrapSecretDraft, setBootstrapSecretDraft] = useState("");
+  const [newTeamNameDraft, setNewTeamNameDraft] = useState("");
+  const [renameTeamNameDraft, setRenameTeamNameDraft] = useState("");
+  const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
+  const [exportStartDate, setExportStartDate] = useState("");
+  const [exportEndDate, setExportEndDate] = useState("");
   const workspaceName = viewModel?.workspaceName ?? "No workspace connected";
   const workspaceId = viewModel?.workspaceId ?? "Pending";
   const joinCode = viewModel?.joinCode ?? "Not generated yet";
-  const teamNames = viewModel?.teamNames ?? [];
+  const teams = viewModel?.teams ?? [];
+
+  useEffect(() => {
+    if (teams.length === 0) {
+      setSelectedTeamId(null);
+      setRenameTeamNameDraft("");
+      return;
+    }
+
+    const currentTeam = teams.find((team) => team.id === selectedTeamId);
+
+    if (currentTeam) {
+      if (renameTeamNameDraft.trim().length === 0) {
+        setRenameTeamNameDraft(currentTeam.name);
+      }
+      return;
+    }
+
+    const firstTeam = teams[0];
+    setSelectedTeamId(firstTeam.id);
+    setRenameTeamNameDraft(firstTeam.name);
+  }, [renameTeamNameDraft, selectedTeamId, teams]);
+
+  const selectedTeam = teams.find((team) => team.id === selectedTeamId) ?? null;
+
+  function handleSelectTeam(team: AdminTeam) {
+    setSelectedTeamId(team.id);
+    setRenameTeamNameDraft(team.name);
+  }
 
   return (
     <ThemedView style={styles.screen}>
@@ -146,14 +212,31 @@ export function AdminPanelScreen({
             <ThemedText type="smallBold">Panel overview</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.summaryCopy}>
               {viewModel
-                ? `Workspace: ${workspaceName}. Teams ready: ${teamNames.length}. Join code visibility stays admin-only.`
+                ? `Workspace: ${workspaceName}. Teams ready: ${teams.length}. Join code visibility stays admin-only.`
                 : "Use this admin shell to prepare workspace setup, teams, join codes, and exports before wiring live actions."}
             </ThemedText>
           </ThemedView>
 
+          {feedbackState ? (
+            <ThemedView
+              style={[
+                styles.feedbackBanner,
+                {
+                  backgroundColor:
+                    feedbackState.kind === "success"
+                      ? "#D9F7E8"
+                      : theme.backgroundSelected,
+                },
+              ]}
+              testID={`admin-panel-feedback-${feedbackState.kind}`}
+            >
+              <ThemedText type="smallBold">{feedbackState.message}</ThemedText>
+            </ThemedView>
+          ) : null}
+
           {contentState.kind === "guarded" ? (
             <StatePanel
-              body="Open this route with workspace-scoped admin access. Anonymous member and manager sessions cannot use the admin panel."
+              body="Open this route with workspace-scoped admin access or bootstrap a new workspace with the admin setup secret. Anonymous member and manager sessions cannot use admin data."
               title="Admin access required"
               testID="admin-panel-guarded-state"
             >
@@ -170,6 +253,16 @@ export function AdminPanelScreen({
               >
                 <ThemedText type="smallBold">Return to app</ThemedText>
               </Pressable>
+
+              <WorkspaceSetupForm
+                bootstrapSecretDraft={bootstrapSecretDraft}
+                isActionPending={isActionPending}
+                onChangeBootstrapSecret={setBootstrapSecretDraft}
+                onChangeWorkspaceName={setWorkspaceNameDraft}
+                onCreateWorkspace={onCreateWorkspace}
+                theme={theme}
+                workspaceNameDraft={workspaceNameDraft}
+              />
             </StatePanel>
           ) : null}
 
@@ -188,7 +281,17 @@ export function AdminPanelScreen({
               body="No admin workspace details are available yet. Start with workspace creation, then add teams and generate a join code."
               title="Admin setup is empty"
               testID="admin-panel-empty-state"
-            />
+            >
+              <WorkspaceSetupForm
+                bootstrapSecretDraft={bootstrapSecretDraft}
+                isActionPending={isActionPending}
+                onChangeBootstrapSecret={setBootstrapSecretDraft}
+                onChangeWorkspaceName={setWorkspaceNameDraft}
+                onCreateWorkspace={onCreateWorkspace}
+                theme={theme}
+                workspaceNameDraft={workspaceNameDraft}
+              />
+            </StatePanel>
           ) : null}
 
           {contentState.kind === "error" ? (
@@ -226,11 +329,13 @@ export function AdminPanelScreen({
               >
                 <DetailRow label="Workspace name" value={workspaceName} />
                 <DetailRow label="Workspace ID" value={workspaceId} />
-                <PlaceholderAction
-                  label="Create workspace"
-                  status="Backend ready"
-                  testID="admin-panel-workspace-action"
-                />
+                <ThemedText
+                  themeColor="textSecondary"
+                  style={styles.sectionCopy}
+                >
+                  Workspace creation is available from the bootstrap panel. Once
+                  created, this section stays focused on the active admin scope.
+                </ThemedText>
               </AdminSectionCard>
 
               <AdminSectionCard
@@ -240,16 +345,36 @@ export function AdminPanelScreen({
                 testID="admin-panel-team-section"
                 title="Team management"
               >
-                {teamNames.length > 0 ? (
+                {teams.length > 0 ? (
                   <View style={styles.teamChipRow}>
-                    {teamNames.map((teamName) => (
-                      <ThemedView
-                        key={teamName}
-                        style={styles.teamChip}
-                        type="background"
+                    {teams.map((team) => (
+                      <Pressable
+                        key={team.id}
+                        accessibilityRole="button"
+                        onPress={() => handleSelectTeam(team)}
+                        style={({ pressed }) => [
+                          styles.teamChipButton,
+                          {
+                            opacity: pressed ? 0.85 : 1,
+                          },
+                        ]}
+                        testID={`admin-panel-select-team-${team.id}`}
                       >
-                        <ThemedText type="smallBold">{teamName}</ThemedText>
-                      </ThemedView>
+                        <ThemedView
+                          style={[
+                            styles.teamChip,
+                            {
+                              backgroundColor:
+                                selectedTeamId === team.id
+                                  ? theme.backgroundSelected
+                                  : theme.background,
+                            },
+                          ]}
+                          type="background"
+                        >
+                          <ThemedText type="smallBold">{team.name}</ThemedText>
+                        </ThemedView>
+                      </Pressable>
                     ))}
                   </View>
                 ) : (
@@ -260,11 +385,79 @@ export function AdminPanelScreen({
                     No teams yet. Add the first team after workspace setup.
                   </ThemedText>
                 )}
-                <PlaceholderAction
-                  label="Add or rename teams"
-                  status="Wiring next"
-                  testID="admin-panel-team-action"
-                />
+                <View style={styles.formBlock}>
+                  <ThemedText type="smallBold">Add team</ThemedText>
+                  <TextInput
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    onChangeText={setNewTeamNameDraft}
+                    placeholder="Product"
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.backgroundSelected,
+                        color: theme.text,
+                      },
+                    ]}
+                    testID="admin-panel-team-name-input"
+                    value={newTeamNameDraft}
+                  />
+                  <ActionButton
+                    disabled={
+                      isActionPending || newTeamNameDraft.trim().length === 0
+                    }
+                    label={isActionPending ? "Saving..." : "Create team"}
+                    onPress={() => {
+                      void onCreateTeam?.(newTeamNameDraft.trim());
+                    }}
+                    testID="admin-panel-create-team"
+                    theme={theme}
+                  />
+                </View>
+                <View style={styles.formBlock}>
+                  <ThemedText type="smallBold">Rename selected team</ThemedText>
+                  <TextInput
+                    autoCapitalize="words"
+                    autoCorrect={false}
+                    editable={Boolean(selectedTeam)}
+                    onChangeText={setRenameTeamNameDraft}
+                    placeholder="Engineering"
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.backgroundSelected,
+                        color: theme.text,
+                        opacity: selectedTeam ? 1 : 0.6,
+                      },
+                    ]}
+                    testID="admin-panel-rename-team-input"
+                    value={renameTeamNameDraft}
+                  />
+                  <ActionButton
+                    disabled={
+                      isActionPending ||
+                      !selectedTeam ||
+                      renameTeamNameDraft.trim().length === 0
+                    }
+                    label={isActionPending ? "Saving..." : "Rename team"}
+                    onPress={() => {
+                      if (!selectedTeam) {
+                        return;
+                      }
+
+                      void onUpdateTeam?.({
+                        teamId: selectedTeam.id,
+                        name: renameTeamNameDraft.trim(),
+                      });
+                    }}
+                    testID="admin-panel-rename-team"
+                    theme={theme}
+                  />
+                </View>
               </AdminSectionCard>
 
               <AdminSectionCard
@@ -275,13 +468,31 @@ export function AdminPanelScreen({
                 title="Join code"
               >
                 <DetailRow label="Active code" value={joinCode} />
-                <PlaceholderAction
-                  label="Copy or rotate code"
-                  status={
-                    viewModel?.joinCode ? "Ready to wire" : "Pending workspace"
-                  }
-                  testID="admin-panel-join-code-action"
-                />
+                <View style={styles.actionRow}>
+                  <ActionButton
+                    disabled={isActionPending || !viewModel?.joinCode}
+                    label={isActionPending ? "Working..." : "Copy join code"}
+                    onPress={() => {
+                      if (!viewModel?.joinCode) {
+                        return;
+                      }
+
+                      void onCopyJoinCode?.(viewModel.joinCode);
+                    }}
+                    testID="admin-panel-copy-join-code"
+                    theme={theme}
+                  />
+                  <ActionButton
+                    disabled={isActionPending || !viewModel?.workspaceId}
+                    label={isActionPending ? "Working..." : "Refresh join code"}
+                    onPress={() => {
+                      void onRotateJoinCode?.();
+                    }}
+                    testID="admin-panel-refresh-join-code"
+                    theme={theme}
+                    variant="secondary"
+                  />
+                </View>
               </AdminSectionCard>
 
               <AdminSectionCard
@@ -298,11 +509,58 @@ export function AdminPanelScreen({
                   Export range and download wiring will stay admin-only and
                   reuse the existing privacy-safe backend contract.
                 </ThemedText>
-                <PlaceholderAction
-                  label="Download CSV"
-                  status="Backend ready"
-                  testID="admin-panel-export-action"
-                />
+                <View style={styles.formBlock}>
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={setExportStartDate}
+                    placeholder="2026-06-01"
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.backgroundSelected,
+                        color: theme.text,
+                      },
+                    ]}
+                    testID="admin-panel-export-start-date"
+                    value={exportStartDate}
+                  />
+                  <TextInput
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    onChangeText={setExportEndDate}
+                    placeholder="2026-06-30"
+                    placeholderTextColor={theme.textSecondary}
+                    style={[
+                      styles.textInput,
+                      {
+                        backgroundColor: theme.background,
+                        borderColor: theme.backgroundSelected,
+                        color: theme.text,
+                      },
+                    ]}
+                    testID="admin-panel-export-end-date"
+                    value={exportEndDate}
+                  />
+                  <ActionButton
+                    disabled={
+                      isActionPending ||
+                      exportStartDate.trim().length === 0 ||
+                      exportEndDate.trim().length === 0
+                    }
+                    label={isActionPending ? "Preparing..." : "Export CSV"}
+                    onPress={() => {
+                      void onExport?.({
+                        startDate: exportStartDate.trim(),
+                        endDate: exportEndDate.trim(),
+                      });
+                    }}
+                    testID="admin-panel-export-run"
+                    theme={theme}
+                  />
+                </View>
               </AdminSectionCard>
             </View>
           ) : null}
@@ -407,31 +665,122 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function PlaceholderAction({
+function WorkspaceSetupForm({
+  workspaceNameDraft,
+  bootstrapSecretDraft,
+  isActionPending,
+  onChangeWorkspaceName,
+  onChangeBootstrapSecret,
+  onCreateWorkspace,
+  theme,
+}: {
+  workspaceNameDraft: string;
+  bootstrapSecretDraft: string;
+  isActionPending: boolean;
+  onChangeWorkspaceName: (value: string) => void;
+  onChangeBootstrapSecret: (value: string) => void;
+  onCreateWorkspace?: (input: {
+    bootstrapSecret: string;
+    name: string;
+  }) => void | Promise<void>;
+  theme: ReturnType<typeof useTheme>;
+}) {
+  return (
+    <View style={styles.formBlock}>
+      <ThemedText type="smallBold">Create workspace</ThemedText>
+      <TextInput
+        autoCapitalize="words"
+        autoCorrect={false}
+        onChangeText={onChangeWorkspaceName}
+        placeholder="MoodMarble HQ"
+        placeholderTextColor={theme.textSecondary}
+        style={[
+          styles.textInput,
+          {
+            backgroundColor: theme.background,
+            borderColor: theme.backgroundSelected,
+            color: theme.text,
+          },
+        ]}
+        testID="admin-panel-workspace-name-input"
+        value={workspaceNameDraft}
+      />
+      <TextInput
+        autoCapitalize="none"
+        autoCorrect={false}
+        onChangeText={onChangeBootstrapSecret}
+        placeholder="Admin bootstrap secret"
+        placeholderTextColor={theme.textSecondary}
+        secureTextEntry
+        style={[
+          styles.textInput,
+          {
+            backgroundColor: theme.background,
+            borderColor: theme.backgroundSelected,
+            color: theme.text,
+          },
+        ]}
+        testID="admin-panel-bootstrap-secret-input"
+        value={bootstrapSecretDraft}
+      />
+      <ActionButton
+        disabled={
+          isActionPending ||
+          workspaceNameDraft.trim().length === 0 ||
+          bootstrapSecretDraft.trim().length === 0
+        }
+        label={isActionPending ? "Creating..." : "Create workspace"}
+        onPress={() => {
+          void onCreateWorkspace?.({
+            name: workspaceNameDraft.trim(),
+            bootstrapSecret: bootstrapSecretDraft.trim(),
+          });
+        }}
+        testID="admin-panel-create-workspace"
+        theme={theme}
+      />
+    </View>
+  );
+}
+
+function ActionButton({
   label,
-  status,
+  onPress,
+  disabled = false,
   testID,
+  theme,
+  variant = "primary",
 }: {
   label: string;
-  status: string;
+  onPress: () => void;
+  disabled?: boolean;
   testID: string;
+  theme: ReturnType<typeof useTheme>;
+  variant?: "primary" | "secondary";
 }) {
-  const theme = useTheme();
-
   return (
-    <ThemedView
-      style={[
-        styles.placeholderAction,
+    <Pressable
+      accessibilityRole="button"
+      disabled={disabled}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.actionButton,
         {
-          backgroundColor: theme.background,
-          borderColor: theme.backgroundSelected,
+          backgroundColor: variant === "primary" ? "#208AEF" : theme.background,
+          borderColor:
+            variant === "primary" ? "#208AEF" : theme.backgroundSelected,
+          opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
         },
       ]}
       testID={testID}
     >
-      <ThemedText type="smallBold">{label}</ThemedText>
-      <ThemedText themeColor="textSecondary">{status}</ThemedText>
-    </ThemedView>
+      <ThemedText
+        style={variant === "primary" ? styles.primaryButtonText : undefined}
+        type="smallBold"
+      >
+        {label}
+      </ThemedText>
+    </Pressable>
   );
 }
 
@@ -498,6 +847,11 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.two,
   },
+  feedbackBanner: {
+    borderRadius: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+  },
   summaryCopy: {
     maxWidth: 720,
   },
@@ -559,17 +913,38 @@ const styles = StyleSheet.create({
   detailRow: {
     gap: Spacing.one,
   },
-  placeholderAction: {
+  formBlock: {
+    gap: Spacing.two,
+  },
+  actionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.two,
+  },
+  textInput: {
     borderRadius: Spacing.three,
     borderWidth: 1,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
-    gap: Spacing.one,
+    minHeight: 48,
+  },
+  actionButton: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    alignSelf: "flex-start",
+  },
+  primaryButtonText: {
+    color: "#ffffff",
   },
   teamChipRow: {
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.two,
+  },
+  teamChipButton: {
+    borderRadius: Spacing.five,
   },
   teamChip: {
     borderRadius: Spacing.five,

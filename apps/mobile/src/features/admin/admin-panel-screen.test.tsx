@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { AdminPanelScreen } from "@/features/admin/admin-panel-screen";
 
@@ -21,7 +21,18 @@ describe("AdminPanelScreen", () => {
           workspaceId: "ws_admin",
           workspaceName: "MoodMarble HQ",
           joinCode: "ABC123",
-          teamNames: ["Product", "Engineering"],
+          teams: [
+            {
+              id: "tm_product",
+              workspace_id: "ws_admin",
+              name: "Product",
+            },
+            {
+              id: "tm_engineering",
+              workspace_id: "ws_admin",
+              name: "Engineering",
+            },
+          ],
         }}
       />,
     );
@@ -94,7 +105,7 @@ describe("AdminPanelScreen", () => {
           workspaceId: "ws_admin",
           workspaceName: "MoodMarble HQ",
           joinCode: null,
-          teamNames: [],
+          teams: [],
         }}
       />,
     );
@@ -102,5 +113,52 @@ describe("AdminPanelScreen", () => {
     expect(view.getByTestId("admin-panel-team-empty-copy")).toBeTruthy();
     expect(view.queryByText(/daily heatmap/i)).toBeNull();
     expect(view.queryByText(/manager dashboard/i)).toBeNull();
+  });
+
+  it("invokes the copy and export actions from the ready admin panel", async () => {
+    const onCopyJoinCode = jest.fn();
+    const onExport = jest.fn();
+    const view = await render(
+      <AdminPanelScreen
+        contentState={{ kind: "ready" }}
+        onCopyJoinCode={onCopyJoinCode}
+        onExport={onExport}
+        viewModel={{
+          workspaceId: "ws_admin",
+          workspaceName: "MoodMarble HQ",
+          joinCode: "ABC123",
+          teams: [
+            {
+              id: "tm_product",
+              workspace_id: "ws_admin",
+              name: "Product",
+            },
+          ],
+        }}
+      />,
+    );
+
+    fireEvent.press(view.getByTestId("admin-panel-copy-join-code"));
+    fireEvent.changeText(
+      view.getByTestId("admin-panel-export-start-date"),
+      "2026-06-01",
+    );
+    fireEvent.changeText(
+      view.getByTestId("admin-panel-export-end-date"),
+      "2026-06-30",
+    );
+    await waitFor(() => {
+      expect(view.getByDisplayValue("2026-06-01")).toBeTruthy();
+      expect(view.getByDisplayValue("2026-06-30")).toBeTruthy();
+    });
+    fireEvent.press(view.getByTestId("admin-panel-export-run"));
+
+    expect(onCopyJoinCode).toHaveBeenCalledWith("ABC123");
+    await waitFor(() =>
+      expect(onExport).toHaveBeenCalledWith({
+        startDate: "2026-06-01",
+        endDate: "2026-06-30",
+      }),
+    );
   });
 });
