@@ -7,6 +7,7 @@ import { PostgresAdminApiService } from "./services/admin-api";
 import { PostgresDashboardAnalyticsSource } from "./services/dashboard-daily";
 import { PostgresMoodSubmissionStore } from "./services/mood-submissions";
 import { RedisSubmissionRateLimiter } from "./services/submission-rate-limit";
+import { PostgresTeamMembershipStore } from "./services/team-members";
 import { PostgresWorkspaceDirectory } from "./services/workspace-directory";
 
 async function startServer(): Promise<void> {
@@ -31,6 +32,7 @@ async function startServer(): Promise<void> {
     ),
     moodSubmissionStore: new PostgresMoodSubmissionStore(databaseClient),
     submissionRateLimiter: new RedisSubmissionRateLimiter(redis),
+    teamMembershipStore: new PostgresTeamMembershipStore(databaseClient),
     workspaceDirectory: new PostgresWorkspaceDirectory(databaseClient),
   });
 

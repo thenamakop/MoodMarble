@@ -16,7 +16,10 @@ import {
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, MaxContentWidth, Spacing } from "@/constants/theme";
-import { joinWorkspace } from "@/features/onboarding/api";
+import {
+  finalizeAnonymousTeamSelection,
+  joinWorkspace,
+} from "@/features/onboarding/api";
 import type { AnonymousSession } from "@/features/onboarding/types";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -43,12 +46,18 @@ const ONBOARDING_SLIDES = [
 
 interface OnboardingScreenProps {
   onSessionReady: (session: AnonymousSession) => Promise<void> | void;
+  onCompleteTeamSelection?: (selection: {
+    teamId: string;
+    deviceJwt: string;
+  }) => Promise<void> | void;
   onJoinWorkspace?: (joinCode: string) => Promise<WorkspaceJoinResponse>;
   replaySession?: AnonymousSession;
 }
 
 export function OnboardingScreen({
   onSessionReady,
+  onCompleteTeamSelection = ({ teamId, deviceJwt }) =>
+    finalizeAnonymousTeamSelection(teamId, deviceJwt),
   onJoinWorkspace = joinWorkspace,
   replaySession,
 }: OnboardingScreenProps) {
@@ -105,6 +114,10 @@ export function OnboardingScreen({
     setErrorMessage(null);
 
     try {
+      await onCompleteTeamSelection({
+        teamId: selectedTeamId,
+        deviceJwt: workspaceResult.device_jwt,
+      });
       await onSessionReady({
         workspaceId: workspaceResult.workspace.id,
         teamId: selectedTeamId,

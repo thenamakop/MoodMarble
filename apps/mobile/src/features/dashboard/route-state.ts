@@ -7,9 +7,12 @@ interface ManagerDateSelection {
   date: string;
   startDate: string;
   label: string;
+  hasExplicitStartDate: boolean;
 }
 
-function parseManagerTeams(encodedManagerTeams: string | null): ManagerTeamOption[] {
+function parseManagerTeams(
+  encodedManagerTeams: string | null,
+): ManagerTeamOption[] {
   if (!encodedManagerTeams) {
     return [];
   }
@@ -37,7 +40,9 @@ function resolveSelectedTeam(
   }
 
   return (
-    managerTeams.find((team) => team.teamId === teamIdParam) ?? managerTeams[0] ?? null
+    managerTeams.find((team) => team.teamId === teamIdParam) ??
+    managerTeams[0] ??
+    null
   );
 }
 
@@ -46,13 +51,27 @@ function resolveSelectedDate(
   startDateParam: string | null,
 ): ManagerDateSelection {
   const fallbackDate = dateParam ?? startDateParam ?? getTodayDate();
-  return buildDateSelection(fallbackDate);
+  return {
+    date: fallbackDate,
+    startDate: startDateParam ?? getWeekStartDate(fallbackDate),
+    label: fallbackDate,
+    hasExplicitStartDate: Boolean(startDateParam),
+  };
 }
 
 function getNextDateSelection(
   currentSelection: ManagerDateSelection,
 ): ManagerDateSelection {
-  return buildDateSelection(shiftDateByDays(currentSelection.date, -1));
+  const nextDate = shiftDateByDays(currentSelection.date, -1);
+
+  return {
+    date: nextDate,
+    startDate: currentSelection.hasExplicitStartDate
+      ? currentSelection.startDate
+      : getWeekStartDate(nextDate),
+    label: nextDate,
+    hasExplicitStartDate: currentSelection.hasExplicitStartDate,
+  };
 }
 
 function buildDateSelection(date: string): ManagerDateSelection {
@@ -60,6 +79,7 @@ function buildDateSelection(date: string): ManagerDateSelection {
     date,
     startDate: getWeekStartDate(date),
     label: date,
+    hasExplicitStartDate: false,
   };
 }
 

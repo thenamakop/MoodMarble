@@ -146,7 +146,7 @@ describe("ManagerDashboardRoute", () => {
       date: "2026-06-18",
       manager_jwt: "manager-jwt-token",
       manager_teams: "tm_product:Product|tm_design:Design",
-      start_date: "2026-06-15",
+      start_date: "2026-06-16",
       team_id: "tm_product",
       team_name: "Product",
     };
@@ -158,7 +158,7 @@ describe("ManagerDashboardRoute", () => {
         teamId: "tm_product",
         managerJwt: "manager-jwt-token",
         date: "2026-06-18",
-        startDate: "2026-06-15",
+        startDate: "2026-06-16",
       }),
     );
 
@@ -175,7 +175,7 @@ describe("ManagerDashboardRoute", () => {
       date: "2026-06-18",
       manager_jwt: "manager-jwt-token",
       manager_teams: "tm_product:Product|tm_design:Design",
-      start_date: "2026-06-15",
+      start_date: "2026-06-16",
       team_id: "tm_product",
       team_name: "Product",
     };
@@ -194,7 +194,7 @@ describe("ManagerDashboardRoute", () => {
         date: "2026-06-17",
         manager_jwt: "manager-jwt-token",
         manager_teams: "tm_product:Product|tm_design:Design",
-        start_date: "2026-06-15",
+        start_date: "2026-06-16",
         team_id: "tm_product",
         team_name: "Product",
       },
@@ -211,7 +211,7 @@ describe("ManagerDashboardRoute", () => {
         teamId: "tm_product",
         managerJwt: "manager-jwt-token",
         date: "2026-06-17",
-        startDate: "2026-06-15",
+        startDate: "2026-06-16",
       }),
     );
   });

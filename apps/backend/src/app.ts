@@ -26,6 +26,10 @@ import {
   type SubmissionRateLimiter,
 } from "./services/submission-rate-limit";
 import {
+  InMemoryTeamMembershipStore,
+  type TeamMembershipStore,
+} from "./services/team-members";
+import {
   InMemoryWorkspaceDirectory,
   type WorkspaceDirectory,
 } from "./services/workspace-directory";
@@ -38,6 +42,7 @@ interface BuildAppOptions {
   moodSubmissionStore?: MoodSubmissionStore;
   workspaceDirectory?: WorkspaceDirectory;
   submissionRateLimiter?: SubmissionRateLimiter;
+  teamMembershipStore?: TeamMembershipStore;
   now?: () => Date;
 }
 
@@ -74,6 +79,8 @@ export async function buildApp(
   });
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
+    teamMembershipStore:
+      options.teamMembershipStore ?? new InMemoryTeamMembershipStore(),
     workspaceDirectory,
   });
   await registerDashboardDailyRoute(app, {

@@ -168,8 +168,10 @@ describe("OnboardingScreen", () => {
   });
 
   it("requires selecting exactly one team before continuing", async () => {
+    const onCompleteTeamSelection = jest.fn().mockResolvedValue(undefined);
     const onSessionReady = jest.fn().mockResolvedValue(undefined);
     const view = await renderScreen({
+      onCompleteTeamSelection,
       onSessionReady,
       onJoinWorkspace: jest.fn().mockResolvedValue({
         workspace: {
@@ -199,6 +201,7 @@ describe("OnboardingScreen", () => {
     );
     fireEvent.press(continueButton);
     expect(onSessionReady).not.toHaveBeenCalled();
+    expect(onCompleteTeamSelection).not.toHaveBeenCalled();
 
     fireEvent.press(await view.findByTestId("team-option-tm_engineering"));
 
@@ -212,6 +215,12 @@ describe("OnboardingScreen", () => {
       { selected: false },
     );
     fireEvent.press(await view.findByTestId("complete-onboarding-button"));
+    await waitFor(() =>
+      expect(onCompleteTeamSelection).toHaveBeenCalledWith({
+        teamId: "tm_engineering",
+        deviceJwt: "device-jwt-token",
+      }),
+    );
     await waitFor(() =>
       expect(onSessionReady).toHaveBeenCalledWith({
         workspaceId: "ws_localdemo",
@@ -304,6 +313,7 @@ describe("OnboardingScreen", () => {
   });
 
   it("completes onboarding after join and team selection", async () => {
+    const onCompleteTeamSelection = jest.fn().mockResolvedValue(undefined);
     const onSessionReady = jest.fn().mockResolvedValue(undefined);
     const onJoinWorkspace = jest.fn().mockResolvedValue({
       workspace: {
@@ -323,6 +333,7 @@ describe("OnboardingScreen", () => {
       device_jwt: "device-jwt-token",
     });
     const view = await renderScreen({
+      onCompleteTeamSelection,
       onJoinWorkspace,
       onSessionReady,
     });
@@ -336,6 +347,12 @@ describe("OnboardingScreen", () => {
     fireEvent.press(await view.findByTestId("team-option-tm_engineering"));
     fireEvent.press(await view.findByTestId("complete-onboarding-button"));
 
+    await waitFor(() =>
+      expect(onCompleteTeamSelection).toHaveBeenCalledWith({
+        teamId: "tm_engineering",
+        deviceJwt: "device-jwt-token",
+      }),
+    );
     await waitFor(() =>
       expect(onSessionReady).toHaveBeenCalledWith({
         workspaceId: "ws_localdemo",

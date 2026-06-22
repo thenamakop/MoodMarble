@@ -1,4 +1,7 @@
-import { joinWorkspace } from "@/features/onboarding/api";
+import {
+  finalizeAnonymousTeamSelection,
+  joinWorkspace,
+} from "@/features/onboarding/api";
 import { getOrCreateDeviceToken } from "@/features/onboarding/device-token";
 
 jest.mock("@/features/onboarding/device-token", () => ({
@@ -174,5 +177,57 @@ describe("joinWorkspace", () => {
     await expect(joinWorkspace("ABC123")).rejects.toThrow(
       "Unable to join workspace right now.",
     );
+  });
+});
+
+describe("finalizeAnonymousTeamSelection", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = jest.fn() as typeof fetch;
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("posts the selected team with the device jwt", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        status: "registered",
+      }),
+    });
+
+    await expect(
+      finalizeAnonymousTeamSelection("tm_product", "device-jwt-token"),
+    ).resolves.toBeUndefined();
+
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://localhost:3000/workspace/team-member",
+      {
+        method: "POST",
+        headers: {
+          Authorization: "Bearer device-jwt-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          team_id: "tm_product",
+        }),
+      },
+    );
+  });
+
+  it("surfaces a stable error when team selection fails", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: false,
+      json: jest.fn().mockResolvedValue({
+        message: "Invalid team selection payload.",
+      }),
+    });
+
+    await expect(
+      finalizeAnonymousTeamSelection("tm_unknown", "device-jwt-token"),
+    ).rejects.toThrow("Invalid team selection payload.");
   });
 });

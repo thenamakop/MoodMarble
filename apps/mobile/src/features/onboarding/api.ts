@@ -4,10 +4,12 @@ import {
   WorkspaceJoinRequestSchema,
   WorkspaceJoinResponseSchema,
 } from "@/contracts/workspace-join";
+import { TeamIdSchema } from "@/contracts/mood-submission";
 import { createApiUrl, getApiRequestErrorMessage } from "@/lib/api";
 import { getOrCreateDeviceToken } from "./device-token";
 
 const SAFE_JOIN_ERROR_MESSAGES = new Set(["Join code not found."]);
+const TEAM_SELECTION_ERROR_MESSAGE = "Unable to save team right now.";
 
 export async function joinWorkspace(
   joinCode: string,
@@ -47,6 +49,38 @@ export async function joinWorkspace(
   return WorkspaceJoinResponseSchema.parse(await response.json());
 }
 
+export async function finalizeAnonymousTeamSelection(
+  teamId: string,
+  deviceJwt: string,
+): Promise<void> {
+  const requestUrl = createApiUrl("/workspace/team-member");
+
+  try {
+    const response = await fetch(requestUrl, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${deviceJwt}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        team_id: TeamIdSchema.parse(teamId),
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getTeamSelectionErrorMessage(response));
+    }
+  } catch (error) {
+    throw new Error(
+      getApiRequestErrorMessage(
+        TEAM_SELECTION_ERROR_MESSAGE,
+        error,
+        requestUrl,
+      ),
+    );
+  }
+}
+
 async function getJoinErrorMessage(response: Response): Promise<string> {
   try {
     const responseBody = (await response.json()) as { message?: unknown };
@@ -63,4 +97,23 @@ async function getJoinErrorMessage(response: Response): Promise<string> {
   }
 
   return "Unable to join workspace right now.";
+}
+
+async function getTeamSelectionErrorMessage(
+  response: Response,
+): Promise<string> {
+  try {
+    const responseBody = (await response.json()) as { message?: unknown };
+
+    if (
+      typeof responseBody.message === "string" &&
+      responseBody.message.trim()
+    ) {
+      return responseBody.message;
+    }
+  } catch {
+    // Fall through to the stable default message.
+  }
+
+  return TEAM_SELECTION_ERROR_MESSAGE;
 }
