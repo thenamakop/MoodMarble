@@ -252,6 +252,10 @@ Query:
 
 Success response: `200 text/csv`
 
+Download header:
+
+- `Content-Disposition: attachment; filename="moodmarble-<workspaceId>-<start>-to-<end>.csv"`
+
 CSV columns:
 
 - `team_id`

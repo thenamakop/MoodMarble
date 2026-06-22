@@ -277,8 +277,13 @@ export async function registerAdminRoutes(
             await options.adminApiService.getExportRows({ workspaceId, query }),
           );
         const csv = serializeAdminExportCsv(records);
+        const fileName = `moodmarble-${workspaceId}-${query.start_date}-to-${query.end_date}.csv`;
 
-        return reply.status(200).type("text/csv; charset=utf-8").send(csv);
+        return reply
+          .status(200)
+          .header("content-disposition", `attachment; filename="${fileName}"`)
+          .type("text/csv; charset=utf-8")
+          .send(csv);
       } catch (error) {
         return handleAdminError(error, reply, "Invalid admin export request.");
       }

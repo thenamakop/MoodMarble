@@ -307,6 +307,9 @@ describe("admin routes", () => {
 
     expect(exportResponse.statusCode).toBe(200);
     expect(exportResponse.headers["content-type"]).toContain("text/csv");
+    expect(exportResponse.headers["content-disposition"]).toBe(
+      'attachment; filename="moodmarble-ws_admin-2026-06-01-to-2026-06-30.csv"',
+    );
     expect(exportResponse.body).toContain(
       "team_id,team_name,mood_type,tags,note_hash,hour_of_day,submission_date",
     );

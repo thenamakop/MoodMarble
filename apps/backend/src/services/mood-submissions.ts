@@ -14,6 +14,10 @@ export class InMemoryMoodSubmissionStore implements MoodSubmissionStore {
   async createSubmission(submission: NewMoodSubmission): Promise<void> {
     this.submissions.push(submission);
   }
+
+  listSubmissions(): NewMoodSubmission[] {
+    return [...this.submissions];
+  }
 }
 
 export class PostgresMoodSubmissionStore implements MoodSubmissionStore {

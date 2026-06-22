@@ -1,10 +1,11 @@
 import { randomUUID } from "node:crypto";
 
-import { eq } from "drizzle-orm";
+import { and, eq, gte, inArray, lte } from "drizzle-orm";
 
 import { createAdminJwt } from "../auth/admin-jwt";
 import type { DatabaseClient } from "../db/client";
-import { teams, workspaces } from "../db/schema";
+import { moodSubmissions, teams, workspaces } from "../db/schema";
+import type { InMemoryMoodSubmissionStore } from "./mood-submissions";
 import type {
   InMemoryWorkspaceDirectory,
   WorkspaceDirectoryEntry,
@@ -107,6 +108,7 @@ export class NotImplementedAdminApiService implements AdminApiService {
 
 interface InMemoryAdminApiServiceOptions extends AdminServiceOptions {
   workspaceDirectory: InMemoryWorkspaceDirectory;
+  moodSubmissionStore: InMemoryMoodSubmissionStore;
 }
 
 export class InMemoryAdminApiService implements AdminApiService {
@@ -250,8 +252,49 @@ export class InMemoryAdminApiService implements AdminApiService {
     };
   }
 
-  async getExportRows(): Promise<AdminExportRecord[]> {
-    throw new AdminApiNotImplementedError();
+  async getExportRows(input: {
+    workspaceId: WorkspaceId;
+    query: AdminExportQuery;
+  }): Promise<AdminExportRecord[]> {
+    const teams = await this.options.workspaceDirectory.listTeams(
+      input.workspaceId,
+    );
+
+    if (!teams) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    const teamNameById = new Map(teams.map((team) => [team.id, team.name]));
+    const teamIds = teams.map((team) => team.id);
+
+    return this.options.moodSubmissionStore
+      .listSubmissions()
+      .filter(
+        (submission) =>
+          teamIds.includes(submission.teamId) &&
+          submission.submissionDate >= input.query.start_date &&
+          submission.submissionDate <= input.query.end_date,
+      )
+      .sort((left, right) => {
+        if (left.submissionDate !== right.submissionDate) {
+          return left.submissionDate.localeCompare(right.submissionDate);
+        }
+
+        if (left.hourOfDay !== right.hourOfDay) {
+          return left.hourOfDay - right.hourOfDay;
+        }
+
+        return left.id.localeCompare(right.id);
+      })
+      .map((submission) => ({
+        team_id: submission.teamId,
+        team_name: teamNameById.get(submission.teamId) ?? "Unknown Team",
+        mood_type: submission.moodType,
+        tags: submission.tags,
+        note_hash: submission.noteHash,
+        hour_of_day: submission.hourOfDay,
+        submission_date: submission.submissionDate,
+      }));
   }
 
   private async createUniqueWorkspaceId(): Promise<string> {
@@ -453,8 +496,58 @@ export class PostgresAdminApiService implements AdminApiService {
     };
   }
 
-  async getExportRows(): Promise<AdminExportRecord[]> {
-    throw new AdminApiNotImplementedError();
+  async getExportRows(input: {
+    workspaceId: WorkspaceId;
+    query: AdminExportQuery;
+  }): Promise<AdminExportRecord[]> {
+    const workspaceRecord =
+      await this.options.databaseClient.db.query.workspaces.findFirst({
+        where: eq(workspaces.id, input.workspaceId),
+      });
+
+    if (!workspaceRecord) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    const teamRecords =
+      await this.options.databaseClient.db.query.teams.findMany({
+        where: eq(teams.workspaceId, input.workspaceId),
+        orderBy: (teamTable, { asc }) => [asc(teamTable.name)],
+      });
+
+    if (teamRecords.length === 0) {
+      return [];
+    }
+
+    const teamNameById = new Map(
+      teamRecords.map((teamRecord) => [teamRecord.id, teamRecord.name]),
+    );
+    const submissionRecords =
+      await this.options.databaseClient.db.query.moodSubmissions.findMany({
+        where: and(
+          inArray(
+            moodSubmissions.teamId,
+            teamRecords.map((teamRecord) => teamRecord.id),
+          ),
+          gte(moodSubmissions.submissionDate, input.query.start_date),
+          lte(moodSubmissions.submissionDate, input.query.end_date),
+        ),
+        orderBy: (submissionTable, { asc }) => [
+          asc(submissionTable.submissionDate),
+          asc(submissionTable.hourOfDay),
+          asc(submissionTable.id),
+        ],
+      });
+
+    return submissionRecords.map((submissionRecord) => ({
+      team_id: submissionRecord.teamId,
+      team_name: teamNameById.get(submissionRecord.teamId) ?? "Unknown Team",
+      mood_type: submissionRecord.moodType,
+      tags: submissionRecord.tags,
+      note_hash: submissionRecord.noteHash,
+      hour_of_day: submissionRecord.hourOfDay,
+      submission_date: submissionRecord.submissionDate,
+    }));
   }
 
   private async createUniqueWorkspaceId(): Promise<string> {

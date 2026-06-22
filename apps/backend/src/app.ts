@@ -47,6 +47,8 @@ export async function buildApp(
   const app = Fastify();
   const workspaceDirectory =
     options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
+  const moodSubmissionStore =
+    options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore();
 
   await app.register(cors, {
     origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u],
@@ -67,6 +69,7 @@ export async function buildApp(
       createDefaultAdminApiService({
         jwtSecret: options.jwtSecret,
         workspaceDirectory,
+        moodSubmissionStore,
       }),
   });
   await registerWorkspaceJoinRoute(app, {
@@ -99,8 +102,7 @@ export async function buildApp(
   });
   await registerMoodRoute(app, {
     jwtSecret: options.jwtSecret,
-    moodSubmissionStore:
-      options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore(),
+    moodSubmissionStore,
     workspaceDirectory,
     submissionRateLimiter:
       options.submissionRateLimiter ?? new InMemorySubmissionRateLimiter(),
@@ -113,11 +115,16 @@ export async function buildApp(
 function createDefaultAdminApiService(options: {
   jwtSecret?: string;
   workspaceDirectory: WorkspaceDirectory;
+  moodSubmissionStore: MoodSubmissionStore;
 }): AdminApiService {
-  if (options.workspaceDirectory instanceof InMemoryWorkspaceDirectory) {
+  if (
+    options.workspaceDirectory instanceof InMemoryWorkspaceDirectory &&
+    options.moodSubmissionStore instanceof InMemoryMoodSubmissionStore
+  ) {
     return new InMemoryAdminApiService({
       jwtSecret: options.jwtSecret,
       workspaceDirectory: options.workspaceDirectory,
+      moodSubmissionStore: options.moodSubmissionStore,
     });
   }
 

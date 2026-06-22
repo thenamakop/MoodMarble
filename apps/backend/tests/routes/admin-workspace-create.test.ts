@@ -172,6 +172,136 @@ describe("admin workspace creation integration", () => {
     });
   });
 
+  it("exports sanitized CSV rows for the workspace without affecting public join or manager flows", async () => {
+    const app = await buildApp({
+      jwtSecret: JWT_SECRET,
+      adminBootstrapSecret: ADMIN_BOOTSTRAP_SECRET,
+    });
+
+    const createWorkspaceResponse = await app.inject({
+      method: "POST",
+      url: "/admin/workspace",
+      headers: {
+        [ADMIN_BOOTSTRAP_HEADER]: ADMIN_BOOTSTRAP_SECRET,
+      },
+      payload: {
+        name: "MoodMarble HQ",
+      },
+    });
+    const adminAuthorization = `Bearer ${createWorkspaceResponse.json().admin_jwt}`;
+
+    const createTeamResponse = await app.inject({
+      method: "POST",
+      url: "/admin/team",
+      headers: {
+        authorization: adminAuthorization,
+      },
+      payload: {
+        name: "Product",
+      },
+    });
+
+    const joinWorkspaceResponse = await app.inject({
+      method: "POST",
+      url: "/workspace/join",
+      payload: {
+        join_code: createWorkspaceResponse.json().workspace.join_code,
+        device_token: "550e8400-e29b-41d4-a716-446655440010",
+      },
+    });
+
+    const deviceAuthorization = `Bearer ${joinWorkspaceResponse.json().device_jwt}`;
+
+    const firstMoodResponse = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: deviceAuthorization,
+      },
+      payload: {
+        workspace_id: createWorkspaceResponse.json().workspace.id,
+        team_id: createTeamResponse.json().team.id,
+        mood_type: "focused",
+        tags: ["#workload", "#deadlines"],
+        note: "Need some breathing room today.",
+        hour_of_day: 14,
+        submission_date: "2026-06-12",
+      },
+    });
+    const secondMoodResponse = await app.inject({
+      method: "POST",
+      url: "/mood",
+      headers: {
+        authorization: deviceAuthorization,
+      },
+      payload: {
+        workspace_id: createWorkspaceResponse.json().workspace.id,
+        team_id: createTeamResponse.json().team.id,
+        mood_type: "calm",
+        tags: ["#management"],
+        note: "Feeling steadier this afternoon.",
+        hour_of_day: 16,
+        submission_date: "2026-07-02",
+      },
+    });
+
+    expect(firstMoodResponse.statusCode).toBe(201);
+    expect(secondMoodResponse.statusCode).toBe(201);
+
+    const exportResponse = await app.inject({
+      method: "GET",
+      url: `/admin/workspace/${createWorkspaceResponse.json().workspace.id}/export?start_date=2026-06-01&end_date=2026-06-30`,
+      headers: {
+        authorization: adminAuthorization,
+      },
+    });
+
+    expect(exportResponse.statusCode).toBe(200);
+    expect(exportResponse.headers["content-type"]).toContain("text/csv");
+    expect(exportResponse.headers["content-disposition"]).toBe(
+      `attachment; filename="moodmarble-${createWorkspaceResponse.json().workspace.id}-2026-06-01-to-2026-06-30.csv"`,
+    );
+    expect(exportResponse.body).toContain(
+      "team_id,team_name,mood_type,tags,note_hash,hour_of_day,submission_date",
+    );
+    expect(exportResponse.body).toContain(
+      `"${createTeamResponse.json().team.id}","Product","focused","[""#workload"",""#deadlines""]",`,
+    );
+    expect(exportResponse.body).toContain('"14","2026-06-12"');
+    expect(exportResponse.body).not.toContain(
+      "Need some breathing room today.",
+    );
+    expect(exportResponse.body).not.toContain(
+      "Feeling steadier this afternoon.",
+    );
+    expect(exportResponse.body).not.toContain(
+      "550e8400-e29b-41d4-a716-446655440010",
+    );
+    expect(exportResponse.body).not.toContain("device_token");
+    expect(exportResponse.body).not.toContain("email");
+    expect(exportResponse.body).not.toContain("2026-07-02");
+
+    const rejoinResponse = await app.inject({
+      method: "POST",
+      url: "/workspace/join",
+      payload: {
+        join_code: createWorkspaceResponse.json().workspace.join_code,
+        device_token: "550e8400-e29b-41d4-a716-446655440011",
+      },
+    });
+
+    expect(rejoinResponse.statusCode).toBe(200);
+    expect(() =>
+      WorkspaceJoinResponseSchema.parse(rejoinResponse.json()),
+    ).not.toThrow();
+    expect(rejoinResponse.json().teams).toEqual([
+      {
+        id: createTeamResponse.json().team.id,
+        name: "Product",
+      },
+    ]);
+  });
+
   it("keeps the workspace creation route protected by the bootstrap secret", async () => {
     const app = await buildApp({
       jwtSecret: JWT_SECRET,
