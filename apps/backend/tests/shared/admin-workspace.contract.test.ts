@@ -5,6 +5,7 @@ import {
   AdminExportRecordSchema,
   AdminJoinCodeResponseSchema,
   AdminTeamCreateRequestSchema,
+  AdminTeamListResponseSchema,
   AdminTeamResponseSchema,
   AdminTeamUpdateRequestSchema,
   AdminWorkspaceCreateRequestSchema,
@@ -54,6 +55,28 @@ describe("admin workspace and team contract schemas", () => {
     expect(createRequest).toEqual({ name: "Product" });
     expect(updateRequest).toEqual({ name: "Engineering" });
     expect(response.team.workspace_id).toBe("ws_localdemo");
+  });
+
+  it("accepts the workspace-scoped admin team list contract", () => {
+    const response = AdminTeamListResponseSchema.parse({
+      teams: [
+        {
+          id: "tm_product",
+          workspace_id: "ws_localdemo",
+          name: "Product",
+        },
+      ],
+    });
+
+    expect(response).toEqual({
+      teams: [
+        {
+          id: "tm_product",
+          workspace_id: "ws_localdemo",
+          name: "Product",
+        },
+      ],
+    });
   });
 
   it("accepts a join code response and an anonymized export record", () => {

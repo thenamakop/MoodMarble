@@ -5,6 +5,7 @@ import {
   AdminExportRecordSchema,
   AdminExportQuerySchema,
   AdminTeamCreateRequestSchema,
+  AdminTeamListResponseSchema,
   AdminTeamResponseSchema,
   AdminTeamUpdateRequestSchema,
   AdminWorkspaceCreateRequestSchema,
@@ -22,6 +23,7 @@ import { verifyAdminJwt } from "../auth/admin-jwt";
 import { MissingJwtSecretError, UnauthorizedError } from "../auth/device-jwt";
 import {
   AdminApiNotImplementedError,
+  AdminTeamNotFoundError,
   AdminWorkspaceNotFoundError,
   type AdminApiService,
 } from "../services/admin-api";
@@ -125,6 +127,44 @@ export async function registerAdminRoutes(
           error,
           reply,
           "Invalid admin team update request.",
+        );
+      }
+    },
+  );
+
+  app.get(
+    "/admin/workspace/:workspaceId/teams",
+    async (
+      request: FastifyRequest<{
+        Params: unknown;
+      }>,
+      reply: FastifyReply,
+    ) => {
+      try {
+        const adminJwt = verifyAdminJwt(
+          request.headers.authorization,
+          options.jwtSecret,
+        );
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
+          request.params,
+        );
+
+        if (adminJwt.workspace_id !== workspaceId) {
+          return reply.status(403).send({
+            message: "Forbidden",
+          });
+        }
+
+        const response = AdminTeamListResponseSchema.parse(
+          await options.adminApiService.listTeams(workspaceId),
+        );
+
+        return reply.status(200).send(response);
+      } catch (error) {
+        return handleAdminError(
+          error,
+          reply,
+          "Invalid admin team list request.",
         );
       }
     },
@@ -277,6 +317,10 @@ function handleAdminError(
   }
 
   if (error instanceof AdminWorkspaceNotFoundError) {
+    return reply.status(404).send({ message: error.message });
+  }
+
+  if (error instanceof AdminTeamNotFoundError) {
     return reply.status(404).send({ message: error.message });
   }
 

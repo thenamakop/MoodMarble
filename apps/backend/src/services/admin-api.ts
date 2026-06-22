@@ -4,7 +4,7 @@ import { eq } from "drizzle-orm";
 
 import { createAdminJwt } from "../auth/admin-jwt";
 import type { DatabaseClient } from "../db/client";
-import { workspaces } from "../db/schema";
+import { teams, workspaces } from "../db/schema";
 import type {
   InMemoryWorkspaceDirectory,
   WorkspaceDirectoryEntry,
@@ -15,6 +15,8 @@ import type {
   AdminExportRecord,
   AdminJoinCodeResponse,
   AdminTeamCreateRequest,
+  TeamId,
+  AdminTeamListResponse,
   AdminTeamResponse,
   AdminTeamUpdateRequest,
   AdminWorkspaceCreateRequest,
@@ -35,6 +37,7 @@ export interface AdminApiService {
     teamId: string;
     payload: AdminTeamUpdateRequest;
   }): Promise<AdminTeamResponse>;
+  listTeams(workspaceId: WorkspaceId): Promise<AdminTeamListResponse>;
   getJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse>;
   rotateJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse>;
   getExportRows(input: {
@@ -55,12 +58,20 @@ export class AdminWorkspaceNotFoundError extends Error {
   }
 }
 
+export class AdminTeamNotFoundError extends Error {
+  constructor() {
+    super("Team not found.");
+  }
+}
+
 type WorkspaceIdFactory = () => string;
+type TeamIdFactory = () => string;
 type JoinCodeFactory = () => string;
 
 interface AdminServiceOptions {
   jwtSecret?: string;
   workspaceIdFactory?: WorkspaceIdFactory;
+  teamIdFactory?: TeamIdFactory;
   joinCodeFactory?: JoinCodeFactory;
 }
 
@@ -74,6 +85,10 @@ export class NotImplementedAdminApiService implements AdminApiService {
   }
 
   async updateTeam(): Promise<AdminTeamResponse> {
+    throw new AdminApiNotImplementedError();
+  }
+
+  async listTeams(): Promise<AdminTeamListResponse> {
     throw new AdminApiNotImplementedError();
   }
 
@@ -96,11 +111,13 @@ interface InMemoryAdminApiServiceOptions extends AdminServiceOptions {
 
 export class InMemoryAdminApiService implements AdminApiService {
   private readonly workspaceIdFactory: WorkspaceIdFactory;
+  private readonly teamIdFactory: TeamIdFactory;
   private readonly joinCodeFactory: JoinCodeFactory;
 
   constructor(private readonly options: InMemoryAdminApiServiceOptions) {
     this.workspaceIdFactory =
       options.workspaceIdFactory ?? defaultWorkspaceIdFactory;
+    this.teamIdFactory = options.teamIdFactory ?? defaultTeamIdFactory;
     this.joinCodeFactory = options.joinCodeFactory ?? defaultJoinCodeFactory;
   }
 
@@ -122,12 +139,78 @@ export class InMemoryAdminApiService implements AdminApiService {
     );
   }
 
-  async createTeam(): Promise<AdminTeamResponse> {
-    throw new AdminApiNotImplementedError();
+  async createTeam(input: {
+    workspaceId: WorkspaceId;
+    payload: AdminTeamCreateRequest;
+  }): Promise<AdminTeamResponse> {
+    const workspace = await this.options.workspaceDirectory.findById(
+      input.workspaceId,
+    );
+
+    if (!workspace) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    const teamId = await this.createUniqueTeamId(input.workspaceId);
+    const storedTeam = await this.options.workspaceDirectory.addTeam(
+      input.workspaceId,
+      {
+        id: teamId as TeamId,
+        name: input.payload.name,
+      },
+    );
+
+    if (!storedTeam) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    return {
+      team: {
+        id: storedTeam.id,
+        workspace_id: input.workspaceId,
+        name: storedTeam.name,
+      },
+    };
   }
 
-  async updateTeam(): Promise<AdminTeamResponse> {
-    throw new AdminApiNotImplementedError();
+  async updateTeam(input: {
+    workspaceId: WorkspaceId;
+    teamId: string;
+    payload: AdminTeamUpdateRequest;
+  }): Promise<AdminTeamResponse> {
+    const updatedTeam = await this.options.workspaceDirectory.updateTeam(
+      input.workspaceId,
+      input.teamId,
+      input.payload.name,
+    );
+
+    if (!updatedTeam) {
+      throw new AdminTeamNotFoundError();
+    }
+
+    return {
+      team: {
+        id: updatedTeam.id,
+        workspace_id: input.workspaceId,
+        name: updatedTeam.name,
+      },
+    };
+  }
+
+  async listTeams(workspaceId: WorkspaceId): Promise<AdminTeamListResponse> {
+    const teams = await this.options.workspaceDirectory.listTeams(workspaceId);
+
+    if (!teams) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    return {
+      teams: teams.map((team) => ({
+        id: team.id,
+        workspace_id: workspaceId,
+        name: team.name,
+      })),
+    };
   }
 
   async getJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse> {
@@ -179,6 +262,19 @@ export class InMemoryAdminApiService implements AdminApiService {
     );
   }
 
+  private async createUniqueTeamId(workspaceId: WorkspaceId): Promise<string> {
+    return createUniqueValue(this.teamIdFactory, async (candidate) => {
+      const teams =
+        await this.options.workspaceDirectory.listTeams(workspaceId);
+
+      if (!teams) {
+        return false;
+      }
+
+      return teams.some((team) => team.id === candidate);
+    });
+  }
+
   private async createUniqueJoinCode(): Promise<string> {
     return createUniqueValue(
       this.joinCodeFactory,
@@ -195,11 +291,13 @@ interface PostgresAdminApiServiceOptions extends AdminServiceOptions {
 
 export class PostgresAdminApiService implements AdminApiService {
   private readonly workspaceIdFactory: WorkspaceIdFactory;
+  private readonly teamIdFactory: TeamIdFactory;
   private readonly joinCodeFactory: JoinCodeFactory;
 
   constructor(private readonly options: PostgresAdminApiServiceOptions) {
     this.workspaceIdFactory =
       options.workspaceIdFactory ?? defaultWorkspaceIdFactory;
+    this.teamIdFactory = options.teamIdFactory ?? defaultTeamIdFactory;
     this.joinCodeFactory = options.joinCodeFactory ?? defaultJoinCodeFactory;
   }
 
@@ -223,12 +321,89 @@ export class PostgresAdminApiService implements AdminApiService {
     });
   }
 
-  async createTeam(): Promise<AdminTeamResponse> {
-    throw new AdminApiNotImplementedError();
+  async createTeam(input: {
+    workspaceId: WorkspaceId;
+    payload: AdminTeamCreateRequest;
+  }): Promise<AdminTeamResponse> {
+    const workspaceRecord =
+      await this.options.databaseClient.db.query.workspaces.findFirst({
+        where: eq(workspaces.id, input.workspaceId),
+      });
+
+    if (!workspaceRecord) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    const teamId = await this.createUniqueTeamId(input.workspaceId);
+
+    await this.options.databaseClient.db.insert(teams).values({
+      id: teamId,
+      workspaceId: input.workspaceId,
+      name: input.payload.name,
+    });
+
+    return {
+      team: {
+        id: teamId,
+        workspace_id: input.workspaceId,
+        name: input.payload.name,
+      },
+    };
   }
 
-  async updateTeam(): Promise<AdminTeamResponse> {
-    throw new AdminApiNotImplementedError();
+  async updateTeam(input: {
+    workspaceId: WorkspaceId;
+    teamId: string;
+    payload: AdminTeamUpdateRequest;
+  }): Promise<AdminTeamResponse> {
+    const teamRecord =
+      await this.options.databaseClient.db.query.teams.findFirst({
+        where: eq(teams.id, input.teamId),
+      });
+
+    if (!teamRecord || teamRecord.workspaceId !== input.workspaceId) {
+      throw new AdminTeamNotFoundError();
+    }
+
+    await this.options.databaseClient.db
+      .update(teams)
+      .set({
+        name: input.payload.name,
+      })
+      .where(eq(teams.id, input.teamId));
+
+    return {
+      team: {
+        id: input.teamId,
+        workspace_id: input.workspaceId,
+        name: input.payload.name,
+      },
+    };
+  }
+
+  async listTeams(workspaceId: WorkspaceId): Promise<AdminTeamListResponse> {
+    const workspaceRecord =
+      await this.options.databaseClient.db.query.workspaces.findFirst({
+        where: eq(workspaces.id, workspaceId),
+      });
+
+    if (!workspaceRecord) {
+      throw new AdminWorkspaceNotFoundError();
+    }
+
+    const teamRecords =
+      await this.options.databaseClient.db.query.teams.findMany({
+        where: eq(teams.workspaceId, workspaceId),
+        orderBy: (teamTable, { asc }) => [asc(teamTable.name)],
+      });
+
+    return {
+      teams: teamRecords.map((team) => ({
+        id: team.id,
+        workspace_id: workspaceId,
+        name: team.name,
+      })),
+    };
   }
 
   async getJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse> {
@@ -293,6 +468,21 @@ export class PostgresAdminApiService implements AdminApiService {
     });
   }
 
+  private async createUniqueTeamId(workspaceId: WorkspaceId): Promise<string> {
+    return createUniqueValue(this.teamIdFactory, async (candidate) => {
+      const teamRecord =
+        await this.options.databaseClient.db.query.teams.findFirst({
+          where: eq(teams.id, candidate),
+        });
+
+      return (
+        teamRecord !== null &&
+        teamRecord !== undefined &&
+        teamRecord.workspaceId === workspaceId
+      );
+    });
+  }
+
   private async createUniqueJoinCode(): Promise<string> {
     return createUniqueValue(this.joinCodeFactory, async (candidate) => {
       const workspaceRecord =
@@ -341,6 +531,10 @@ async function createUniqueValue(
 
 function defaultWorkspaceIdFactory(): string {
   return `ws_${randomUUID().replace(/-/g, "").slice(0, 10)}`;
+}
+
+function defaultTeamIdFactory(): string {
+  return `tm_${randomUUID().replace(/-/g, "").slice(0, 10)}`;
 }
 
 function defaultJoinCodeFactory(): string {

@@ -153,6 +153,12 @@ export const AdminTeamResponseSchema = z
   })
   .strict();
 
+export const AdminTeamListResponseSchema = z
+  .object({
+    teams: z.array(AdminTeamSchema),
+  })
+  .strict();
+
 export const AdminJoinCodeResponseSchema = z
   .object({
     workspace: z

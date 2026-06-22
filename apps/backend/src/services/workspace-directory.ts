@@ -102,6 +102,72 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
     workspace.joinCode = joinCode;
     return cloneWorkspaceDirectoryEntry(workspace);
   }
+
+  async listTeams(workspaceId: string): Promise<TeamSummary[] | null> {
+    const workspace = this.workspaces.find(
+      (currentWorkspace) => currentWorkspace.id === workspaceId,
+    );
+
+    if (!workspace) {
+      return null;
+    }
+
+    return workspace.teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+    }));
+  }
+
+  async addTeam(
+    workspaceId: string,
+    team: TeamSummary & { id: TeamId },
+  ): Promise<TeamSummary | null> {
+    const workspace = this.workspaces.find(
+      (currentWorkspace) => currentWorkspace.id === workspaceId,
+    );
+
+    if (!workspace) {
+      return null;
+    }
+
+    workspace.teams.push({
+      id: team.id,
+      name: team.name,
+    });
+
+    return {
+      id: team.id,
+      name: team.name,
+    };
+  }
+
+  async updateTeam(
+    workspaceId: string,
+    teamId: string,
+    name: string,
+  ): Promise<TeamSummary | null> {
+    const workspace = this.workspaces.find(
+      (currentWorkspace) => currentWorkspace.id === workspaceId,
+    );
+
+    if (!workspace) {
+      return null;
+    }
+
+    const team = workspace.teams.find(
+      (currentTeam) => currentTeam.id === teamId,
+    );
+
+    if (!team) {
+      return null;
+    }
+
+    team.name = name;
+    return {
+      id: team.id,
+      name: team.name,
+    };
+  }
 }
 
 export class PostgresWorkspaceDirectory implements WorkspaceDirectory {

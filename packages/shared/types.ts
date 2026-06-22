@@ -5,6 +5,7 @@ import {
   AdminJwtPayloadSchema,
   AdminJoinCodeResponseSchema,
   AdminTeamCreateRequestSchema,
+  AdminTeamListResponseSchema,
   AdminTeamResponseSchema,
   AdminTeamSchema,
   AdminTeamUpdateRequestSchema,
@@ -76,6 +77,7 @@ export type AdminTeamUpdateRequest = z.infer<
   typeof AdminTeamUpdateRequestSchema
 >;
 export type AdminTeamResponse = z.infer<typeof AdminTeamResponseSchema>;
+export type AdminTeamListResponse = z.infer<typeof AdminTeamListResponseSchema>;
 export type AdminJoinCodeResponse = z.infer<typeof AdminJoinCodeResponseSchema>;
 export type AdminExportQuery = z.infer<typeof AdminExportQuerySchema>;
 export type AdminExportRecord = z.infer<typeof AdminExportRecordSchema>;

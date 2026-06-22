@@ -32,6 +32,7 @@ This task does not add:
 The Week 7 admin API surface is limited to these endpoints:
 
 - `POST /admin/workspace`
+- `GET /admin/workspace/:workspaceId/teams`
 - `POST /admin/team`
 - `PATCH /admin/team/:teamId`
 - `GET /admin/workspace/:workspaceId/join-code`
@@ -109,6 +110,30 @@ Shared contracts:
 
 - `AdminWorkspaceCreateRequestSchema`
 - `AdminWorkspaceCreateResponseSchema`
+
+### `GET /admin/workspace/:workspaceId/teams`
+
+Purpose:
+
+- list the current teams inside one workspace for the admin management flow
+
+Success response: `200`
+
+```json
+{
+  "teams": [
+    {
+      "id": "tm_product",
+      "workspace_id": "ws_hq",
+      "name": "Product"
+    }
+  ]
+}
+```
+
+Shared contract:
+
+- `AdminTeamListResponseSchema`
 
 ### `POST /admin/team`
 

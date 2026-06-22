@@ -99,4 +99,105 @@ describe("InMemoryAdminApiService", () => {
       ],
     });
   });
+
+  it("creates, lists, and renames teams within the correct workspace", async () => {
+    const workspaceDirectory = new InMemoryWorkspaceDirectory([
+      {
+        id: "ws_admin",
+        name: "MoodMarble HQ",
+        joinCode: "ABC123",
+        teams: [],
+      },
+      {
+        id: "ws_other",
+        name: "Other Workspace",
+        joinCode: "XYZ789",
+        teams: [
+          {
+            id: "tm_other",
+            name: "Other Team",
+          },
+        ],
+      },
+    ]);
+    const teamIdCandidates = ["tm_product"];
+    const adminApiService = new InMemoryAdminApiService({
+      jwtSecret: JWT_SECRET,
+      workspaceDirectory,
+      teamIdFactory: () => {
+        const candidate = teamIdCandidates.shift();
+
+        if (!candidate) {
+          throw new Error("No team id candidate left for the test.");
+        }
+
+        return candidate;
+      },
+    });
+
+    await expect(adminApiService.listTeams("ws_admin")).resolves.toEqual({
+      teams: [],
+    });
+
+    await expect(
+      adminApiService.createTeam({
+        workspaceId: "ws_admin",
+        payload: {
+          name: "Product",
+        },
+      }),
+    ).resolves.toEqual({
+      team: {
+        id: "tm_product",
+        workspace_id: "ws_admin",
+        name: "Product",
+      },
+    });
+
+    await expect(adminApiService.listTeams("ws_admin")).resolves.toEqual({
+      teams: [
+        {
+          id: "tm_product",
+          workspace_id: "ws_admin",
+          name: "Product",
+        },
+      ],
+    });
+
+    await expect(
+      adminApiService.updateTeam({
+        workspaceId: "ws_admin",
+        teamId: "tm_product",
+        payload: {
+          name: "Engineering",
+        },
+      }),
+    ).resolves.toEqual({
+      team: {
+        id: "tm_product",
+        workspace_id: "ws_admin",
+        name: "Engineering",
+      },
+    });
+
+    await expect(adminApiService.listTeams("ws_admin")).resolves.toEqual({
+      teams: [
+        {
+          id: "tm_product",
+          workspace_id: "ws_admin",
+          name: "Engineering",
+        },
+      ],
+    });
+
+    await expect(adminApiService.listTeams("ws_other")).resolves.toEqual({
+      teams: [
+        {
+          id: "tm_other",
+          workspace_id: "ws_other",
+          name: "Other Team",
+        },
+      ],
+    });
+  });
 });

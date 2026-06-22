@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import {
   AdminJoinCodeResponseSchema,
+  AdminTeamListResponseSchema,
   AdminTeamResponseSchema,
   AdminWorkspaceCreateResponseSchema,
 } from "../../../../packages/shared";
@@ -47,6 +48,17 @@ describe("admin routes", () => {
             workspace_id: workspaceId,
             name: payload.name,
           },
+        };
+      },
+      async listTeams(workspaceId) {
+        return {
+          teams: [
+            {
+              id: TEST_TEAM_ID,
+              workspace_id: workspaceId,
+              name: "Product",
+            },
+          ],
         };
       },
       async getJoinCode(workspaceId) {
@@ -129,7 +141,14 @@ describe("admin routes", () => {
     });
   });
 
-  it("creates and updates teams through admin-only routes", async () => {
+  it("lists, creates, and updates teams through admin-only routes", async () => {
+    const listResponse = await app.inject({
+      method: "GET",
+      url: `/admin/workspace/${TEST_WORKSPACE_ID}/teams`,
+      headers: {
+        authorization: createAdminAuthorizationHeader(),
+      },
+    });
     const createResponse = await app.inject({
       method: "POST",
       url: "/admin/team",
@@ -149,6 +168,20 @@ describe("admin routes", () => {
       payload: {
         name: "Engineering",
       },
+    });
+
+    expect(listResponse.statusCode).toBe(200);
+    expect(() =>
+      AdminTeamListResponseSchema.parse(listResponse.json()),
+    ).not.toThrow();
+    expect(listResponse.json()).toEqual({
+      teams: [
+        {
+          id: TEST_TEAM_ID,
+          workspace_id: TEST_WORKSPACE_ID,
+          name: "Product",
+        },
+      ],
     });
 
     expect(createResponse.statusCode).toBe(201);
@@ -194,6 +227,13 @@ describe("admin routes", () => {
   });
 
   it("forbids admin workspace routes outside the token workspace scope", async () => {
+    const listResponse = await app.inject({
+      method: "GET",
+      url: `/admin/workspace/${OTHER_WORKSPACE_ID}/teams`,
+      headers: {
+        authorization: createAdminAuthorizationHeader(),
+      },
+    });
     const joinCodeResponse = await app.inject({
       method: "GET",
       url: `/admin/workspace/${OTHER_WORKSPACE_ID}/join-code`,
@@ -209,6 +249,10 @@ describe("admin routes", () => {
       },
     });
 
+    expect(listResponse.statusCode).toBe(403);
+    expect(listResponse.json()).toEqual({
+      message: "Forbidden",
+    });
     expect(joinCodeResponse.statusCode).toBe(403);
     expect(joinCodeResponse.json()).toEqual({
       message: "Forbidden",
