@@ -109,6 +109,13 @@ export const ManagerJwtPayloadSchema = z
   })
   .strict();
 
+export const AdminJwtPayloadSchema = z
+  .object({
+    workspace_id: WorkspaceIdSchema,
+    role: z.literal("admin"),
+  })
+  .strict();
+
 export const DashboardMetricVisibilitySchema = z.enum([
   "visible",
   "blurred",

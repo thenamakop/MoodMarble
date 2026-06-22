@@ -1,5 +1,6 @@
 import { z } from "zod";
 import {
+  AdminJwtPayloadSchema,
   DashboardAlertStateSchema,
   DashboardCountValueSchema,
   DashboardDateWindowSchema,
@@ -46,6 +47,7 @@ export type HourOfDay = z.infer<typeof HourOfDaySchema>;
 export type SubmissionDate = z.infer<typeof SubmissionDateSchema>;
 export type MoodSubmissionTags = z.infer<typeof MoodSubmissionTagsSchema>;
 export type MoodSubmissionNote = z.infer<typeof MoodSubmissionNoteSchema>;
+export type AdminJwtPayload = z.infer<typeof AdminJwtPayloadSchema>;
 export type ManagerJwtPayload = z.infer<typeof ManagerJwtPayloadSchema>;
 
 export type MoodSubmission = z.infer<typeof MoodSubmissionSchema>;
