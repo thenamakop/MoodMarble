@@ -1,78 +1,73 @@
 # MoodMarble
 
-> Anonymous team mood tracking, designed for privacy-first workplace wellbeing.
+> Privacy-first anonymous team mood tracking for workplace wellbeing.
 
-MoodMarble helps teams understand collective sentiment without exposing individual responses. Team members can quickly log how they feel, while managers see only aggregated trends and insights.
+MoodMarble lets team members join a workspace without accounts, submit a mood in seconds, keep a personal on-device history, and lets managers view aggregate trends without exposing individual responses.
 
----
+## Verified Repository Status
 
-## Core Principles
+This README reflects the verified repository state through the completed Week 6 work.
 
-### Privacy First
+- Implemented: anonymous onboarding and mood submission, local personal history, manager dashboard analytics, and local reminder/settings flows
+- Stable and intentionally preserved: Week 3 member onboarding, Week 4 local history, Week 5 manager dashboard, Week 6 notifications/settings
+- Not implemented yet: Week 7 admin panel, admin JWT flow, workspace creation UI, team management UI, join-code management UI, anonymized CSV export
 
-- No names
-- No email addresses
-- No personal profiles
-- No GPS or location tracking
-- No individual mood visibility
-- No personally identifiable information stored with mood submissions
+## Current Product Scope
 
-### Anonymous by Design
+### Team member features
 
-- Mood submissions are anonymous
-- Managers only see aggregated team-level data
-- Personal mood history remains on-device
+- Anonymous join by workspace join code
+- Team selection inside the joined workspace
+- Secure device-local anonymous session restore
+- Mood submission with one mood, up to two tags, and an optional short note
+- Local-only personal mood timeline
+- Local-only streak tracking
+- Local-only monthly calendar view with previous and next month navigation
+- Exact local timestamp display for saved personal history entries
+- Local settings for reminder times, onboarding replay, and device-local data deletion
 
-### Simple and Fast
+### Manager features
 
-- Mood check-in in under 5 seconds
-- Mobile-first experience
-- Lightweight and accessible UI
+- Manager dashboard route and aggregate chart rendering
+- Daily, weekly, and tag-based team analytics
+- Privacy-threshold enforcement:
+  - dashboard views require at least 5 submissions in the selected window
+  - teams smaller than 5 members return blurred ranges
+  - hour-level detail is blocked below 3 submissions in that hour
+- Manager JWT protected dashboard endpoints
 
----
+### Admin and export status
 
-# Current Product Scope
-
-### Team Member Features
-
-- Anonymous mood submissions
-- Mood tagging
-- Optional mood notes
-- Personal mood history on the current device
-- Mood streak tracking on the current device
-- Personal mood calendar on the current device
-- Month-to-month calendar navigation on the current device
-- Exact local timestamp display in personal history on the current device
-
-### Planned Manager Features
-
-- Daily mood overview
-- Weekly trend analysis
-- Mood distribution visualization
-- Common workplace sentiment tags
-- Team wellbeing alerts
-
-### Planned Admin Features
+These spec-aligned features are planned next, but are not implemented in the current verified repo state:
 
 - Workspace creation
 - Team management
-- Join code management
-- Anonymous CSV exports
+- Join code generation and management
+- Admin JWT authorization
+- Anonymized CSV export
 
----
+## Privacy Guarantees
 
-# Technology Stack
+- No names, email addresses, or personal profiles
+- No individual manager visibility into member mood submissions
+- Personal history stays on the current device
+- Reminder preferences and reminder schedules stay on the current device
+- No new identity model beyond anonymous device and manager JWT flows
+- No reminder or settings state is sent to the backend
 
-## Mobile Application
+## Technology Stack
+
+### Mobile app
 
 - React Native
 - Expo SDK 54
 - Expo Router
 - TypeScript
 - Expo Secure Store
+- Expo Notifications
 - React Native Safe Area Context
 
-## Backend API
+### Backend API
 
 - Fastify
 - TypeScript
@@ -80,190 +75,155 @@ MoodMarble helps teams understand collective sentiment without exposing individu
 - PostgreSQL
 - Redis
 - Zod
-- Swagger
+- JSON Web Tokens
 
-## Infrastructure
+### Tooling and infrastructure
 
-- Docker
+- pnpm workspaces
+- Docker Compose
+- Jest for mobile tests
+- Vitest for backend tests
 - GitHub Actions
-- Expo EAS
-- Railway / Render
 
----
-
-# Repository Structure
+## Repository Layout
 
 ```text
-moodmarble/
+MoodMarble/
 ├── apps/
-│   ├── mobile/
-│   └── backend/
-│
+│   ├── backend/
+│   └── mobile/
+├── docs/
 ├── packages/
 │   └── shared/
-│
-├── docs/
-│   └── architecture.md
-│
-├── .github/
-│   └── workflows/
-│
 ├── docker-compose.yml
 ├── pnpm-workspace.yaml
-├── README.md
-└── package.json
+└── README.md
 ```
 
----
+## System Requirements
 
-# Getting Started
-
-## Prerequisites
-
-Install:
-
-- Node.js 20+
-- pnpm
+- Node.js 20 or newer
+- pnpm 10 or newer
 - Docker Desktop
+- Android Studio and an Android emulator if you need Android development-build verification
+- Xcode only if you plan to verify iOS native behavior locally
 
----
+## Environment Setup
 
-## Clone Repository
+The backend loads environment variables from either:
+
+- `apps/backend/.env`
+- the repository root `.env`
+
+The easiest local setup is to copy the backend example file to the project root:
+
+```powershell
+Copy-Item apps/backend/.env.example .env
+```
+
+Default local values:
+
+```env
+DATABASE_URL=postgresql://postgres:postgres@localhost:5433/moodmarble
+REDIS_URL=redis://localhost:6379
+JWT_SECRET=local-dev-jwt-secret-change-me
+HOST=0.0.0.0
+PORT=3000
+```
+
+## Installation
 
 ```bash
 git clone <repository-url>
-cd moodmarble
-```
-
----
-
-## Install Dependencies
-
-```bash
+cd MoodMarble
 pnpm install
-```
-
----
-
-## Start Infrastructure
-
-```bash
 docker compose up -d
+pnpm --filter backend db:migrate
+pnpm --filter backend db:seed
 ```
 
-This starts:
+The local seed creates:
 
-- PostgreSQL 16
-- Redis
+- workspace: `ws_localdemo`
+- join code: `ABC123`
+- teams: `tm_product`, `tm_engineering`
 
-Verify:
+## Running The Project
+
+### Backend
 
 ```bash
-docker ps
+pnpm --filter backend dev
 ```
 
----
-
-## Environment Variables
-
-Create a `.env` file in the project root:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/moodmarble
-
-REDIS_URL=redis://localhost:6379
-
-JWT_SECRET=replace-with-secure-secret
-```
-
----
-
-## Run Backend
-
-```bash
-cd apps/backend
-
-pnpm dev
-```
-
-Expected:
-
-```text
-http://localhost:3000
-```
-
-Health Check:
-
-```text
-GET /health
-```
-
----
-
-## Backend Postman Workflow
-
-### Prerequisites
-
-Before sending requests in Postman, make sure:
-
-- Postman is installed.
-- Docker Desktop is running.
-- `docker compose up -d` has started PostgreSQL and Redis.
-- The project root `.env` file exists and includes:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/moodmarble
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=replace-with-secure-secret
-```
-
-- Backend setup has been completed:
-
-```bash
-cd apps/backend
-pnpm db:migrate
-pnpm db:seed
-pnpm dev
-```
-
-- The local API base URL is:
+Expected local URL:
 
 ```text
 http://127.0.0.1:3000
 ```
 
-- Seeded local join code:
+Health check:
 
 ```text
-ABC123
+GET /health
 ```
 
-### Request 1: Health Check
+### Mobile app
 
-Use this first to confirm the backend is running.
+Start the Expo app from the repo root with workspace filtering:
 
-- Method: `GET`
-- URL: `http://127.0.0.1:3000/health`
-- Headers: none
-- Body: none
-- Expected status: `200 OK`
-- Expected response:
-
-```json
-{
-  "status": "ok"
-}
+```bash
+pnpm --filter moodmarble start
 ```
 
-### Request 2: Join Workspace
+Other useful mobile commands:
 
-Use this to get a device JWT for the anonymous submission flow.
+```bash
+pnpm --filter moodmarble android
+pnpm --filter moodmarble ios
+pnpm --filter moodmarble web
+pnpm --filter moodmarble test
+pnpm --filter moodmarble lint
+```
 
-- Method: `POST`
-- URL: `http://127.0.0.1:3000/workspace/join`
-- Headers:
-  - `Content-Type: application/json`
-- Body:
+### Supported local runtimes
+
+- Expo Go: anonymous onboarding, mood submission, local history, manager route shell, and local settings UI
+- Android development build: required for real Android local notification scheduling verification
+- iOS native runtime: required for native iOS notification verification
+- Web: useful for flow checks, but reminders remain local-only and web does not schedule notifications
+
+## API Overview
+
+### Member-facing endpoints
+
+- `GET /health`
+- `POST /workspace/join`
+- `POST /mood`
+
+### Manager-facing endpoints
+
+- `GET /dashboard/team/:teamId/daily`
+- `GET /dashboard/team/:teamId/weekly`
+- `GET /dashboard/team/:teamId/tags`
+
+Manager endpoints require a valid manager JWT in the `Authorization` header. The current repository does not yet include a dedicated manager login UI.
+
+### Not available yet
+
+The following spec items are not yet exposed by the current backend:
+
+- `/admin/team`
+- `/admin/workspace/:id/export`
+- admin authorization endpoints or admin UI routes
+
+## Local Usage Notes
+
+### Joining a workspace
+
+Use the seeded join code `ABC123` to exercise the anonymous member flow locally.
+
+Example request:
 
 ```json
 {
@@ -272,306 +232,99 @@ Use this to get a device JWT for the anonymous submission flow.
 }
 ```
 
-- Expected status: `200 OK`
-- Expected response shape:
+The join response returns:
 
-```json
-{
-  "workspace": {
-    "id": "ws_localdemo",
-    "name": "MoodMarble Local Workspace"
-  },
-  "teams": [
-    {
-      "id": "tm_product",
-      "name": "Product"
-    },
-    {
-      "id": "tm_engineering",
-      "name": "Engineering"
-    }
-  ],
-  "device_jwt": "<signed-jwt>"
-}
-```
+- workspace metadata
+- available teams
+- a signed `device_jwt` for anonymous mood submission
 
-Save the returned `device_jwt`. You will use it in the `Authorization` header for `POST /mood`.
+### Mood submission constraints
 
-### Request 3: Submit Mood
+- one mood per submission
+- up to two tags per submission
+- optional note up to 120 characters
+- `hour_of_day` must be an integer from `0` to `23`
+- the same anonymous device is limited to 5 submissions per local day
 
-Use the JWT from the join response and submit only anonymous mood data.
+### Reminder behavior
 
-- Method: `POST`
-- URL: `http://127.0.0.1:3000/mood`
-- Headers:
-  - `Content-Type: application/json`
-  - `Authorization: Bearer <device_jwt>`
-- Body parameters:
-  - `workspace_id`: workspace ID returned from join
-  - `team_id`: one of the team IDs returned from join
-  - `mood_type`: one of the 9 allowed moods
-  - `tags`: up to 2 allowed tags
-  - `note`: optional, max 120 characters
-  - `hour_of_day`: integer hour only, `0` through `23`
-- Example body:
+- reminder settings are stored locally on-device
+- reminder schedules are stored locally on-device
+- Android Expo Go can open the settings flow, but real Android notification scheduling requires a development build
+- local data deletion clears device-stored session, history, reminder, and settings state only
 
-```json
-{
-  "workspace_id": "ws_localdemo",
-  "team_id": "tm_product",
-  "mood_type": "happy",
-  "tags": ["#team", "#recognition"],
-  "note": "Feeling good after planning.",
-  "hour_of_day": 10
-}
-```
+## Windows And Android Development Notes
 
-- Expected status: `201 Created`
-- Expected response:
+These notes reflect the current verified repo behavior and recent Android dev-client fixes.
 
-```json
-{
-  "status": "received",
-  "marble_id": "mr_1234567890"
-}
-```
+- If ports `3000` or `8081` are stuck from a previous run, stop the stale process before restarting the backend or Metro
+- Windows native Android builds may require a short pnpm virtual store directory such as `C:\mmvs` to avoid path-length issues
+- Metro is configured to resolve symlinked packages correctly for the Windows short-store setup
+- Avoid eager top-level imports of `expo-notifications` in startup route paths so Expo Go stays stable
+- For physical-device testing, keep `apps/mobile/.env.local` local-only and set `EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:3000`
 
-### Allowed Submission Values
+## Recent Changes And Developer Impact
 
-Use only these spec-aligned values in Postman.
+### Newly reflected in this README
 
-- `mood_type`:
-  - `energised`
-  - `happy`
-  - `calm`
-  - `focused`
-  - `neutral`
-  - `tired`
-  - `stressed`
-  - `sad`
-  - `unheard`
-- `tags`:
-  - `#meetings`
-  - `#workload`
-  - `#management`
-  - `#team`
-  - `#deadlines`
-  - `#recognition`
+- The manager dashboard is implemented and should no longer be treated as a planned feature
+- Local-only settings and reminder flows are implemented and verified at the code and test level
+- Native settings handoff from the member home flow is covered by focused regression tests
+- Metro now supports symlink-aware resolution needed for the Windows short virtual-store Android setup
 
-### Common Response Codes
+### Important workflow changes
 
-- `200 OK`: health check passed or workspace join succeeded
-- `201 Created`: mood submission succeeded
-- `400 Bad Request`: invalid join payload or invalid mood payload
-- `401 Unauthorized`: missing or invalid device JWT on `POST /mood`
-- `404 Not Found`: join code does not exist
-- `429 Too Many Requests`: more than 5 mood submissions sent for the same device on the same day
-- `500 Internal Server Error`: backend configuration issue, such as missing `JWT_SECRET`
+- Android reminder verification now requires a development build instead of relying on Expo Go
+- Admin panel and CSV export work remain future scope and should not be treated as present functionality
+- The current repository boundary for the next sprint is Week 7 admin responsibilities only: workspace creation, team management, join code generation or copying, and CSV export
 
-### Troubleshooting
+## Testing
 
-- `POST /workspace/join` returns `404`
-  - Make sure you are using the seeded join code `ABC123`.
-  - Re-run `pnpm db:seed` from `apps/backend`.
-- `POST /mood` returns `401`
-  - Make sure `Authorization` is exactly `Bearer <device_jwt>`.
-  - Get a fresh token by calling `POST /workspace/join` again.
-- `POST /mood` returns `400`
-  - Check `hour_of_day` is an integer from `0` to `23`.
-  - Check `mood_type` matches one of the allowed values exactly.
-  - Check `tags` contains at most 2 allowed values.
-  - Check `note` is 120 characters or fewer.
-- `POST /mood` returns `429`
-  - The anonymous device has reached the daily limit of 5 submissions.
-  - Join again to get a different test JWT, or wait until the next day boundary for the same device token.
-- Requests fail to connect
-  - Confirm the backend is running on `http://127.0.0.1:3000`.
-  - Confirm Docker containers are healthy with `docker compose ps`.
-  - Confirm the root `.env` still points to Docker Postgres on port `5433`.
-
----
-
-## Run Mobile App
+Backend:
 
 ```bash
-cd apps/mobile
-
-pnpm start
+pnpm --filter backend test
 ```
 
-Open using:
-
-- Expo Go (Android) for onboarding, join, mood submission, history, dashboard, and local settings UI
-- Expo Go (iOS)
-- Android Emulator
-- iOS Simulator
-
-### Reminder Runtime Notes
-
-- Reminder settings always save locally on the current device.
-- Android Expo Go can open the app and settings screen, but Android reminder scheduling requires a development build.
-- Android development builds can schedule and cancel local reminder notifications.
-- iOS supports local reminder scheduling in supported native runtimes.
-- Web keeps reminder settings local-only and does not schedule notifications.
-
-### Android Development Build
-
-If you need to verify Android reminder scheduling instead of the Expo Go local-only path:
+Mobile:
 
 ```bash
-cd apps/mobile
-
-npx expo run:android
-npx expo start --dev-client
+pnpm --filter moodmarble test
+pnpm --filter moodmarble lint
 ```
 
-Use the installed development build on the emulator or device to open the project after the native client is created.
+Recent verified coverage includes:
 
-### Physical Device Setup
+- anonymous join and device JWT behavior
+- mood submission contracts and rate limiting
+- local history timeline, calendar, and streak behavior
+- manager dashboard route and chart rendering
+- manager dashboard privacy-threshold enforcement
+- local settings, onboarding replay, reminder state, and local data deletion
 
-- Run the backend on the host machine.
-- Keep the phone and computer on the same Wi-Fi network.
-- Use the host LAN IP, not `localhost`, for physical devices.
-- Set `apps/mobile/.env.local` to `EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:3000`.
-- Keep that env file local-only and do not commit it.
-- Start Expo from `apps/mobile`.
-- Restart Expo after changing `apps/mobile/.env.local`.
-- Web and emulator behavior remain unchanged.
+## Documentation
 
----
+- `docs/architecture.md`: implementation blueprint and milestone plan
+- `docs/week-3-workspace-audit.md`: Week 3 audit and gap analysis
+- `docs/week-4-handoff.md`: local-history boundary and verification notes
+- `docs/week-5-handoff.md`: manager dashboard boundary and verification notes
+- `docs/week-6-handoff.md`: settings and reminder boundary and verification notes
+- `docs/task-tracker.md`: milestone tracking through upcoming admin and export work
 
-## Local-Only QoL Addendum
+## Contribution Guidelines
 
-- The personal mood calendar now supports previous and next month navigation using already-saved local device history only.
-- The personal mood timeline now shows the exact local upload time for each saved marble as a secondary UI detail.
-- These quality-of-life features remain device-local only.
-- They do not add backend fields, backend API calls, manager visibility, or dashboard exposure.
-- They do not change the anonymous join model, device session model, rate limiting, or `submission_date` local-day semantics.
+- Follow the project specification and the verified repository state
+- Keep changes privacy-safe and account-light
+- Do not introduce a new identity model unless a blocking bug makes a minimal fix unavoidable
+- Keep personal history, reminder state, and local settings on-device unless the spec explicitly changes
+- Add or update focused tests when behavior changes
+- Keep debug artifacts, local logs, screenshots, and one-off investigation files out of commits
+- During the current Week 7 sprint, keep changes scoped to admin and export responsibilities and avoid touching stable Week 3-6 flows unless fixing a narrowly scoped bug
 
----
+## License
 
-# Development Status
+Private project. All rights reserved.
 
-## Current Phase
+## Contributor
 
-**Week 6 local settings and reminder foundations are implemented**
-
-### Completed
-
-- Repository structure
-- Shared schema package
-- Anonymous mood submission API
-- Workspace join foundation and device JWT issuance
-- Device-generated anonymous token flow
-- Mobile onboarding slides
-- Join-code entry and team selection flow
-- Secure anonymous session persistence and recovery
-- Route protection for the anonymous member flow
-- Week 3 privacy and specification compliance audit
-- Per-device daily rate limiting
-- Marble tray submission UI
-- Confirmation flow
-- Local-device-day submission semantics
-- Local-only history storage
-- Local-only history timeline screen
-- Local-only streak tracking
-- Local-only mood calendar screen
-- Local-only month navigation for the mood calendar
-- Exact local timestamp display in personal history
-- Local-only reminder settings and reminder-time persistence
-- Settings screen for reminder preferences, onboarding replay, and local data deletion
-- Android Expo Go-safe reminder runtime boundary
-- Development-build reminder scheduling and cancellation support
-- Local onboarding replay without creating a new identity
-- Device-local data deletion for session, history, and reminder state
-- Backend and mobile verification coverage for the Week 3 flow
-- Backend and mobile verification coverage for the Week 4 local history flow
-- Focused Week 6 settings and reminder regression coverage
-- Docker infrastructure
-
-### Stable for Week 6
-
-- Anonymous onboarding and join flow
-- Workspace-scoped team selection
-- Device JWT issuance and validation
-- Secure mobile session restore and fallback to onboarding
-- Privacy-safe join and submission error handling
-- Local-only timeline, streak, and monthly calendar history
-- Exact local timestamp display stored only on-device
-- Local reminder preferences stored only on-device
-- Onboarding replay request handling stored only on-device
-- Local data deletion for anonymous member state
-- Android emulator, web, and physical-device local development paths
-
-### Upcoming
-
-- Manager dashboard routes and privacy-threshold logic
-- Admin-managed workspace and team setup
-- Export flows and later-phase integrations
-
----
-
-# Documentation
-
-| Document             | Purpose                                          |
-| -------------------- | ------------------------------------------------ |
-| docs/architecture.md | System architecture and implementation blueprint |
-
----
-
-# Development Guidelines
-
-### Before Building Features
-
-1. Define shared types and schemas.
-2. Update architecture documentation when needed.
-3. Create database schema before route implementation.
-4. Build backend contracts before frontend integration.
-5. Verify privacy requirements before merging.
-
-### Privacy Checklist
-
-Every feature must satisfy:
-
-- [ ] No PII collected
-- [ ] No user identification possible
-- [ ] No raw notes stored server-side
-- [ ] No individual manager visibility
-- [ ] Aggregation thresholds respected
-
----
-
-# Roadmap
-
-### Phase 1 — MVP
-
-- Anonymous mood submissions
-- Team dashboards
-- Personal mood history
-- Daily prompts
-- Team management
-- CSV export
-
-### Phase 2
-
-- Mood of the Week
-- Custom marble sets
-- Anonymous suggestion box
-- Insight generation
-- Collaboration platform integrations
-
----
-
-# License
-
-Private project.
-
-All rights reserved.
-
----
-
-# Contributors
-
-Maulik Gupta (thenamkop)
-
-[![GitHub Profile](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/thenamakop)
+- Maulik Gupta ([thenamakop](https://github.com/thenamakop))
