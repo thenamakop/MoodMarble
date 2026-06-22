@@ -1,5 +1,5 @@
+import { inject } from "./http-client";
 import jwt from "jsonwebtoken";
-import { beforeEach, describe, expect, it } from "vitest";
 
 import { DashboardWeeklySchema } from "../../../../packages/shared";
 
@@ -56,7 +56,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
@@ -111,7 +111,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
   });
 
   it("rejects requests without a valid manager jwt", async () => {
-    const missingJwtResponse = await app.inject({
+    const missingJwtResponse = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
     });
@@ -127,7 +127,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
         expiresIn: "30d",
       },
     );
-    const wrongRoleResponse = await app.inject({
+    const wrongRoleResponse = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
@@ -162,7 +162,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
@@ -214,14 +214,14 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const firstResponse = await app.inject({
+    const firstResponse = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
         authorization: createManagerAuthorizationHeader(),
       },
     });
-    const secondResponse = await app.inject({
+    const secondResponse = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
@@ -256,7 +256,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {
@@ -314,7 +314,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/weekly?start_date=${TEST_START_DATE}`,
       headers: {

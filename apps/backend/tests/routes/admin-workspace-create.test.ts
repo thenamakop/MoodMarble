@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { inject } from "./http-client";
 
 import {
   AdminTeamListResponseSchema,
@@ -18,7 +18,7 @@ describe("admin workspace creation integration", () => {
       adminBootstrapSecret: ADMIN_BOOTSTRAP_SECRET,
     });
 
-    const createWorkspaceResponse = await app.inject({
+    const createWorkspaceResponse = await inject(app, {
       method: "POST",
       url: "/admin/workspace",
       headers: {
@@ -41,7 +41,7 @@ describe("admin workspace creation integration", () => {
       "created_at",
     );
 
-    const joinWorkspaceResponse = await app.inject({
+    const joinWorkspaceResponse = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -70,7 +70,7 @@ describe("admin workspace creation integration", () => {
       adminBootstrapSecret: ADMIN_BOOTSTRAP_SECRET,
     });
 
-    const createWorkspaceResponse = await app.inject({
+    const createWorkspaceResponse = await inject(app, {
       method: "POST",
       url: "/admin/workspace",
       headers: {
@@ -82,7 +82,7 @@ describe("admin workspace creation integration", () => {
     });
     const adminAuthorization = `Bearer ${createWorkspaceResponse.json().admin_jwt}`;
 
-    const createTeamResponse = await app.inject({
+    const createTeamResponse = await inject(app, {
       method: "POST",
       url: "/admin/team",
       headers: {
@@ -102,7 +102,7 @@ describe("admin workspace creation integration", () => {
       },
     });
 
-    const renameTeamResponse = await app.inject({
+    const renameTeamResponse = await inject(app, {
       method: "PATCH",
       url: `/admin/team/${createTeamResponse.json().team.id}`,
       headers: {
@@ -122,7 +122,7 @@ describe("admin workspace creation integration", () => {
       },
     });
 
-    const listTeamsResponse = await app.inject({
+    const listTeamsResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${createWorkspaceResponse.json().workspace.id}/teams`,
       headers: {
@@ -144,7 +144,7 @@ describe("admin workspace creation integration", () => {
       ],
     });
 
-    const joinWorkspaceResponse = await app.inject({
+    const joinWorkspaceResponse = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -178,7 +178,7 @@ describe("admin workspace creation integration", () => {
       adminBootstrapSecret: ADMIN_BOOTSTRAP_SECRET,
     });
 
-    const createWorkspaceResponse = await app.inject({
+    const createWorkspaceResponse = await inject(app, {
       method: "POST",
       url: "/admin/workspace",
       headers: {
@@ -190,7 +190,7 @@ describe("admin workspace creation integration", () => {
     });
     const adminAuthorization = `Bearer ${createWorkspaceResponse.json().admin_jwt}`;
 
-    const createTeamResponse = await app.inject({
+    const createTeamResponse = await inject(app, {
       method: "POST",
       url: "/admin/team",
       headers: {
@@ -201,7 +201,7 @@ describe("admin workspace creation integration", () => {
       },
     });
 
-    const joinWorkspaceResponse = await app.inject({
+    const joinWorkspaceResponse = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -212,7 +212,7 @@ describe("admin workspace creation integration", () => {
 
     const deviceAuthorization = `Bearer ${joinWorkspaceResponse.json().device_jwt}`;
 
-    const firstMoodResponse = await app.inject({
+    const firstMoodResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -228,7 +228,7 @@ describe("admin workspace creation integration", () => {
         submission_date: "2026-06-12",
       },
     });
-    const secondMoodResponse = await app.inject({
+    const secondMoodResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -248,7 +248,7 @@ describe("admin workspace creation integration", () => {
     expect(firstMoodResponse.statusCode).toBe(201);
     expect(secondMoodResponse.statusCode).toBe(201);
 
-    const exportResponse = await app.inject({
+    const exportResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${createWorkspaceResponse.json().workspace.id}/export?start_date=2026-06-01&end_date=2026-06-30`,
       headers: {
@@ -289,7 +289,7 @@ describe("admin workspace creation integration", () => {
     expect(exportResponse.body).not.toContain("history");
     expect(exportResponse.body).not.toContain("2026-07-02");
 
-    const rejoinResponse = await app.inject({
+    const rejoinResponse = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -316,7 +316,7 @@ describe("admin workspace creation integration", () => {
       adminBootstrapSecret: ADMIN_BOOTSTRAP_SECRET,
     });
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/admin/workspace",
       payload: {

@@ -1,5 +1,5 @@
+import { inject } from "./http-client";
 import jwt from "jsonwebtoken";
-import { beforeEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../../src/app";
 import { createManagerJwt } from "../../src/auth/manager-jwt";
@@ -29,7 +29,7 @@ describe("POST /workspace/team-member", () => {
   it("registers an anonymous team member without duplicating repeated device joins", async () => {
     const authorization = createDeviceAuthorizationHeader();
 
-    const firstResponse = await app.inject({
+    const firstResponse = await inject(app, {
       method: "POST",
       url: "/workspace/team-member",
       headers: {
@@ -39,7 +39,7 @@ describe("POST /workspace/team-member", () => {
         team_id: TEST_TEAM_ID,
       },
     });
-    const secondResponse = await app.inject({
+    const secondResponse = await inject(app, {
       method: "POST",
       url: "/workspace/team-member",
       headers: {
@@ -66,7 +66,7 @@ describe("POST /workspace/team-member", () => {
   });
 
   it("rejects team registrations outside the joined workspace", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/team-member",
       headers: {

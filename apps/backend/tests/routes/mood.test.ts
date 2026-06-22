@@ -1,5 +1,5 @@
+import { inject } from "./http-client";
 import jwt from "jsonwebtoken";
-import { beforeEach, describe, expect, it } from "vitest";
 
 import { buildApp } from "../../src/app";
 import type { MoodSubmissionStore } from "../../src/services/mood-submissions";
@@ -41,7 +41,7 @@ describe("POST /mood", () => {
   });
 
   it("accepts a valid anonymous submission", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -63,7 +63,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects requests without a device JWT", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       payload: {
@@ -81,7 +81,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects requests with an invalid device JWT", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -110,7 +110,7 @@ describe("POST /mood", () => {
         expiresIn: -1,
       },
     );
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -129,7 +129,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects an invalid mood type", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -145,7 +145,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects more than 2 tags", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -162,7 +162,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects duplicate tags", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -182,7 +182,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects a note longer than 120 characters", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -199,7 +199,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects a missing or invalid hour_of_day", async () => {
-    const missingHourResponse = await app.inject({
+    const missingHourResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -213,7 +213,7 @@ describe("POST /mood", () => {
       },
     });
 
-    const invalidHourResponse = await app.inject({
+    const invalidHourResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -230,7 +230,7 @@ describe("POST /mood", () => {
   });
 
   it("stores only anonymous submission fields", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -266,7 +266,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects submissions for a different workspace than the joined JWT", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -292,7 +292,7 @@ describe("POST /mood", () => {
   });
 
   it("rejects submissions for a team outside the submitted workspace", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -323,7 +323,7 @@ describe("POST /mood", () => {
       submissionNumber < 5;
       submissionNumber += 1
     ) {
-      const response = await app.inject({
+      const response = await inject(app, {
         method: "POST",
         url: "/mood",
         headers: {
@@ -347,7 +347,7 @@ describe("POST /mood", () => {
       submissionNumber < 5;
       submissionNumber += 1
     ) {
-      const response = await app.inject({
+      const response = await inject(app, {
         method: "POST",
         url: "/mood",
         headers: {
@@ -362,7 +362,7 @@ describe("POST /mood", () => {
       expect(response.statusCode).toBe(201);
     }
 
-    const blockedResponse = await app.inject({
+    const blockedResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -387,7 +387,7 @@ describe("POST /mood", () => {
       submissionNumber < 5;
       submissionNumber += 1
     ) {
-      const response = await app.inject({
+      const response = await inject(app, {
         method: "POST",
         url: "/mood",
         headers: {
@@ -402,7 +402,7 @@ describe("POST /mood", () => {
       expect(response.statusCode).toBe(201);
     }
 
-    const nextDayResponse = await app.inject({
+    const nextDayResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
@@ -430,7 +430,7 @@ describe("POST /mood", () => {
       submissionNumber < 5;
       submissionNumber += 1
     ) {
-      await app.inject({
+      await inject(app, {
         method: "POST",
         url: "/mood",
         headers: {
@@ -444,7 +444,7 @@ describe("POST /mood", () => {
       });
     }
 
-    const blockedResponse = await app.inject({
+    const blockedResponse = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {

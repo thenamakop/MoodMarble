@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it } from "vitest";
+import { inject } from "./http-client";
 import {
   AdminJoinCodeResponseSchema,
   AdminTeamListResponseSchema,
@@ -100,7 +100,7 @@ describe("admin routes", () => {
   });
 
   it("creates a workspace through the bootstrap-only admin entrypoint", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/admin/workspace",
       headers: {
@@ -127,7 +127,7 @@ describe("admin routes", () => {
   });
 
   it("rejects workspace creation without the bootstrap secret", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/admin/workspace",
       payload: {
@@ -142,14 +142,14 @@ describe("admin routes", () => {
   });
 
   it("lists, creates, and updates teams through admin-only routes", async () => {
-    const listResponse = await app.inject({
+    const listResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${TEST_WORKSPACE_ID}/teams`,
       headers: {
         authorization: createAdminAuthorizationHeader(),
       },
     });
-    const createResponse = await app.inject({
+    const createResponse = await inject(app, {
       method: "POST",
       url: "/admin/team",
       headers: {
@@ -159,7 +159,7 @@ describe("admin routes", () => {
         name: "Product",
       },
     });
-    const updateResponse = await app.inject({
+    const updateResponse = await inject(app, {
       method: "PATCH",
       url: `/admin/team/${TEST_TEAM_ID}`,
       headers: {
@@ -238,7 +238,7 @@ describe("admin routes", () => {
     ];
 
     for (const request of protectedRequests) {
-      const response = await app.inject(request);
+      const response = await inject(app, request);
 
       expect(response.statusCode).toBe(401);
       expect(response.json()).toEqual({
@@ -288,7 +288,7 @@ describe("admin routes", () => {
     ];
 
     for (const request of protectedRequests) {
-      const response = await app.inject({
+      const response = await inject(app, {
         ...request,
         headers: {
           authorization: `Bearer ${managerJwt}`,
@@ -303,21 +303,21 @@ describe("admin routes", () => {
   });
 
   it("forbids admin workspace routes outside the token workspace scope", async () => {
-    const listResponse = await app.inject({
+    const listResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${OTHER_WORKSPACE_ID}/teams`,
       headers: {
         authorization: createAdminAuthorizationHeader(),
       },
     });
-    const joinCodeResponse = await app.inject({
+    const joinCodeResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${OTHER_WORKSPACE_ID}/join-code`,
       headers: {
         authorization: createAdminAuthorizationHeader(),
       },
     });
-    const exportResponse = await app.inject({
+    const exportResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${OTHER_WORKSPACE_ID}/export?start_date=2026-06-01&end_date=2026-06-30`,
       headers: {
@@ -340,21 +340,21 @@ describe("admin routes", () => {
   });
 
   it("returns safe join-code and CSV export responses for the scoped admin workflow", async () => {
-    const getJoinCodeResponse = await app.inject({
+    const getJoinCodeResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
       headers: {
         authorization: createAdminAuthorizationHeader(),
       },
     });
-    const rotateJoinCodeResponse = await app.inject({
+    const rotateJoinCodeResponse = await inject(app, {
       method: "POST",
       url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
       headers: {
         authorization: createAdminAuthorizationHeader(),
       },
     });
-    const exportResponse = await app.inject({
+    const exportResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${TEST_WORKSPACE_ID}/export?start_date=2026-06-01&end_date=2026-06-30`,
       headers: {
@@ -403,7 +403,7 @@ describe("admin routes", () => {
   });
 
   it("rejects invalid admin payloads and export date ranges", async () => {
-    const invalidTeamResponse = await app.inject({
+    const invalidTeamResponse = await inject(app, {
       method: "POST",
       url: "/admin/team",
       headers: {
@@ -414,7 +414,7 @@ describe("admin routes", () => {
         workspace_id: TEST_WORKSPACE_ID,
       },
     });
-    const invalidExportResponse = await app.inject({
+    const invalidExportResponse = await inject(app, {
       method: "GET",
       url: `/admin/workspace/${TEST_WORKSPACE_ID}/export?start_date=2026-06-30&end_date=2026-06-01`,
       headers: {

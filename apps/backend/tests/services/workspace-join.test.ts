@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { describe, expect, it } from "vitest";
 import { ZodError } from "zod";
 
 import { WorkspaceJoinResponseSchema } from "../../../../packages/shared";

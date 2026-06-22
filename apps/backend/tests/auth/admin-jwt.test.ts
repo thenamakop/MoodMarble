@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { describe, expect, it } from "vitest";
 
 import {
   ADMIN_JWT_EXPIRES_IN,
@@ -34,8 +33,8 @@ describe("admin jwt auth", () => {
     const decoded = jwt.decode(adminJwt) as jwt.JwtPayload;
 
     expect(ADMIN_JWT_EXPIRES_IN).toBe("30d");
-    expect(decoded.exp).toBeTypeOf("number");
-    expect(decoded.iat).toBeTypeOf("number");
+    expect(typeof decoded.exp).toBe("number");
+    expect(typeof decoded.iat).toBe("number");
     expect((decoded.exp ?? 0) - (decoded.iat ?? 0)).toBe(30 * 24 * 60 * 60);
   });
 
@@ -90,3 +89,4 @@ describe("admin jwt auth", () => {
     ).toThrowError(UnauthorizedError);
   });
 });
+

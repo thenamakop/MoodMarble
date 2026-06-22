@@ -1,5 +1,5 @@
+import { inject } from "./http-client";
 import jwt from "jsonwebtoken";
-import { beforeEach, describe, expect, it } from "vitest";
 
 import { DashboardDailySchema } from "../../../../packages/shared";
 
@@ -80,7 +80,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
       headers: {
@@ -130,7 +130,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
   });
 
   it("rejects requests without a valid manager jwt", async () => {
-    const missingJwtResponse = await app.inject({
+    const missingJwtResponse = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
     });
@@ -146,7 +146,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
         expiresIn: "30d",
       },
     );
-    const wrongRoleResponse = await app.inject({
+    const wrongRoleResponse = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
       headers: {
@@ -165,7 +165,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
   });
 
   it("forbids access when the manager token is scoped to a different team", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
       headers: {
@@ -195,7 +195,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
       headers: {
@@ -245,7 +245,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
       headers: {
@@ -308,7 +308,7 @@ describe("GET /dashboard/team/:teamId/daily", () => {
     });
     app = await createTestApp(dashboardAnalyticsSource);
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: `/dashboard/team/${TEST_TEAM_ID}/daily?date=${TEST_DATE}`,
       headers: {

@@ -1,5 +1,5 @@
+import { inject } from "./http-client";
 import jwt from "jsonwebtoken";
-import { beforeEach, describe, expect, it } from "vitest";
 
 import { WorkspaceJoinResponseSchema } from "../../../../packages/shared";
 
@@ -29,7 +29,7 @@ describe("backend foundation routes", () => {
   });
 
   it("returns OK from GET /health", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "GET",
       url: "/health",
     });
@@ -41,7 +41,7 @@ describe("backend foundation routes", () => {
   });
 
   it("joins a workspace with a valid public join code", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -78,7 +78,7 @@ describe("backend foundation routes", () => {
   });
 
   it("returns a join response that matches the shared contract", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -94,7 +94,7 @@ describe("backend foundation routes", () => {
   });
 
   it("returns not found for an unknown join code", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -113,7 +113,7 @@ describe("backend foundation routes", () => {
   });
 
   it("rejects an invalid join code payload", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -129,7 +129,7 @@ describe("backend foundation routes", () => {
   });
 
   it("rejects privacy-breaking extra fields in the join payload", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -147,7 +147,7 @@ describe("backend foundation routes", () => {
   });
 
   it("rejects a missing join code payload", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {},
@@ -183,7 +183,7 @@ describe("backend foundation routes", () => {
   });
 
   it("keeps POST /workspace/join public", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -196,7 +196,7 @@ describe("backend foundation routes", () => {
   });
 
   it("answers the local web preflight for POST /workspace/join", async () => {
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "OPTIONS",
       url: "/workspace/join",
       headers: {
@@ -214,7 +214,7 @@ describe("backend foundation routes", () => {
   });
 
   it("allows a joined device JWT to submit a mood", async () => {
-    const joinResponse = await app.inject({
+    const joinResponse = await inject(app, {
       method: "POST",
       url: "/workspace/join",
       payload: {
@@ -223,7 +223,7 @@ describe("backend foundation routes", () => {
       },
     });
 
-    const response = await app.inject({
+    const response = await inject(app, {
       method: "POST",
       url: "/mood",
       headers: {
