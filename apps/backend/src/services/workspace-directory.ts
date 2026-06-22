@@ -39,9 +39,11 @@ export const LOCAL_WORKSPACE_SEED: WorkspaceDirectoryEntry[] = [
 ];
 
 export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
-  constructor(
-    private readonly workspaces: WorkspaceDirectoryEntry[] = LOCAL_WORKSPACE_SEED,
-  ) {}
+  private readonly workspaces: WorkspaceDirectoryEntry[];
+
+  constructor(workspaces: WorkspaceDirectoryEntry[] = LOCAL_WORKSPACE_SEED) {
+    this.workspaces = workspaces.map(cloneWorkspaceDirectoryEntry);
+  }
 
   async findByJoinCode(
     joinCode: string,
@@ -67,6 +69,38 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
     return workspace.teams.some(
       (team): team is TeamSummary & { id: TeamId } => team.id === teamId,
     );
+  }
+
+  async findById(workspaceId: string): Promise<WorkspaceDirectoryEntry | null> {
+    return (
+      this.workspaces.find(
+        (currentWorkspace) => currentWorkspace.id === workspaceId,
+      ) ?? null
+    );
+  }
+
+  async addWorkspace(
+    workspace: WorkspaceDirectoryEntry,
+  ): Promise<WorkspaceDirectoryEntry> {
+    const storedWorkspace = cloneWorkspaceDirectoryEntry(workspace);
+    this.workspaces.push(storedWorkspace);
+    return cloneWorkspaceDirectoryEntry(storedWorkspace);
+  }
+
+  async updateJoinCode(
+    workspaceId: string,
+    joinCode: string,
+  ): Promise<WorkspaceDirectoryEntry | null> {
+    const workspace = this.workspaces.find(
+      (currentWorkspace) => currentWorkspace.id === workspaceId,
+    );
+
+    if (!workspace) {
+      return null;
+    }
+
+    workspace.joinCode = joinCode;
+    return cloneWorkspaceDirectoryEntry(workspace);
   }
 }
 
@@ -113,4 +147,18 @@ export class PostgresWorkspaceDirectory implements WorkspaceDirectory {
 
     return teamRecord?.workspaceId === workspaceId;
   }
+}
+
+function cloneWorkspaceDirectoryEntry(
+  workspace: WorkspaceDirectoryEntry,
+): WorkspaceDirectoryEntry {
+  return {
+    id: workspace.id,
+    name: workspace.name,
+    joinCode: workspace.joinCode,
+    teams: workspace.teams.map((team) => ({
+      id: team.id,
+      name: team.name,
+    })),
+  };
 }

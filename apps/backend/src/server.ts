@@ -3,6 +3,7 @@ import Redis from "ioredis";
 import { buildApp } from "./app";
 import { getAppEnv } from "./config/env";
 import { createDatabaseClient, verifyDatabaseConnection } from "./db/client";
+import { PostgresAdminApiService } from "./services/admin-api";
 import { PostgresDashboardAnalyticsSource } from "./services/dashboard-daily";
 import { PostgresMoodSubmissionStore } from "./services/mood-submissions";
 import { RedisSubmissionRateLimiter } from "./services/submission-rate-limit";
@@ -21,6 +22,10 @@ async function startServer(): Promise<void> {
   const app = await buildApp({
     jwtSecret: env.JWT_SECRET,
     adminBootstrapSecret: env.ADMIN_BOOTSTRAP_SECRET,
+    adminApiService: new PostgresAdminApiService({
+      databaseClient,
+      jwtSecret: env.JWT_SECRET,
+    }),
     dashboardAnalyticsSource: new PostgresDashboardAnalyticsSource(
       databaseClient,
     ),

@@ -22,6 +22,7 @@ import { verifyAdminJwt } from "../auth/admin-jwt";
 import { MissingJwtSecretError, UnauthorizedError } from "../auth/device-jwt";
 import {
   AdminApiNotImplementedError,
+  AdminWorkspaceNotFoundError,
   type AdminApiService,
 } from "../services/admin-api";
 
@@ -273,6 +274,10 @@ function handleAdminError(
 
   if (error instanceof AdminApiNotImplementedError) {
     return reply.status(501).send({ message: error.message });
+  }
+
+  if (error instanceof AdminWorkspaceNotFoundError) {
+    return reply.status(404).send({ message: error.message });
   }
 
   if (error instanceof ZodError) {

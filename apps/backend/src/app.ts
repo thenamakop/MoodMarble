@@ -9,6 +9,7 @@ import { registerHealthRoutes } from "./routes/health";
 import { registerMoodRoute } from "./routes/mood";
 import { registerWorkspaceJoinRoute } from "./routes/workspace-join";
 import {
+  InMemoryAdminApiService,
   NotImplementedAdminApiService,
   type AdminApiService,
 } from "./services/admin-api";
@@ -62,7 +63,11 @@ export async function buildApp(
     jwtSecret: options.jwtSecret,
     adminBootstrapSecret: options.adminBootstrapSecret,
     adminApiService:
-      options.adminApiService ?? new NotImplementedAdminApiService(),
+      options.adminApiService ??
+      createDefaultAdminApiService({
+        jwtSecret: options.jwtSecret,
+        workspaceDirectory,
+      }),
   });
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
@@ -103,4 +108,18 @@ export async function buildApp(
   });
 
   return app;
+}
+
+function createDefaultAdminApiService(options: {
+  jwtSecret?: string;
+  workspaceDirectory: WorkspaceDirectory;
+}): AdminApiService {
+  if (options.workspaceDirectory instanceof InMemoryWorkspaceDirectory) {
+    return new InMemoryAdminApiService({
+      jwtSecret: options.jwtSecret,
+      workspaceDirectory: options.workspaceDirectory,
+    });
+  }
+
+  return new NotImplementedAdminApiService();
 }
