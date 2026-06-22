@@ -17,6 +17,7 @@ const AppEnvSchema = z.object({
   DATABASE_URL: z.string().min(1),
   REDIS_URL: z.string().min(1),
   JWT_SECRET: JwtSecretSchema,
+  ADMIN_BOOTSTRAP_SECRET: z.string().trim().min(1).optional(),
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(3000),
 });

@@ -20,6 +20,7 @@ async function startServer(): Promise<void> {
 
   const app = await buildApp({
     jwtSecret: env.JWT_SECRET,
+    adminBootstrapSecret: env.ADMIN_BOOTSTRAP_SECRET,
     dashboardAnalyticsSource: new PostgresDashboardAnalyticsSource(
       databaseClient,
     ),

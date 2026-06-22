@@ -1,12 +1,17 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { registerAdminRoutes } from "./routes/admin";
 import { registerDashboardDailyRoute } from "./routes/dashboard-daily";
 import { registerDashboardTagsRoute } from "./routes/dashboard-tags";
 import { registerDashboardWeeklyRoute } from "./routes/dashboard-weekly";
 import { registerHealthRoutes } from "./routes/health";
 import { registerMoodRoute } from "./routes/mood";
 import { registerWorkspaceJoinRoute } from "./routes/workspace-join";
+import {
+  NotImplementedAdminApiService,
+  type AdminApiService,
+} from "./services/admin-api";
 import {
   InMemoryDashboardAnalyticsSource,
   type DashboardAnalyticsSource,
@@ -26,6 +31,8 @@ import {
 
 interface BuildAppOptions {
   jwtSecret?: string;
+  adminBootstrapSecret?: string;
+  adminApiService?: AdminApiService;
   dashboardAnalyticsSource?: DashboardAnalyticsSource;
   moodSubmissionStore?: MoodSubmissionStore;
   workspaceDirectory?: WorkspaceDirectory;
@@ -42,11 +49,21 @@ export async function buildApp(
 
   await app.register(cors, {
     origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u],
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    methods: ["GET", "POST", "PATCH", "OPTIONS"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "x-admin-bootstrap-secret",
+    ],
   });
 
   await registerHealthRoutes(app);
+  await registerAdminRoutes(app, {
+    jwtSecret: options.jwtSecret,
+    adminBootstrapSecret: options.adminBootstrapSecret,
+    adminApiService:
+      options.adminApiService ?? new NotImplementedAdminApiService(),
+  });
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
     workspaceDirectory,
