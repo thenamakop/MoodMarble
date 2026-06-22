@@ -122,17 +122,24 @@ jest.mock("@/features/mood-submission/marble-tray-screen", () => {
       teamId,
       deviceJwt,
       onOpenHistory,
+      onOpenSettings,
     }: {
       workspaceId?: string;
       teamId?: string;
       deviceJwt?: string;
       onOpenHistory?: () => void;
+      onOpenSettings?: () => void;
     }) => (
       <View>
         <Text>{`marble-tray:${workspaceId ?? "none"}:${teamId ?? "none"}:${deviceJwt ?? "none"}`}</Text>
         {onOpenHistory ? (
           <Pressable onPress={onOpenHistory} testID="open-history">
             <Text>open-history</Text>
+          </Pressable>
+        ) : null}
+        {onOpenSettings ? (
+          <Pressable onPress={onOpenSettings} testID="open-settings">
+            <Text>open-settings</Text>
           </Pressable>
         ) : null}
       </View>
@@ -150,6 +157,42 @@ jest.mock("@/features/history/history-screen", () => {
         <Text>local-history-screen</Text>
         <Pressable onPress={onReturnHome} testID="return-home">
           <Text>return-home</Text>
+        </Pressable>
+      </View>
+    ),
+  };
+});
+
+jest.mock("@/features/settings/settings-screen", () => {
+  const React = require("react");
+  const { Pressable, Text, View } = require("react-native");
+
+  return {
+    SettingsScreen: ({
+      onClearLocalData,
+      onRequestOnboardingReplay,
+      onReturnHome,
+    }: {
+      onClearLocalData?: () => Promise<void> | void;
+      onRequestOnboardingReplay?: () => Promise<void> | void;
+      onReturnHome?: () => void;
+    }) => (
+      <View>
+        <Text>native-settings-screen</Text>
+        <Pressable onPress={onReturnHome} testID="settings-return-home">
+          <Text>settings-return-home</Text>
+        </Pressable>
+        <Pressable
+          onPress={onRequestOnboardingReplay}
+          testID="settings-replay-onboarding"
+        >
+          <Text>settings-replay-onboarding</Text>
+        </Pressable>
+        <Pressable
+          onPress={onClearLocalData}
+          testID="settings-clear-local-data"
+        >
+          <Text>settings-clear-local-data</Text>
         </Pressable>
       </View>
     ),
@@ -297,6 +340,40 @@ describe("HomeScreen", () => {
     );
 
     fireEvent.press(view.getByTestId("return-home"));
+
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
+        ),
+      ).toBeTruthy(),
+    );
+  });
+
+  it("uses a native settings handoff without losing the active session", async () => {
+    jest.mocked(restoreAnonymousSession).mockResolvedValue({
+      workspaceId: "ws_localdemo",
+      teamId: "tm_engineering",
+      deviceJwt: "active-device-jwt",
+    });
+
+    const view = await render(<HomeScreen />);
+
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
+        ),
+      ).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("open-settings"));
+
+    await waitFor(() =>
+      expect(view.getByText("native-settings-screen")).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("settings-return-home"));
 
     await waitFor(() =>
       expect(

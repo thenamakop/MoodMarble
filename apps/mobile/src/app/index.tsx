@@ -13,9 +13,12 @@ import {
   restoreAnonymousSession,
 } from "@/features/onboarding/session-boundary";
 import type { AnonymousSession } from "@/features/onboarding/types";
+import { clearLocalDeviceData } from "@/features/settings/local-data";
+import { SettingsScreen } from "@/features/settings/settings-screen";
 import {
   clearStoredOnboardingReplayRequest,
   loadLocalSettings,
+  requestStoredOnboardingReplay,
 } from "@/features/settings/storage";
 import { syncStoredReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 import { useTheme } from "@/hooks/use-theme";
@@ -37,7 +40,7 @@ export default function HomeScreen() {
   );
   const [isLoadingSession, setIsLoadingSession] = useState(true);
   const [activeNativeScreen, setActiveNativeScreen] = useState<
-    "marbles" | "history"
+    "marbles" | "history" | "settings"
   >("marbles");
   const sessionSyncVersionRef = useRef(0);
 
@@ -96,6 +99,28 @@ export default function HomeScreen() {
     void syncStoredReminderScheduleForRuntime().catch(() => undefined);
   }, []);
 
+  async function refreshNativeHomeState() {
+    const nextContext = getAnonymousSessionFromParams(params);
+    const nextSession = await restoreAnonymousSession(params);
+    const localSettings = await loadLocalSettings();
+    const shouldReplayOnboarding =
+      !nextContext && nextSession && localSettings.replayOnboarding;
+
+    if (shouldReplayOnboarding) {
+      await clearStoredOnboardingReplayRequest();
+      setReplaySession(nextSession);
+      setSession(null);
+      setIsLoadingSession(false);
+      setActiveNativeScreen("marbles");
+      return;
+    }
+
+    setReplaySession(null);
+    setSession(nextSession);
+    setIsLoadingSession(false);
+    setActiveNativeScreen("marbles");
+  }
+
   async function handleSessionReady(nextSession: AnonymousSession) {
     sessionSyncVersionRef.current += 1;
     await saveAnonymousSession(nextSession);
@@ -140,6 +165,24 @@ export default function HomeScreen() {
     );
   }
 
+  if (Platform.OS !== "web" && activeNativeScreen === "settings") {
+    return (
+      <SettingsScreen
+        onClearLocalData={async () => {
+          setIsLoadingSession(true);
+          await clearLocalDeviceData();
+          await refreshNativeHomeState();
+        }}
+        onRequestOnboardingReplay={async () => {
+          setIsLoadingSession(true);
+          await requestStoredOnboardingReplay();
+          await refreshNativeHomeState();
+        }}
+        onReturnHome={() => setActiveNativeScreen("marbles")}
+      />
+    );
+  }
+
   return (
     <MarbleTrayScreen
       workspaceId={session.workspaceId}
@@ -150,6 +193,13 @@ export default function HomeScreen() {
           ? undefined
           : () => {
               setActiveNativeScreen("history");
+            }
+      }
+      onOpenSettings={
+        Platform.OS === "web"
+          ? undefined
+          : () => {
+              setActiveNativeScreen("settings");
             }
       }
     />
