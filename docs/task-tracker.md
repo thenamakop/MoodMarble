@@ -272,7 +272,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W7-01 - Implement admin team management and join-code APIs
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `large`
 - Dependencies: `MM-W3-04`
@@ -284,7 +284,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W7-02 - Implement anonymised CSV export
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `medium`
 - Dependencies: `MM-W7-01`
@@ -296,7 +296,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W7-03 - Build the admin panel
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P2`
 - Estimated effort: `large`
 - Dependencies: `MM-W7-01`, `MM-W7-02`
@@ -308,7 +308,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W7-04 - Add admin JWT authorization flow
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `medium`
 - Dependencies: `MM-W7-01`, `MM-W7-02`
