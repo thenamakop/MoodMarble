@@ -2,9 +2,20 @@ const { by, device, element, waitFor } = require("detox");
 const jwt = require("jsonwebtoken");
 
 const DEFAULT_MANAGER_JWT_SECRET = "local-dev-jwt-secret-change-me";
+const DEFAULT_DEV_CLIENT_SCHEME =
+  process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
+const DEFAULT_DEV_SERVER_URL =
+  process.env.DETOX_DEV_SERVER_URL || "http://127.0.0.1:8081";
+const BOOTSTRAP_READY_TEST_IDS = [
+  "next-onboarding-button",
+  "join-code-input",
+  "open-settings-button",
+  "submit-button",
+  "manager-dashboard-screen",
+];
 
 async function resetToOnboardingIfNeeded() {
-  await device.launchApp({ newInstance: true });
+  await launchExpoDevClient();
 
   if (await isVisible("join-code-input", 4000)) {
     return;
@@ -27,11 +38,7 @@ async function resetToOnboardingIfNeeded() {
 }
 
 async function completeAnonymousMemberJourney() {
-  await waitFor(element(by.id("next-onboarding-button")))
-    .toBeVisible()
-    .withTimeout(10000);
-  await element(by.id("next-onboarding-button")).tap();
-  await element(by.id("next-onboarding-button")).tap();
+  await advanceToJoinCode();
 
   await waitFor(element(by.id("join-code-input")))
     .toBeVisible()
@@ -48,6 +55,15 @@ async function completeAnonymousMemberJourney() {
   await waitFor(element(by.id("submit-button")))
     .toBeVisible()
     .withTimeout(15000);
+}
+
+function createExpoDevClientLaunchUrl() {
+  const searchParams = new URLSearchParams({
+    url: DEFAULT_DEV_SERVER_URL,
+    disableOnboarding: "1",
+  });
+
+  return `${DEFAULT_DEV_CLIENT_SCHEME}://expo-development-client/?${searchParams.toString()}`;
 }
 
 function createManagerLaunchUrl() {
@@ -75,6 +91,43 @@ function createManagerLaunchUrl() {
   return `moodmarble://manager?${searchParams.toString()}`;
 }
 
+async function launchExpoDevClient() {
+  await device.launchApp({
+    newInstance: true,
+    url: createExpoDevClientLaunchUrl(),
+  });
+  await device.disableSynchronization();
+  await waitForBootstrappedApp();
+}
+
+async function advanceToJoinCode() {
+  if (await isVisible("join-code-input", 2000)) {
+    return;
+  }
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await isVisible("join-code-input", 1000)) {
+      return;
+    }
+
+    if (await isVisible("next-onboarding-button", 1000)) {
+      await element(by.id("next-onboarding-button")).tap();
+      continue;
+    }
+
+    if (await isVisible("skip-onboarding-button", 1000)) {
+      await element(by.id("skip-onboarding-button")).tap();
+      continue;
+    }
+
+    break;
+  }
+
+  await waitFor(element(by.id("join-code-input")))
+    .toBeVisible()
+    .withTimeout(10000);
+}
+
 async function isVisible(testID, timeout = 2500) {
   try {
     await waitFor(element(by.id(testID)))
@@ -86,9 +139,54 @@ async function isVisible(testID, timeout = 2500) {
   }
 }
 
+async function waitForBootstrappedApp(timeout = 20000) {
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    for (const testID of BOOTSTRAP_READY_TEST_IDS) {
+      if (await isVisible(testID, 1500)) {
+        return testID;
+      }
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  throw new Error(
+    `Expo dev client did not open the app runtime within ${timeout}ms.`,
+  );
+}
+
+async function openUrlWithRetries(url, attempts = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await sleep(750);
+      await device.openURL({ url });
+      return;
+    } catch (error) {
+      lastError = error;
+
+      if (attempt === attempts) {
+        throw lastError;
+      }
+    }
+  }
+}
+
+function sleep(milliseconds) {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
 module.exports = {
+  advanceToJoinCode,
   completeAnonymousMemberJourney,
+  createExpoDevClientLaunchUrl,
   createManagerLaunchUrl,
   isVisible,
+  launchExpoDevClient,
+  openUrlWithRetries,
   resetToOnboardingIfNeeded,
+  waitForBootstrappedApp,
 };

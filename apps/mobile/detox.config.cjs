@@ -15,13 +15,14 @@ module.exports = {
       testBinaryPath:
         "android/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk",
       build: "node ./scripts/detox-build-android.cjs",
+      reversePorts: [3000, 8081, 8097],
     },
   },
   devices: {
     emulator: {
       type: "android.emulator",
       device: {
-        avdName: process.env.DETOX_AVD_NAME ?? "Pixel_6_API_35",
+        avdName: process.env.DETOX_AVD_NAME ?? "Pixel_10",
       },
     },
   },

@@ -1,11 +1,15 @@
 const { by, device, element, expect, waitFor } = require("detox");
 
-const { createManagerLaunchUrl } = require("./helpers.cjs");
+const {
+  createManagerLaunchUrl,
+  launchExpoDevClient,
+} = require("./helpers.cjs");
 
 describe("manager dashboard journey", () => {
   beforeAll(async () => {
+    await launchExpoDevClient();
     await device.launchApp({
-      newInstance: true,
+      newInstance: false,
       url: createManagerLaunchUrl(),
     });
   });
