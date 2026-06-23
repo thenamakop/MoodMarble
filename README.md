@@ -476,20 +476,51 @@ Use the installed development build on the emulator or device to open the projec
 
 Week 8 includes a basic Detox layer for the highest-value journeys:
 
-- anonymous onboarding -> join code entry -> team selection -> mood submission -> history
+- anonymous onboarding -> join code entry -> team selection -> mood submission -> history -> settings
 - manager deep link -> dashboard view
+- admin deep link -> scoped admin shell render
 
 The checked-in Detox path is Android-emulator focused and uses the existing Expo development-build flow.
 
 Prerequisites:
 
-- Android SDK and an emulator available locally
-- one Android AVD named `Pixel_6_API_35`, or set `DETOX_AVD_NAME` to your emulator name
+- Android SDK installed at `D:\Android`
+- `ANDROID_SDK_ROOT=D:\Android` and, if you also use `ANDROID_HOME`, set it to `D:\Android`
+- `D:\Android\platform-tools` already on `PATH` so `adb` resolves from any terminal
+- one Android AVD named `Pixel_8`, or set `DETOX_AVD_NAME` if you intentionally override the standard emulator target
 - the backend running on `http://127.0.0.1:3000`
 - the local demo data seeded so join code `ABC123` and team `tm_product` exist
-- if you changed the backend JWT secret from the default local value, export `JWT_SECRET` before the manager Detox test so the deep link token matches your backend
+- if you changed the backend JWT secret from the default local value, export `JWT_SECRET` before the manager or admin Detox tests so the deep link token matches your backend
+- Detox uses an Expo development build and dev client on Android, not Expo Go
 
-Backend prep:
+Start the Pixel 8 emulator:
+
+```powershell
+& "D:\Android\emulator\emulator.exe" -avd Pixel_8
+```
+
+Confirm ADB connectivity:
+
+```powershell
+adb devices
+```
+
+The expected result is one connected emulator entry such as `emulator-5554 device`.
+
+Optional repo preflight:
+
+```bash
+pnpm e2e:android:preflight
+```
+
+Unit and integration tests:
+
+```bash
+pnpm test:backend
+pnpm test:mobile
+```
+
+Backend prep for Android E2E:
 
 ```bash
 cd apps/backend
@@ -498,11 +529,25 @@ pnpm db:seed
 pnpm dev
 ```
 
-Mobile E2E flow:
+Mobile E2E flow from the repo root:
+
+```bash
+pnpm e2e:android:metro
+```
+
+In a second terminal:
+
+```bash
+pnpm e2e:android:build
+pnpm e2e:android:test
+```
+
+Equivalent app-local commands:
 
 ```bash
 cd apps/mobile
 
+pnpm e2e:android:preflight
 pnpm e2e:android:metro
 ```
 
@@ -518,18 +563,21 @@ pnpm e2e:android:test
 Notes:
 
 - `pnpm e2e:android:build` runs Expo prebuild for Android if the generated native project does not exist yet, then builds the app and Detox test APKs.
-- On Windows, the Detox Android build script temporarily maps the repo to a short drive path to avoid native build path-length failures. Override the drive letter with `DETOX_SUBST_DRIVE` if `M:` is already in use.
 - The debug app under test uses the emulator-safe backend URL logic already in the app, so Android emulator traffic targets `http://10.0.2.2:3000`.
 - The member journey clears local device data through the existing settings flow when needed so repeated runs can return to onboarding without inventing new reset logic.
-- The manager journey launches the existing `/manager` route using the app scheme `moodmarble://`.
+- The manager and admin journeys launch the existing native deep-link routes through the Expo dev-client scheme `exp+moodmarble://`.
 - These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic Week 8 task.
 
 ### Android And Windows Notes
 
 - Clear any stale listeners on ports `3000` and `8081` before restarting local development servers.
-- Windows native Android builds can still hit path-length limits in some environments during Expo/Gradle native compilation.
+- Use the Pixel 8 Android 14 / API 34 / x86_64 emulator as the default local Android E2E target.
+- If the emulator is not detected, run `adb kill-server`, then `adb start-server`, then rerun `adb devices`.
+- If `pnpm e2e:android:preflight` reports no running emulator, start `Pixel_8` in Android Studio Device Manager or with `& "D:\Android\emulator\emulator.exe" -avd Pixel_8`.
+- If Android Studio is missing SDK components, install Android Emulator, Platform-Tools, Android SDK Platform 34, and the matching system image for the Pixel 8 API 34 AVD under the `D:\Android` SDK root.
+- The Android dev-client/Detox flow assumes Android Studio and the Expo Android toolchain are installed locally.
 - Metro is configured to resolve workspace packages correctly on Windows.
-- Avoid eager top-level imports of `expo-notifications` in startup route paths so Expo Go remains stable.
+- Avoid eager top-level imports of `expo-notifications` in startup route paths so Expo Go remains stable outside the Detox/dev-client path.
 
 ### Physical Device Setup
 

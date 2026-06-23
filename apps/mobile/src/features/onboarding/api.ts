@@ -54,9 +54,10 @@ export async function finalizeAnonymousTeamSelection(
   deviceJwt: string,
 ): Promise<void> {
   const requestUrl = createApiUrl("/workspace/team-member");
+  let response: Response;
 
   try {
-    const response = await fetch(requestUrl, {
+    response = await fetch(requestUrl, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${deviceJwt}`,
@@ -66,10 +67,6 @@ export async function finalizeAnonymousTeamSelection(
         team_id: TeamIdSchema.parse(teamId),
       }),
     });
-
-    if (!response.ok) {
-      throw new Error(await getTeamSelectionErrorMessage(response));
-    }
   } catch (error) {
     throw new Error(
       getApiRequestErrorMessage(
@@ -78,6 +75,10 @@ export async function finalizeAnonymousTeamSelection(
         requestUrl,
       ),
     );
+  }
+
+  if (!response.ok) {
+    throw new Error(await getTeamSelectionErrorMessage(response));
   }
 }
 

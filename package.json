@@ -1,5 +1,13 @@
 {
   "name": "moodmarble",
   "private": true,
-  "version": "0.0.0"
+  "version": "0.0.0",
+  "scripts": {
+    "test:backend": "pnpm --dir apps/backend test",
+    "test:mobile": "node ./scripts/test-mobile.cjs",
+    "e2e:android:preflight": "pnpm --dir apps/mobile e2e:android:preflight",
+    "e2e:android:metro": "pnpm --dir apps/mobile e2e:android:metro",
+    "e2e:android:build": "pnpm --dir apps/mobile e2e:android:build",
+    "e2e:android:test": "pnpm --dir apps/mobile e2e:android:test"
+  }
 }

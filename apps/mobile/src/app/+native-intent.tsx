@@ -1,14 +1,15 @@
 /**
  * +native-intent.tsx
  *
- * Expo Router calls redirectSystemNotification() with every incoming
+ * Expo Router calls redirectSystemPath() with every incoming
  * native deep-link URL on Android and iOS. Return the internal Expo
  * Router path to navigate to, or null to let the default handler run.
  *
  * Handles: moodmarble://manager?workspace_id=...&manager_jwt=...&...
  * Produces: /manager?workspace_id=...&manager_jwt=...&...
  */
-export function redirectSystemNotification(url: string): string | null {
+
+export function resolveSystemHref(url: string): string {
   try {
     const parsed = new URL(url);
 
@@ -27,5 +28,20 @@ export function redirectSystemNotification(url: string): string | null {
     // malformed URL — let the default handler run
   }
 
-  return null;
+  // If it's the dev client launch URL, just return root so the app boots normally
+  if (url.includes("expo-development-client")) {
+    return "/";
+  }
+
+  return url;
+}
+
+export function redirectSystemPath({
+  path,
+  initial,
+}: {
+  path: string;
+  initial: boolean;
+}): string | Promise<string> {
+  return resolveSystemHref(path);
 }

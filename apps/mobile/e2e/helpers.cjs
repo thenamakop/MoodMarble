@@ -1,3 +1,4 @@
+const { execFileSync } = require("child_process");
 const { by, device, element, waitFor } = require("detox");
 const jwt = require("jsonwebtoken");
 
@@ -6,12 +7,16 @@ const DEFAULT_DEV_CLIENT_SCHEME =
   process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
 const DEFAULT_DEV_SERVER_URL =
   process.env.DETOX_DEV_SERVER_URL || "http://127.0.0.1:8081";
+const DEFAULT_ANDROID_APP_ID =
+  process.env.DETOX_ANDROID_APP_ID || "com.thenamak.MoodMarble";
+const DEFAULT_AVD_NAME = process.env.DETOX_AVD_NAME || "Pixel_8";
 const BOOTSTRAP_READY_TEST_IDS = [
   "next-onboarding-button",
   "join-code-input",
   "open-settings-button",
-  "submit-button",
+  "mood-happy",
   "manager-dashboard-screen",
+  "admin-panel-screen",
 ];
 
 async function resetToOnboardingIfNeeded() {
@@ -48,11 +53,11 @@ async function completeAnonymousMemberJourney() {
 
   await waitFor(element(by.id("team-option-tm_product")))
     .toBeVisible()
-    .withTimeout(15000);
+    .withTimeout(20000);
   await element(by.id("team-option-tm_product")).tap();
   await element(by.id("complete-onboarding-button")).tap();
 
-  await waitFor(element(by.id("submit-button")))
+  await waitFor(element(by.id("mood-happy")))
     .toBeVisible()
     .withTimeout(15000);
 }
@@ -88,15 +93,37 @@ function createManagerLaunchUrl() {
     team_name: "Product",
   });
 
-  return `moodmarble://manager?${searchParams.toString()}`;
+  return `${DEFAULT_DEV_CLIENT_SCHEME}://manager?${searchParams.toString()}`;
+}
+
+function createAdminLaunchUrl() {
+  const adminJwt = jwt.sign(
+    {
+      workspace_id: "ws_localdemo",
+      role: "admin",
+    },
+    process.env.JWT_SECRET || DEFAULT_MANAGER_JWT_SECRET,
+    {
+      expiresIn: "30d",
+    },
+  );
+
+  const searchParams = new URLSearchParams({
+    admin_jwt: adminJwt,
+    workspace_id: "ws_localdemo",
+    workspace_name: "MoodMarble Local Workspace",
+  });
+
+  return `${DEFAULT_DEV_CLIENT_SCHEME}://admin?${searchParams.toString()}`;
 }
 
 async function launchExpoDevClient() {
   await device.launchApp({
     newInstance: true,
-    url: createExpoDevClientLaunchUrl(),
   });
   await device.disableSynchronization();
+  await waitForConnectedEmulator();
+  await openUrlWithRetries(createExpoDevClientLaunchUrl());
   await waitForBootstrappedApp();
 }
 
@@ -149,7 +176,7 @@ async function waitForBootstrappedApp(timeout = 20000) {
       }
     }
 
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    await sleep(500);
   }
 
   throw new Error(
@@ -162,8 +189,16 @@ async function openUrlWithRetries(url, attempts = 3) {
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     try {
+      const emulatorSerial = await waitForConnectedEmulator();
+
       await sleep(750);
-      await device.openURL({ url });
+      execFileSync(
+        "adb",
+        ["-s", emulatorSerial, "shell", buildAdbDeepLinkCommand(url)],
+        {
+          stdio: "pipe",
+        },
+      );
       return;
     } catch (error) {
       lastError = error;
@@ -171,7 +206,106 @@ async function openUrlWithRetries(url, attempts = 3) {
       if (attempt === attempts) {
         throw lastError;
       }
+
+      await sleep(1000);
     }
+  }
+}
+
+function buildAdbDeepLinkCommand(url) {
+  return [
+    "am start -W -a android.intent.action.VIEW -d",
+    quoteForAndroidShell(url),
+    DEFAULT_ANDROID_APP_ID,
+  ].join(" ");
+}
+
+function quoteForAndroidShell(value) {
+  return `'${String(value).replace(/'/g, `'\\''`)}'`;
+}
+
+async function waitForConnectedEmulator(timeout = 60000) {
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    const emulatorSerial = getConnectedEmulatorSerial(DEFAULT_AVD_NAME);
+
+    if (emulatorSerial) {
+      if (isBootCompleted(emulatorSerial)) {
+        return emulatorSerial;
+      }
+    }
+
+    await sleep(1000);
+  }
+
+  throw new Error(
+    `ADB did not report a booted Android emulator within ${timeout}ms. Start the ${DEFAULT_AVD_NAME} emulator and confirm \`adb devices\` shows it.`,
+  );
+}
+
+function getConnectedEmulatorSerial(expectedAvdName) {
+  const output = execFileSync("adb", ["devices"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+  const lines = output
+    .split(/\r?\n/)
+    .slice(1)
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  for (const line of lines) {
+    const [serial, state] = line.split(/\s+/);
+
+    if (serial?.startsWith("emulator-") && state === "device") {
+      const avdName = getEmulatorAvdName(serial);
+
+      if (!expectedAvdName || avdName === expectedAvdName) {
+        return serial;
+      }
+    }
+  }
+
+  return null;
+}
+
+function getEmulatorAvdName(serial) {
+  try {
+    const output = execFileSync("adb", ["-s", serial, "emu", "avd", "name"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
+
+    return parseAdbAvdName(output);
+  } catch {
+    return null;
+  }
+}
+
+function parseAdbAvdName(output) {
+  return (
+    output
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .find((line) => line && line !== "OK") ?? null
+  );
+}
+
+function isBootCompleted(serial) {
+  try {
+    const output = execFileSync(
+      "adb",
+      ["-s", serial, "shell", "getprop", "sys.boot_completed"],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+
+    return output.trim() === "1";
+  } catch {
+    return false;
   }
 }
 
@@ -182,8 +316,10 @@ function sleep(milliseconds) {
 module.exports = {
   advanceToJoinCode,
   completeAnonymousMemberJourney,
+  createAdminLaunchUrl,
   createExpoDevClientLaunchUrl,
   createManagerLaunchUrl,
+  buildAdbDeepLinkCommand,
   isVisible,
   launchExpoDevClient,
   openUrlWithRetries,

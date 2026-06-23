@@ -23,7 +23,7 @@ export default function TabLayout() {
       const nextHref = resolveSystemHref(url);
 
       if (nextHref.startsWith("/")) {
-        router.replace(nextHref);
+        router.replace(nextHref as any);
       }
     });
 

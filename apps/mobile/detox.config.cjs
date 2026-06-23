@@ -22,7 +22,7 @@ module.exports = {
     emulator: {
       type: "android.emulator",
       device: {
-        avdName: process.env.DETOX_AVD_NAME ?? "Pixel_10",
+        avdName: process.env.DETOX_AVD_NAME ?? "Pixel_8",
       },
     },
   },
@@ -30,6 +30,11 @@ module.exports = {
     "android.emu.debug": {
       device: "emulator",
       app: "android.debug",
+      artifacts: {
+        plugins: {
+          screenshot: "failing",
+        },
+      },
     },
   },
 };
