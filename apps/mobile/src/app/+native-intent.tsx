@@ -1,51 +1,31 @@
-const APP_SCHEME_FALLBACK = "moodmarble:///";
-
-export function redirectSystemPath({
-  path,
-}: {
-  path: string;
-  initial: boolean;
-}): string {
-  return resolveSystemHref(path);
-}
-
-export function resolveSystemHref(path: string): string {
+/**
+ * +native-intent.tsx
+ *
+ * Expo Router calls redirectSystemNotification() with every incoming
+ * native deep-link URL on Android and iOS. Return the internal Expo
+ * Router path to navigate to, or null to let the default handler run.
+ *
+ * Handles: moodmarble://manager?workspace_id=...&manager_jwt=...&...
+ * Produces: /manager?workspace_id=...&manager_jwt=...&...
+ */
+export function redirectSystemNotification(url: string): string | null {
   try {
-    const url = new URL(path, APP_SCHEME_FALLBACK);
-    const normalizedPathname = normalizeExpoPathname(url.pathname);
-    const isManagerLink =
-      url.hostname === "manager" || normalizedPathname === "/manager";
+    const parsed = new URL(url);
 
-    if (isManagerLink) {
-      return buildRoutePath("/manager", url.searchParams);
+    // moodmarble://manager → /manager (with all query params preserved)
+    if (parsed.hostname === "manager") {
+      const qs = parsed.searchParams.toString();
+      return qs ? `/manager?${qs}` : "/manager";
     }
 
-    if (normalizedPathname === "/") {
-      return buildRoutePath("/", url.searchParams);
+    // moodmarble://admin → /admin (future-proofing)
+    if (parsed.hostname === "admin") {
+      const qs = parsed.searchParams.toString();
+      return qs ? `/admin?${qs}` : "/admin";
     }
-
-    return path;
   } catch {
-    return path;
-  }
-}
-
-function normalizeExpoPathname(pathname: string): string {
-  const strippedPathname = pathname.replace(/^\/--(?=\/|$)/, "");
-
-  if (!strippedPathname || strippedPathname === "/") {
-    return "/";
+    // malformed URL — let the default handler run
   }
 
-  return strippedPathname.startsWith("/")
-    ? strippedPathname
-    : `/${strippedPathname}`;
-}
-
-function buildRoutePath(
-  pathname: string,
-  searchParams: URLSearchParams,
-): string {
-  const query = searchParams.toString();
-  return query ? `${pathname}?${query}` : pathname;
+  return null;
 }

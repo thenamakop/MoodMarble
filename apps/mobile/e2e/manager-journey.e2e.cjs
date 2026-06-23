@@ -7,11 +7,10 @@ const {
 
 describe("manager dashboard journey", () => {
   beforeAll(async () => {
-    await launchExpoDevClient();
-    await device.launchApp({
-      newInstance: false,
-      url: createManagerLaunchUrl(),
-    });
+    // Step 1: boot a clean instance and wait for the JS bridge to be ready
+    await device.launchApp({ newInstance: true });
+    // Step 2: deliver the deep-link after the runtime is live
+    await device.openURL({ url: createManagerLaunchUrl() });
   });
 
   it("opens the manager route and renders the dashboard view", async () => {
