@@ -50,7 +50,7 @@ export function AdminLoginScreen({
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
+    <SafeAreaView style={styles.safeArea} testID="admin-login-root">
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
@@ -83,6 +83,7 @@ export function AdminLoginScreen({
                 autoCapitalize="none"
                 autoComplete="email"
                 autoCorrect={false}
+                editable={!isSubmitting}
                 keyboardType="email-address"
                 onChangeText={(value) => {
                   setEmail(value);
@@ -107,6 +108,7 @@ export function AdminLoginScreen({
               <View style={styles.passwordLabelRow}>
                 <ThemedText type="smallBold">Password</ThemedText>
                 <Pressable
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   onPress={() => setShowPassword((prev) => !prev)}
                   testID="admin-password-toggle"
                 >
@@ -118,6 +120,7 @@ export function AdminLoginScreen({
               <TextInput
                 autoCapitalize="none"
                 autoCorrect={false}
+                editable={!isSubmitting}
                 onChangeText={(value) => {
                   setPassword(value);
                   setErrorMessage(null);

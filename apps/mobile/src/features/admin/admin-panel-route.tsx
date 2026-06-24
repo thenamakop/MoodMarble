@@ -176,6 +176,7 @@ export function AdminPanelRoute({
             error.message.includes("Unauthorized")
           ) {
             await clearAdminSession();
+            router.replace("/");
           }
         }
       } finally {

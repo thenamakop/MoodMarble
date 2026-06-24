@@ -1,5 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
+jest.unmock("@/features/admin/admin-panel-screen");
 import { AdminPanelScreen } from "@/features/admin/admin-panel-screen";
 
 jest.mock("@/hooks/use-theme", () => ({
@@ -10,6 +11,10 @@ jest.mock("@/hooks/use-theme", () => ({
     text: "#111111",
     textSecondary: "#6b7280",
   }),
+}));
+
+jest.mock("@/features/admin/session", () => ({
+  clearAdminSession: jest.fn(),
 }));
 
 describe("AdminPanelScreen", () => {

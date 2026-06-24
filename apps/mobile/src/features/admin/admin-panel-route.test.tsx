@@ -16,6 +16,7 @@ import {
   updateAdminTeam,
 } from "@/features/admin/api";
 import { shareAdminCsv } from "@/features/admin/share";
+import { clearAdminSession, loadAdminSession } from "@/features/admin/session";
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
@@ -40,6 +41,11 @@ jest.mock("@/features/admin/api", () => ({
 
 jest.mock("@/features/admin/share", () => ({
   shareAdminCsv: jest.fn(),
+}));
+
+jest.mock("@/features/admin/session", () => ({
+  clearAdminSession: jest.fn(),
+  loadAdminSession: jest.fn(),
 }));
 
 jest.mock("@/features/admin/admin-panel-screen", () => {
@@ -220,6 +226,8 @@ describe("AdminPanelRoute", () => {
         },
       ],
     });
+    jest.mocked(loadAdminSession).mockResolvedValue(null);
+    jest.mocked(clearAdminSession).mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -315,6 +323,40 @@ describe("AdminPanelRoute", () => {
 
     await waitFor(() => expect(loadAdminPanelShell).toHaveBeenCalledTimes(2));
     await waitFor(() => expect(view.getByText("content:ready")).toBeTruthy());
+  });
+
+  it("restores an existing admin session from local storage and loads the shell", async () => {
+    jest.mocked(loadAdminSession).mockResolvedValue({
+      adminJwt: "restored-jwt",
+      workspaceId: "restored-workspace",
+      workspaceName: "Restored Workspace",
+    });
+
+    const view = await render(<AdminPanelRoute />);
+
+    await waitFor(() =>
+      expect(loadAdminPanelShell).toHaveBeenCalledWith({
+        adminJwt: "restored-jwt",
+        workspaceId: "restored-workspace",
+        workspaceName: "Restored Workspace",
+      }),
+    );
+    await waitFor(() => expect(view.getByText("content:ready")).toBeTruthy());
+  });
+
+  it("clears the session and routes out cleanly if the admin shell load returns Unauthorized", async () => {
+    currentParams = {
+      admin_jwt: "admin-jwt-token",
+      workspace_id: "ws_admin",
+    };
+    jest
+      .mocked(loadAdminPanelShell)
+      .mockRejectedValueOnce(new Error("Unauthorized: token expired"));
+
+    const view = await render(<AdminPanelRoute />);
+
+    await waitFor(() => expect(clearAdminSession).toHaveBeenCalled());
+    expect(replace).toHaveBeenCalledWith("/");
   });
 
   it("runs the successful admin action flow for workspace, team, copy, rotate, and export", async () => {

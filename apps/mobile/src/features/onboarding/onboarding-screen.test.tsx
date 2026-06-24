@@ -361,6 +361,20 @@ describe("OnboardingScreen", () => {
       }),
     );
   });
+
+  it("renders the admin access link subtly after intro slides", async () => {
+    const view = await renderScreen();
+
+    // Admin link should not be present during intro slides
+    expect(view.queryByTestId("admin-entry-link")).toBeNull();
+
+    // Skip to join-code step
+    fireEvent.press(await view.findByTestId("skip-onboarding-button"));
+
+    // Admin link should be present now
+    expect(await view.findByTestId("admin-entry-link")).toBeTruthy();
+    expect(await view.findByText("Admin access")).toBeTruthy();
+  });
 });
 
 async function renderScreen(
