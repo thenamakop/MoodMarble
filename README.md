@@ -228,6 +228,29 @@ The local seed creates:
 - teams: `tm_product`, `tm_engineering`
 - admin account: `admin@example.com` (password: `change-this-password-in-prod`)
 
+### Administrative Setup & Authentication
+
+The administrative surface is fully protected by a dedicated login flow. There is NO public sign-up or "forgot password" mechanism for administrators, as the system is designed to be closed to public registration. 
+
+To create an administrator, you must use the backend seed script. It uses the following environment variables (defined in `.env`):
+
+- `ADMIN_EMAIL` (default: `admin@example.com`)
+- `ADMIN_PASSWORD` (default: `change-this-password-in-prod`)
+- `ADMIN_BOOTSTRAP_SECRET` (default: `local-admin-bootstrap-secret-change-me`)
+
+To provision the admin account:
+```bash
+cd apps/backend
+pnpm seed:admin
+```
+
+If you ever lose access to your admin account, you can safely re-run the seed script. It is idempotent; if the email exists, it aborts without data loss. If you need to forcefully reset a password, you will need to directly manipulate the `admin_credentials` table via database administration tools or create a secondary admin account using the script with a new email.
+
+The administrative auth flow is isolated:
+- Member and manager access (via `device_jwt` and `manager_jwt`) cannot fulfill `admin_jwt` route guards.
+- All administrative routes (`/admin/*`) strictly verify the `admin_jwt` payload.
+- Manager and member roles cannot be elevated to administrative privileges through the application UI.
+
 ---
 
 ## Backend Postman Workflow
@@ -670,10 +693,11 @@ Notes:
 
 ### Upcoming
 
-- Admin-managed workspace and team setup
-- Join code generation and management UI/API
-- Anonymous CSV export flows
-- Admin JWT authorization and route protection
+- Admin-managed workspace and team setup (Backend available)
+- Join code generation and management UI/API (Backend available)
+- Anonymous CSV export flows (Backend available)
+- Admin JWT authorization and route protection (Completed)
+- Administrative login and session restoration on mobile (Completed)
 
 ---
 

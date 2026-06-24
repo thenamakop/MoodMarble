@@ -21,8 +21,8 @@ This task defines:
 
 This task does not add:
 
-- email login
-- password login
+- email login (added in Week 8 for seeded admin only)
+- password login (added in Week 8 for seeded admin only)
 - user profiles
 - admin UI implementation
 - onboarding changes
@@ -80,6 +80,8 @@ Workspace scope is the smallest safe boundary because the Week 7 admin responsib
 - team management
 - join code generation and copying
 - anonymised CSV export
+
+*(Note: Week 8 introduced `POST /auth/login` to securely exchange the seeded admin email/password for an `admin_jwt`.)*
 
 ## Admin-only backend routes
 

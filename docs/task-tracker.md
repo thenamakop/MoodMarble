@@ -330,15 +330,28 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W8-02 - Add E2E coverage for key journeys
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `large`
 - Dependencies: `MM-W4-03`, `MM-W5-03`
 - Scope: cover the key user journeys named in the specification
 - Acceptance criteria:
 - onboarding to submit mood to view history journey is covered
-- manager dashboard journey is covered if the dashboard exists
+- manager dashboard journey is covered
+- admin auth and panel journey is covered
 - E2E setup is runnable in the repository
+
+### MM-W8-02b - Admin Auth Rebuild & Handoff
+
+- Status: `done`
+- Priority: `P1`
+- Estimated effort: `medium`
+- Scope: complete the missing administrative login flows, seed scripts, and secure session handoffs
+- Acceptance criteria:
+- backend admin login issues `admin_jwt` only for valid seeded credentials
+- no public sign-up or recovery features exist (intentionally out of scope for MVP)
+- the mobile application has a dedicated admin entry point that yields a persistent authenticated session
+- tests cover the flow end-to-end
 
 ### MM-W8-03 - Add CI/CD and deployment readiness
 
