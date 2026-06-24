@@ -500,24 +500,21 @@ Use the installed development build on the emulator or device to open the projec
 
 ### Basic Detox E2E
 
-Week 8 includes a basic Detox layer for the highest-value journeys:
+Week 8 includes a complete Detox layer covering the most critical Android user journeys:
 
-- anonymous onboarding -> join code entry -> team selection -> mood submission -> history -> settings
-- manager deep link -> dashboard view
-- admin deep link -> scoped admin shell render
+- **Member Journey**: anonymous onboarding -> join code entry -> team selection -> mood submission -> history -> settings
+- **Manager Journey**: deep link -> scoped dashboard view 
+- **Admin Journey**: deep link -> scoped admin panel shell
 
-The checked-in Detox path is Android-emulator focused and uses the existing Expo development-build flow.
+The E2E test suite ensures these key experiences do not regress and relies on the Android emulator with the Expo development build flow.
 
-Prerequisites:
+#### Prerequisites and Setup
 
 - Android SDK installed at `D:\Android`
-- `ANDROID_SDK_ROOT=D:\Android` and, if you also use `ANDROID_HOME`, set it to `D:\Android`
-- `D:\Android\platform-tools` already on `PATH` so `adb` resolves from any terminal
-- one Android AVD named `Pixel_8`, or set `DETOX_AVD_NAME` if you intentionally override the standard emulator target
-- the backend running on `http://127.0.0.1:3000`
-- the local demo data seeded so join code `ABC123` and team `tm_product` exist
-- if you changed the backend JWT secret from the default local value, export `JWT_SECRET` before the manager or admin Detox tests so the deep link token matches your backend
-- Detox uses an Expo development build and dev client on Android, not Expo Go
+- `ANDROID_SDK_ROOT=D:\Android` and `ANDROID_HOME=D:\Android` environment variables set
+- `D:\Android\platform-tools` on your `PATH` so `adb` is accessible globally
+- An Android AVD named `Pixel_8` (or override by setting `DETOX_AVD_NAME`)
+- The backend running locally on `http://127.0.0.1:3000`
 
 Start the Pixel 8 emulator:
 
@@ -531,78 +528,70 @@ Confirm ADB connectivity:
 adb devices
 ```
 
-The expected result is one connected emulator entry such as `emulator-5554 device`.
+The expected result is one connected emulator entry such as `emulator-5554 device`. If you do not see the device, restart ADB (`adb kill-server` and `adb start-server`) or start the emulator from Android Studio.
 
-Optional repo preflight:
+Optional repo preflight to verify your environment:
 
 ```bash
+cd apps/mobile
 pnpm e2e:android:preflight
 ```
 
-Unit and integration tests:
+#### Unit & Integration Tests
+
+The repository includes standard Jest tests for backend logic and React Native component rendering. You can run these without the emulator:
 
 ```bash
 pnpm test:backend
 pnpm test:mobile
 ```
 
-Backend prep for Android E2E:
+#### Deterministic Data & Backend Seed
+
+The tests depend on a seeded test workspace and use an idempotent setup function. At the start of each E2E test file, a helper called `resetBackendTestState()` sends a request to the `POST /__test/reset` backend route. This safely truncates the database and explicitly seeds the `ws_localdemo` workspace, the `tm_product` team, and the test admin account. 
+
+If the backend is not running, the deep links for the manager and admin journeys will fail to load their workspace shells. Ensure the backend is running before launching tests:
 
 ```bash
 cd apps/backend
-
-pnpm db:seed
 pnpm dev
 ```
 
-Mobile E2E flow from the repo root:
+#### Running the E2E Tests
 
-```bash
-pnpm e2e:android:metro
-```
-
-This starts Metro for the Android development build. Detox installs and launches the build during the test run.
-
-In a second terminal:
-
-```bash
-pnpm e2e:android:build
-pnpm e2e:android:test
-```
-
-Equivalent app-local commands:
+First, start Metro for the Android development build from the mobile app directory:
 
 ```bash
 cd apps/mobile
-
-pnpm e2e:android:preflight
 pnpm e2e:android:metro
 ```
 
-This app-local Metro command keeps the Android dev-client bundle available for Detox without requiring a preinstalled build before the test phase.
-
-In a second terminal:
+In a second terminal, build the app and Detox test APKs (this only needs to run if native code changes):
 
 ```bash
 cd apps/mobile
-
 pnpm e2e:android:build
-pnpm e2e:android:test
 ```
 
-Notes:
+Finally, execute the tests. You can run them headed (visible emulator screen) or headless (no emulator window shown):
 
-- `pnpm e2e:android:build` runs Expo prebuild for Android if the generated native project does not exist yet, then builds the app and Detox test APKs.
-- The debug app under test uses the emulator-safe backend URL logic already in the app, so Android emulator traffic targets `http://10.0.2.2:3000`.
-- The member journey clears local device data through the existing settings flow when needed so repeated runs can return to onboarding without inventing new reset logic.
-- The manager and admin journeys launch the existing native deep-link routes through the Expo dev-client scheme `exp+moodmarble://`.
-- These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic Week 8 task.
+```bash
+pnpm e2e:android:test
+# OR
+pnpm e2e:android:test:headless
+```
+
+#### Notes
+
+- The debug app automatically rewrites `localhost` network requests to `10.0.2.2`, so Android emulator traffic successfully targets `http://10.0.2.2:3000`.
+- The manager and admin journeys use the `exp+moodmarble://` scheme and JWTs generated at test runtime to bypass the UI flow and deep-link directly into the authenticated view.
+- These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic MVP.
 
 ### Android And Windows Notes
 
 - Clear any stale listeners on ports `3000` and `8081` before restarting local development servers.
-- Use the Pixel 8 Android 14 / API 34 / x86_64 emulator as the default local Android E2E target.
-- If the emulator is not detected, run `adb kill-server`, then `adb start-server`, then rerun `adb devices`.
+- Use the Pixel 8 Android 14 / API 34 / x86_64 emulator as the default local Android E2E target. Detox has been configured to boot this emulator with `-no-audio -no-boot-anim -no-snapshot-load` to prevent random crashes.
+- If the emulator freezes, shows up as `offline` in ADB, or causes `pm install` failures (e.g. exit code 224), it may have a corrupted state. Run `adb kill-server` and `adb start-server`, or cold boot it manually using `& "D:\Android\emulator\emulator.exe" -avd Pixel_8 -wipe-data`.
 - If `pnpm e2e:android:preflight` reports no running emulator, start `Pixel_8` in Android Studio Device Manager or with `& "D:\Android\emulator\emulator.exe" -avd Pixel_8`.
 - If Android Studio is missing SDK components, install Android Emulator, Platform-Tools, Android SDK Platform 34, and the matching system image for the Pixel 8 API 34 AVD under the `D:\Android` SDK root.
 - The Android dev-client/Detox flow assumes Android Studio and the Expo Android toolchain are installed locally.
