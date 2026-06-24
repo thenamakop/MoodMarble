@@ -61,9 +61,9 @@
     "e2e:android:start": "expo start --dev-client --port 8081 --host localhost",
     "e2e:android:metro": "expo start --dev-client --clear --host localhost",
     "e2e:android:build": "detox build -c android.emu.debug",
-    "e2e:android:test": "detox test -c android.emu.debug --loglevel verbose",
-    "e2e:android:test:headed": "detox test -c android.emu.debug --loglevel verbose",
-    "e2e:android:test:headless": "detox test -c android.emu.debug --headless --loglevel verbose"
+    "e2e:android:test": "node ./scripts/android-e2e-preflight.cjs && detox test -c android.emu.debug --loglevel verbose",
+    "e2e:android:test:headed": "node ./scripts/android-e2e-preflight.cjs && detox test -c android.emu.debug --loglevel verbose",
+    "e2e:android:test:headless": "node ./scripts/android-e2e-preflight.cjs && detox test -c android.emu.debug --headless --loglevel verbose"
   },
   "jest": {
     "preset": "jest-expo",

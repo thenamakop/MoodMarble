@@ -9,6 +9,7 @@ const DEFAULT_DEV_CLIENT_SCHEME =
   process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
 const DEFAULT_DEV_SERVER_URL =
   process.env.DETOX_DEV_SERVER_URL || "http://127.0.0.1:8081";
+const DEFAULT_BACKEND_URL = DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000");
 const DEFAULT_ANDROID_DEV_SERVER_URL = DEFAULT_DEV_SERVER_URL.replace(
   "127.0.0.1",
   "10.0.2.2",
@@ -28,11 +29,14 @@ const BOOTSTRAP_READY_TEST_IDS = [
 ];
 
 async function resetBackendTestState() {
-  const backendUrl = DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000") + "/__test/reset";
+  const backendUrl =
+    DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000") + "/__test/reset";
   try {
     const response = await fetch(backendUrl, { method: "POST" });
     if (!response.ok) {
-      console.warn(`[DEBUG] Failed to reset backend state. Status: ${response.status}`);
+      console.warn(
+        `[DEBUG] Failed to reset backend state. Status: ${response.status}`,
+      );
     } else {
       console.log("[DEBUG] Backend test state reset successfully.");
     }
@@ -183,6 +187,17 @@ async function launchExpoDevClient() {
     devClientUrl,
   });
   // #endregion
+
+  await waitForMetroServer();
+  await waitForBackendServer();
+  reportDebugEvent(
+    "A",
+    "[DEBUG] Metro and backend servers are reachable before launching the dev client.",
+    {
+      metroStatusUrl: `${DEFAULT_DEV_SERVER_URL}/status`,
+      backendHealthUrl: `${DEFAULT_BACKEND_URL}/health`,
+    },
+  );
   // Belt-and-suspenders: ensure ADB port reversal alongside detox.config reversePorts
   try {
     execFileSync("adb", ["reverse", `tcp:${METRO_PORT}`, `tcp:${METRO_PORT}`], {
@@ -529,6 +544,50 @@ function isBootCompleted(serial) {
   }
 }
 
+async function waitForMetroServer(timeout = 15000) {
+  const statusUrl = `${DEFAULT_DEV_SERVER_URL}/status`;
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(statusUrl, { method: "GET" });
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Ignore failures and retry.
+    }
+
+    await sleep(500);
+  }
+
+  throw new Error(
+    `Metro dev server is not reachable at ${statusUrl}. Start it with \`pnpm e2e:android:metro\` from apps/mobile before running Detox.`,
+  );
+}
+
+async function waitForBackendServer(timeout = 15000) {
+  const healthUrl = `${DEFAULT_BACKEND_URL}/health`;
+  const deadline = Date.now() + timeout;
+
+  while (Date.now() < deadline) {
+    try {
+      const response = await fetch(healthUrl, { method: "GET" });
+      if (response.ok) {
+        return;
+      }
+    } catch {
+      // Ignore failures and retry.
+    }
+
+    await sleep(500);
+  }
+
+  throw new Error(
+    `Backend health endpoint is not reachable at ${healthUrl}. Start the backend and ensure it is healthy before running Detox.`,
+  );
+}
+
 function isAppRuntimeFocused(serial) {
   try {
     const output = execFileSync(
@@ -581,7 +640,7 @@ function reportDebugEvent(hypothesisId, msg, data) {
 
 async function loginAsAdmin(
   email = process.env.DETOX_ADMIN_EMAIL || "admin@example.com",
-  password = process.env.DETOX_ADMIN_PASSWORD || "change-this-password-in-prod"
+  password = process.env.DETOX_ADMIN_PASSWORD || "change-this-password-in-prod",
 ) {
   // Try to start from the root onboarding screen
   await resetToOnboardingIfNeeded();

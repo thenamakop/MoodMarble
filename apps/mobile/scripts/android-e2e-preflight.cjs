@@ -99,6 +99,10 @@ const matchingEmulators = connectedEmulators.filter(
 
 if (devicesResult.status !== 0) {
   fail("Unable to query connected Android devices with `adb devices`.");
+} else if (connectedEmulators.some((d) => d.state === "offline")) {
+  fail(
+    "One or more Android emulators are in an 'offline' state. This means the emulator has crashed or ADB has hung. Run `adb kill-server` and `adb start-server`, or cold boot the emulator with `-wipe-data`.",
+  );
 } else if (matchingEmulators.length === 0) {
   fail(
     `No running Android emulator for ${DEFAULT_AVD_NAME} is connected. Start ${DEFAULT_AVD_NAME} in Android Studio or run: & '${DEFAULT_SDK_ROOT}\\emulator\\emulator.exe' -avd ${DEFAULT_AVD_NAME}`,
@@ -134,6 +138,9 @@ if (matchingEmulators.length > 0) {
   }
 }
 
+checkUrl("Metro dev server", "http://127.0.0.1:8081/status");
+checkUrl("Backend health endpoint", "http://127.0.0.1:3000/health");
+
 if (hasFailure) {
   process.exit(1);
 }
@@ -165,9 +172,7 @@ function parseAdbDevices(output) {
       const [serial, state] = line.split(/\s+/);
       return { serial, state };
     })
-    .filter(
-      (device) => device.serial && device.state && device.state !== "offline",
-    );
+    .filter((device) => device.serial && device.state);
 }
 
 function getEmulatorAvdName(serial) {
@@ -208,4 +213,16 @@ function warn(message) {
 function fail(message) {
   hasFailure = true;
   console.error(`[fail] ${message}`);
+}
+
+function checkUrl(name, url) {
+  const result = runCommand("curl", ["-I", "--max-time", "3", url]);
+
+  if (result.status !== 0 || !/HTTP\/[0-9.]+ 2[0-9][0-9]/.test(result.stdout)) {
+    fail(
+      `${name} is not reachable at ${url}. Start the Metro server and backend before running Detox.`,
+    );
+  } else {
+    ok(`${name} is reachable at ${url}.`);
+  }
 }

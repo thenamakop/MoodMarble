@@ -230,7 +230,7 @@ The local seed creates:
 
 ### Administrative Setup & Authentication
 
-The administrative surface is fully protected by a dedicated login flow. There is NO public sign-up or "forgot password" mechanism for administrators, as the system is designed to be closed to public registration. 
+The administrative surface is fully protected by a dedicated login flow. There is NO public sign-up or "forgot password" mechanism for administrators, as the system is designed to be closed to public registration.
 
 To create an administrator, you must use the backend seed script. It uses the following environment variables (defined in `.env`):
 
@@ -239,6 +239,7 @@ To create an administrator, you must use the backend seed script. It uses the fo
 - `ADMIN_BOOTSTRAP_SECRET` (default: `local-admin-bootstrap-secret-change-me`)
 
 To provision the admin account:
+
 ```bash
 cd apps/backend
 pnpm seed:admin
@@ -247,6 +248,7 @@ pnpm seed:admin
 If you ever lose access to your admin account, you can safely re-run the seed script. It is idempotent; if the email exists, it aborts without data loss. If you need to forcefully reset a password, you will need to directly manipulate the `admin_credentials` table via database administration tools or create a secondary admin account using the script with a new email.
 
 The administrative auth flow is isolated:
+
 - Member and manager access (via `device_jwt` and `manager_jwt`) cannot fulfill `admin_jwt` route guards.
 - All administrative routes (`/admin/*`) strictly verify the `admin_jwt` payload.
 - Manager and member roles cannot be elevated to administrative privileges through the application UI.
@@ -503,7 +505,7 @@ Use the installed development build on the emulator or device to open the projec
 Week 8 includes a complete Detox layer covering the most critical Android user journeys:
 
 - **Member Journey**: anonymous onboarding -> join code entry -> team selection -> mood submission -> history -> settings
-- **Manager Journey**: deep link -> scoped dashboard view 
+- **Manager Journey**: deep link -> scoped dashboard view
 - **Admin Journey**: deep link -> scoped admin panel shell
 
 The E2E test suite ensures these key experiences do not regress and relies on the Android emulator with the Expo development build flow.
@@ -548,7 +550,7 @@ pnpm test:mobile
 
 #### Deterministic Data & Backend Seed
 
-The tests depend on a seeded test workspace and use an idempotent setup function. At the start of each E2E test file, a helper called `resetBackendTestState()` sends a request to the `POST /__test/reset` backend route. This safely truncates the database and explicitly seeds the `ws_localdemo` workspace, the `tm_product` team, and the test admin account. 
+The tests depend on a seeded test workspace and use an idempotent setup function. At the start of each E2E test file, a helper called `resetBackendTestState()` sends a request to the `POST /__test/reset` backend route. This safely truncates the database and explicitly seeds the `ws_localdemo` workspace, the `tm_product` team, and the test admin account.
 
 If the backend is not running, the deep links for the manager and admin journeys will fail to load their workspace shells. Ensure the backend is running before launching tests:
 
@@ -565,6 +567,8 @@ First, start Metro for the Android development build from the mobile app directo
 cd apps/mobile
 pnpm e2e:android:metro
 ```
+
+Note: the E2E preflight now validates Metro and the backend before Detox runs. If Metro or the backend are not reachable, the preflight will fail fast with a clear message — start Metro and the backend before running the tests.
 
 In a second terminal, build the app and Detox test APKs (this only needs to run if native code changes):
 
@@ -692,14 +696,14 @@ pnpm e2e:android:test:headless
 
 # Documentation
 
-| Document                      | Purpose                                                |
-| ----------------------------- | ------------------------------------------------------ |
-| `docs/architecture.md`        | System architecture and implementation blueprint       |
-| `docs/week-3-workspace-audit.md` | Week 3 audit and scope alignment notes              |
-| `docs/week-4-handoff.md`      | Week 4 local-history boundary and verification notes   |
-| `docs/week-5-handoff.md`      | Week 5 manager dashboard boundary and verification     |
-| `docs/week-6-handoff.md`      | Week 6 settings and reminder boundary and verification |
-| `docs/task-tracker.md`        | Milestone tracking through Week 7 and later work       |
+| Document                         | Purpose                                                |
+| -------------------------------- | ------------------------------------------------------ |
+| `docs/architecture.md`           | System architecture and implementation blueprint       |
+| `docs/week-3-workspace-audit.md` | Week 3 audit and scope alignment notes                 |
+| `docs/week-4-handoff.md`         | Week 4 local-history boundary and verification notes   |
+| `docs/week-5-handoff.md`         | Week 5 manager dashboard boundary and verification     |
+| `docs/week-6-handoff.md`         | Week 6 settings and reminder boundary and verification |
+| `docs/task-tracker.md`           | Milestone tracking through Week 7 and later work       |
 
 ---
 
