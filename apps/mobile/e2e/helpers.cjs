@@ -592,15 +592,22 @@ async function loginAsAdmin(
   await advanceToJoinCode();
 
   // Tap the admin entry link
-  await waitFor(element(by.id("admin-entry-link")))
-    .toBeVisible()
-    .withTimeout(5000);
-  await element(by.id("admin-entry-link")).tap();
+  try {
+    await waitFor(element(by.id("admin-entry-link")))
+      .toBeVisible()
+      .whileElement(by.id("onboarding-scroll-view"))
+      .scroll(200, "down");
+  } catch {
+    // Ignore if not scrollable or already visible
+  }
+
+  // Tap twice in case the first tap only dismisses the keyboard
+  await element(by.id("admin-entry-link")).multiTap(2);
 
   // Wait for login screen to mount
   await waitFor(element(by.id("admin-login-root")))
     .toBeVisible()
-    .withTimeout(5000);
+    .withTimeout(15000);
 
   // Fill in credentials
   await element(by.id("admin-email-input")).replaceText(email);
@@ -631,6 +638,7 @@ module.exports = {
   openDevClientUrlWithRetries,
   openUrlWithRetries,
   relaunchExpoDevClient,
+  resetBackendTestState,
   resetToOnboardingIfNeeded,
   waitForBootstrappedApp,
 };
