@@ -9,6 +9,36 @@ import type { DatabaseClient } from "../../src/db/client";
 const JWT_SECRET = "test-jwt-secret";
 
 describe("admin login auth flow", () => {
+  it("rejects login with a non-existent email", async () => {
+    const mockDatabaseClient = {
+      db: {
+        query: {
+          adminCredentials: {
+            findFirst: jest.fn().mockResolvedValue(undefined),
+          },
+        },
+      },
+    } as unknown as DatabaseClient;
+
+    const app = await buildApp({
+      jwtSecret: JWT_SECRET,
+      databaseClient: mockDatabaseClient,
+    });
+
+    const nonExistentResponse = await inject(app, {
+      method: "POST",
+      url: "/auth/login",
+      payload: {
+        email: "nobody@example.com",
+        password: "any-password",
+      },
+    });
+
+    expect(nonExistentResponse.statusCode).toBe(401);
+    expect(nonExistentResponse.json().message).toBe(
+      "Invalid email or password.",
+    );
+  });
   it("authenticates a valid admin and enforces rate limiting", async () => {
     // Mock the DB client
     const dummyHash = await bcrypt.hash("correct-password", 12);
@@ -120,4 +150,5 @@ describe("admin login auth flow", () => {
 
     expect(rateLimitedResponse.statusCode).toBe(429);
   });
+
 });

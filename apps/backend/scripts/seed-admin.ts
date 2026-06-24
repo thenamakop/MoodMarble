@@ -6,11 +6,13 @@ import { createDatabaseClient } from "../src/db/client";
 import { adminCredentials } from "../src/db/schema";
 import { loadLocalEnvFile, getAppEnv } from "../src/config/env";
 
-async function main() {
+export async function seedAdmin(
+  adminEmail = process.env.ADMIN_EMAIL,
+  adminPassword = process.env.ADMIN_PASSWORD,
+  databaseClientOverride?: any,
+) {
   loadLocalEnvFile();
   const env = getAppEnv();
-  const adminEmail = process.env.ADMIN_EMAIL;
-  const adminPassword = process.env.ADMIN_PASSWORD;
 
   if (!adminEmail || !adminPassword) {
     console.error(
@@ -24,7 +26,7 @@ async function main() {
     process.exit(1);
   }
 
-  const databaseClient = createDatabaseClient(env.DATABASE_URL);
+  const databaseClient = databaseClientOverride || createDatabaseClient(env.DATABASE_URL);
 
   try {
     const existingAdmin = await databaseClient.db
@@ -37,7 +39,7 @@ async function main() {
       console.log(
         `Admin account with email ${adminEmail} already exists. Skipping seed.`,
       );
-      process.exit(0);
+      return 0; // Return exit code instead of process.exit for testability
     }
 
     const passwordHash = await bcrypt.hash(adminPassword, 12);
@@ -50,13 +52,17 @@ async function main() {
     });
 
     console.log(`Successfully created admin account for ${adminEmail}.`);
-    process.exit(0);
+    return 0;
   } catch (error) {
     console.error("Failed to seed admin account:", error);
-    process.exit(1);
+    return 1;
   } finally {
-    await databaseClient.close();
+    if (!databaseClientOverride) {
+      await databaseClient.close();
+    }
   }
 }
 
-void main();
+if (require.main === module) {
+  seedAdmin().then((code) => process.exit(code));
+}

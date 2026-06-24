@@ -564,6 +564,42 @@ function reportDebugEvent(hypothesisId, msg, data) {
   }).catch(() => {});
 }
 
+async function loginAsAdmin(
+  email = process.env.DETOX_ADMIN_EMAIL || "admin@example.com",
+  password = process.env.DETOX_ADMIN_PASSWORD || "change-this-password-in-prod"
+) {
+  // Try to start from the root onboarding screen
+  await resetToOnboardingIfNeeded();
+
+  // If the admin access link isn't immediately visible, we may need to navigate
+  // to the join code screen. `advanceToJoinCode` will handle pressing 'next'
+  // until we get there.
+  await advanceToJoinCode();
+
+  // Tap the admin entry link
+  await waitFor(element(by.id("admin-entry-link")))
+    .toBeVisible()
+    .withTimeout(5000);
+  await element(by.id("admin-entry-link")).tap();
+
+  // Wait for login screen to mount
+  await waitFor(element(by.id("admin-login-root")))
+    .toBeVisible()
+    .withTimeout(5000);
+
+  // Fill in credentials
+  await element(by.id("admin-login-email")).replaceText(email);
+  await element(by.id("admin-login-password")).replaceText(password);
+
+  // Submit
+  await element(by.id("admin-login-submit-button")).tap();
+
+  // Wait for the admin panel to become ready
+  await waitFor(element(by.id("admin-panel-ready-state")))
+    .toBeVisible()
+    .withTimeout(20000);
+}
+
 module.exports = {
   advanceToJoinCode,
   completeAnonymousMemberJourney,
@@ -574,6 +610,7 @@ module.exports = {
   buildAdbBootstrapCommand,
   isVisible,
   launchExpoDevClient,
+  loginAsAdmin,
   maybeWaitForBootstrappedApp,
   isAppRuntimeFocused,
   openDevClientUrlWithRetries,
