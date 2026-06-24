@@ -1,6 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
 
+import { registerAuthRoutes } from "./routes/auth";
 import { registerAdminRoutes } from "./routes/admin";
 import { registerDashboardDailyRoute } from "./routes/dashboard-daily";
 import { registerDashboardTagsRoute } from "./routes/dashboard-tags";
@@ -44,6 +45,7 @@ interface BuildAppOptions {
   submissionRateLimiter?: SubmissionRateLimiter;
   teamMembershipStore?: TeamMembershipStore;
   now?: () => Date;
+  databaseClient?: import("./db/client").DatabaseClient;
 }
 
 export async function buildApp(
@@ -66,6 +68,12 @@ export async function buildApp(
   });
 
   await registerHealthRoutes(app);
+  if (options.databaseClient) {
+    await registerAuthRoutes(app, {
+      jwtSecret: options.jwtSecret,
+      databaseClient: options.databaseClient,
+    });
+  }
   await registerAdminRoutes(app, {
     jwtSecret: options.jwtSecret,
     adminBootstrapSecret: options.adminBootstrapSecret,

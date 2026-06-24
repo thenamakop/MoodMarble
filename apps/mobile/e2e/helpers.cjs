@@ -1,4 +1,6 @@
 const { execFileSync } = require("child_process");
+const { readFileSync } = require("fs");
+const path = require("path");
 const { by, device, element, waitFor } = require("detox");
 const jwt = require("jsonwebtoken");
 
@@ -7,9 +9,15 @@ const DEFAULT_DEV_CLIENT_SCHEME =
   process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
 const DEFAULT_DEV_SERVER_URL =
   process.env.DETOX_DEV_SERVER_URL || "http://127.0.0.1:8081";
+const DEFAULT_ANDROID_DEV_SERVER_URL = DEFAULT_DEV_SERVER_URL.replace(
+  "127.0.0.1",
+  "10.0.2.2",
+).replace("localhost", "10.0.2.2");
 const DEFAULT_ANDROID_APP_ID =
   process.env.DETOX_ANDROID_APP_ID || "com.thenamak.MoodMarble";
 const DEFAULT_AVD_NAME = process.env.DETOX_AVD_NAME || "Pixel_8";
+const METRO_PORT = 8081;
+const BACKEND_PORT = 3000;
 const BOOTSTRAP_READY_TEST_IDS = [
   "next-onboarding-button",
   "join-code-input",
@@ -39,6 +47,27 @@ async function resetToOnboardingIfNeeded() {
     await waitFor(element(by.id("join-code-input")))
       .toBeVisible()
       .withTimeout(10000);
+  } else if (await isVisible("settings-scroll-view", 2000)) {
+    // If we're on the settings screen but clear local data is off-screen,
+    // we need to scroll down.
+    try {
+      await waitFor(element(by.id("settings-open-clear-local-data")))
+        .toBeVisible()
+        .whileElement(by.id("settings-scroll-view"))
+        .scroll(300, "down", NaN, 0.85);
+
+      await element(by.id("settings-open-clear-local-data")).tap();
+      await waitFor(element(by.id("settings-confirm-clear-local-data")))
+        .toBeVisible()
+        .whileElement(by.id("settings-scroll-view"))
+        .scroll(300, "down", NaN, 0.85);
+      await element(by.id("settings-confirm-clear-local-data")).tap();
+      await waitFor(element(by.id("join-code-input")))
+        .toBeVisible()
+        .withTimeout(10000);
+    } catch {
+      // Ignore if it fails, maybe it's already cleared or something else
+    }
   }
 }
 
@@ -64,6 +93,8 @@ async function completeAnonymousMemberJourney() {
 
 function createExpoDevClientLaunchUrl() {
   const searchParams = new URLSearchParams({
+    // Detox reverses the Metro port before launching instrumentation, so the
+    // initial Expo dev-client bootstrap is most reliable through loopback.
     url: DEFAULT_DEV_SERVER_URL,
     disableOnboarding: "1",
   });
@@ -117,14 +148,135 @@ function createAdminLaunchUrl() {
   return `${DEFAULT_DEV_CLIENT_SCHEME}://admin?${searchParams.toString()}`;
 }
 
+/**
+ * Launches the Expo dev-client build on Android and waits until the
+ * React Native app is fully interactive.
+ *
+ * Why this works:
+ * - device.launchApp() opens the APK shell (DevLauncherActivity)
+ * - device.openURL() sends a native Android Intent with the Metro URL
+ * - expo-dev-client handles the Intent BEFORE the JS bridge exists
+ *   → bypasses the server-picker UI entirely
+ * - We then wait for the first testID to confirm JS is running
+ */
 async function launchExpoDevClient() {
-  await device.launchApp({
+  const devClientUrl = createExpoDevClientLaunchUrl();
+  // #region debug-point A:launch-start
+  reportDebugEvent("A", "[DEBUG] launchExpoDevClient started.", {
+    devServerUrl: DEFAULT_ANDROID_DEV_SERVER_URL,
+    appId: DEFAULT_ANDROID_APP_ID,
+    devClientUrl,
+  });
+  // #endregion
+  // Belt-and-suspenders: ensure ADB port reversal alongside detox.config reversePorts
+  try {
+    execFileSync("adb", ["reverse", `tcp:${METRO_PORT}`, `tcp:${METRO_PORT}`], {
+      stdio: "pipe",
+    });
+    execFileSync(
+      "adb",
+      ["reverse", `tcp:${BACKEND_PORT}`, `tcp:${BACKEND_PORT}`],
+      { stdio: "pipe" },
+    );
+  } catch {
+    reportDebugEvent(
+      "B",
+      "[DEBUG] adb reverse failed during launchExpoDevClient; continuing with Detox reversePorts.",
+      {
+        metroPort: METRO_PORT,
+        backendPort: BACKEND_PORT,
+      },
+    );
+  }
+
+  // 1. Cold-start using Detox's built-in URL override so the initial
+  // instrumented launch goes directly through the Expo dev-client intent.
+  await device.launchApp({ newInstance: true, url: devClientUrl });
+  reportDebugEvent("A", "[DEBUG] device.launchApp resolved.", {
     newInstance: true,
+    usedUrlOverride: true,
   });
   await device.disableSynchronization();
+  reportDebugEvent("A", "[DEBUG] device.disableSynchronization resolved.", {});
   await waitForConnectedEmulator();
-  await openUrlWithRetries(createExpoDevClientLaunchUrl());
-  await waitForBootstrappedApp();
+  reportDebugEvent("A", "[DEBUG] waitForConnectedEmulator resolved.", {});
+
+  const existingReadyTestId = await maybeWaitForBootstrappedApp(5000);
+  if (existingReadyTestId) {
+    reportDebugEvent(
+      "C",
+      "[DEBUG] Existing Expo runtime was already ready after launchApp.",
+      {
+        readyTestId: existingReadyTestId,
+      },
+    );
+    await device.enableSynchronization();
+    return;
+  }
+
+  // 2. If the initial launch still did not surface the RN runtime, retry the
+  // same dev-client URL through ADB as a fallback.
+  // #region debug-point D:open-url
+  reportDebugEvent(
+    "D",
+    "[DEBUG] Retrying Expo dev-client URL via ADB fallback.",
+    {
+      devClientUrl,
+    },
+  );
+  // #endregion
+  await openDevClientUrlWithRetries(devClientUrl);
+
+  // 3. Wait for JS runtime to be ready (bundle load + React mount).
+  const readyTestId = await waitForBootstrappedApp(120000);
+  // #region debug-point C:ready-test-id
+  reportDebugEvent("C", "[DEBUG] Expo runtime became observable to Detox.", {
+    readyTestId,
+  });
+  // #endregion
+
+  // 4. Re-enable Detox synchronization before test interactions begin.
+  await device.enableSynchronization();
+}
+
+/**
+ * Relaunches without reinstalling (fast path for test suite resets).
+ * Only use this after the first launchExpoDevClient() in the same session.
+ */
+async function relaunchExpoDevClient() {
+  await device.launchApp({ newInstance: false });
+  reportDebugEvent("A", "[DEBUG] relaunch device.launchApp resolved.", {
+    newInstance: false,
+  });
+  await device.disableSynchronization();
+  reportDebugEvent(
+    "A",
+    "[DEBUG] relaunch device.disableSynchronization resolved.",
+    {},
+  );
+
+  const existingReadyTestId = await maybeWaitForBootstrappedApp(3000);
+  if (existingReadyTestId) {
+    reportDebugEvent(
+      "C",
+      "[DEBUG] Existing Expo runtime was already ready after relaunch.",
+      {
+        readyTestId: existingReadyTestId,
+      },
+    );
+    await device.enableSynchronization();
+    return;
+  }
+
+  const readyTestId = await waitForBootstrappedApp(90000);
+  reportDebugEvent(
+    "C",
+    "[DEBUG] Expo runtime became observable after relaunch.",
+    {
+      readyTestId,
+    },
+  );
+  await device.enableSynchronization();
 }
 
 async function advanceToJoinCode() {
@@ -184,7 +336,47 @@ async function waitForBootstrappedApp(timeout = 20000) {
   );
 }
 
+async function maybeWaitForBootstrappedApp(timeout = 5000) {
+  try {
+    return await waitForBootstrappedApp(timeout);
+  } catch {
+    return null;
+  }
+}
+
 async function openUrlWithRetries(url, attempts = 3) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await device.launchApp({ newInstance: false, url });
+      return;
+    } catch (error) {
+      lastError = error;
+
+      try {
+        const emulatorSerial = await waitForConnectedEmulator();
+        const command = buildAdbDeepLinkCommand(url);
+
+        await sleep(750);
+        execFileSync("adb", ["-s", emulatorSerial, "shell", command], {
+          stdio: "pipe",
+        });
+        return;
+      } catch (fallbackError) {
+        lastError = fallbackError;
+      }
+
+      if (attempt === attempts) {
+        throw lastError;
+      }
+
+      await sleep(1000);
+    }
+  }
+}
+
+async function openDevClientUrlWithRetries(url, attempts = 3) {
   let lastError;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -194,7 +386,7 @@ async function openUrlWithRetries(url, attempts = 3) {
       await sleep(750);
       execFileSync(
         "adb",
-        ["-s", emulatorSerial, "shell", buildAdbDeepLinkCommand(url)],
+        ["-s", emulatorSerial, "shell", buildAdbBootstrapCommand(url)],
         {
           stdio: "pipe",
         },
@@ -213,11 +405,24 @@ async function openUrlWithRetries(url, attempts = 3) {
 }
 
 function buildAdbDeepLinkCommand(url) {
-  return [
+  return buildAdbIntentCommand(url, true);
+}
+
+function buildAdbBootstrapCommand(url) {
+  return buildAdbIntentCommand(url, false);
+}
+
+function buildAdbIntentCommand(url, includeAppId) {
+  const command = [
     "am start -W -a android.intent.action.VIEW -d",
     quoteForAndroidShell(url),
-    DEFAULT_ANDROID_APP_ID,
-  ].join(" ");
+  ];
+
+  if (includeAppId) {
+    command.push(DEFAULT_ANDROID_APP_ID);
+  }
+
+  return command.join(" ");
 }
 
 function quoteForAndroidShell(value) {
@@ -309,8 +514,54 @@ function isBootCompleted(serial) {
   }
 }
 
+function isAppRuntimeFocused(serial) {
+  try {
+    const output = execFileSync(
+      "adb",
+      ["-s", serial, "shell", "dumpsys", "window"],
+      {
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "pipe"],
+      },
+    );
+
+    return (
+      output.includes(`${DEFAULT_ANDROID_APP_ID}/.MainActivity`) ||
+      output.includes(
+        `${DEFAULT_ANDROID_APP_ID}/${DEFAULT_ANDROID_APP_ID}.MainActivity`,
+      )
+    );
+  } catch {
+    return false;
+  }
+}
+
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function reportDebugEvent(hypothesisId, msg, data) {
+  const envPath = path.join(process.cwd(), ".dbg", "e2e-manual-edit-audit.env");
+  let debugUrl = "http://127.0.0.1:7777/event";
+  let debugSessionId = "e2e-manual-edit-audit";
+  try {
+    const envFile = readFileSync(envPath, "utf8");
+    debugUrl = envFile.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || debugUrl;
+    debugSessionId =
+      envFile.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || debugSessionId;
+  } catch {}
+  fetch(debugUrl, {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: debugSessionId,
+      runId: "pre-fix",
+      hypothesisId,
+      location: "apps/mobile/e2e/helpers.cjs",
+      msg,
+      data,
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
 }
 
 module.exports = {
@@ -320,9 +571,14 @@ module.exports = {
   createExpoDevClientLaunchUrl,
   createManagerLaunchUrl,
   buildAdbDeepLinkCommand,
+  buildAdbBootstrapCommand,
   isVisible,
   launchExpoDevClient,
+  maybeWaitForBootstrappedApp,
+  isAppRuntimeFocused,
+  openDevClientUrlWithRetries,
   openUrlWithRetries,
+  relaunchExpoDevClient,
   resetToOnboardingIfNeeded,
   waitForBootstrappedApp,
 };

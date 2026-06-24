@@ -22,6 +22,8 @@ import {
 } from "@/features/settings/storage";
 import { syncStoredReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 import { useTheme } from "@/hooks/use-theme";
+import { loadAdminSession } from "@/features/admin/session";
+import { buildAdminRouteParams } from "@/features/admin/route-state";
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -48,7 +50,21 @@ export default function HomeScreen() {
     let cancelled = false;
     const syncVersion = ++sessionSyncVersionRef.current;
 
-    async function syncAnonymousSession() {
+    async function syncSession() {
+      // Check admin session first
+      const adminSession = await loadAdminSession();
+      if (
+        adminSession &&
+        !cancelled &&
+        sessionSyncVersionRef.current === syncVersion
+      ) {
+        router.replace({
+          pathname: "/admin",
+          params: buildAdminRouteParams(adminSession),
+        });
+        return;
+      }
+
       const nextContext = getAnonymousSessionFromParams(params);
       const nextSession = await restoreAnonymousSession(params);
       const localSettings = await loadLocalSettings();
@@ -86,7 +102,7 @@ export default function HomeScreen() {
       }
     }
 
-    void syncAnonymousSession();
+    void syncSession();
 
     return () => {
       cancelled = true;
@@ -183,11 +199,15 @@ export default function HomeScreen() {
     );
   }
 
+  if (!session) {
+    return null;
+  }
+
   return (
     <MarbleTrayScreen
-      workspaceId={session.workspaceId}
-      teamId={session.teamId}
-      deviceJwt={session.deviceJwt}
+      workspaceId={session?.workspaceId}
+      teamId={session?.teamId}
+      deviceJwt={session?.deviceJwt}
       onOpenHistory={
         Platform.OS === "web"
           ? undefined

@@ -16,9 +16,33 @@ import {
 import { AdminPanelScreen } from "@/features/admin/admin-panel-screen";
 import {
   hasAdminAccess,
+  parseAdminRouteParams,
   type AdminSectionFocus,
 } from "@/features/admin/route-state";
 import { shareAdminCsv } from "@/features/admin/share";
+import { loadAdminSession, clearAdminSession } from "@/features/admin/session";
+
+const DEBUG_SERVER_URL = "http://10.0.2.2:7777/event";
+const DEBUG_SESSION_ID = "e2e-manual-edit-audit";
+
+function reportMobileDebugEvent(
+  hypothesisId: string,
+  msg: string,
+  data: Record<string, unknown>,
+) {
+  fetch(DEBUG_SERVER_URL, {
+    method: "POST",
+    body: JSON.stringify({
+      sessionId: DEBUG_SESSION_ID,
+      runId: "pre-fix",
+      hypothesisId,
+      location: "apps/mobile/src/features/admin/admin-panel-route.tsx",
+      msg,
+      data,
+      ts: Date.now(),
+    }),
+  }).catch(() => {});
+}
 
 interface AdminPanelRouteProps {
   sectionFocus?: AdminSectionFocus;
@@ -33,9 +57,10 @@ export function AdminPanelRoute({
     workspace_id?: string;
     workspace_name?: string;
   }>();
-  const routeAdminJwt = normalizeSearchParam(params.admin_jwt);
-  const routeWorkspaceId = normalizeSearchParam(params.workspace_id);
-  const routeWorkspaceName = normalizeSearchParam(params.workspace_name);
+  const parsedParams = parseAdminRouteParams(params);
+  const routeAdminJwt = parsedParams.adminJwt ?? null;
+  const routeWorkspaceId = parsedParams.workspaceId ?? null;
+  const routeWorkspaceName = parsedParams.workspaceName ?? null;
   const [adminJwt, setAdminJwt] = useState(routeAdminJwt);
   const [workspaceId, setWorkspaceId] = useState(routeWorkspaceId);
   const [workspaceName, setWorkspaceName] = useState(routeWorkspaceName);
@@ -51,6 +76,27 @@ export function AdminPanelRoute({
   );
   const [reloadKey, setReloadKey] = useState(0);
   const isAdminAccessReady = hasAdminAccess(adminJwt, workspaceId);
+
+  useEffect(() => {
+    // #region debug-point E:admin-route-params
+    reportMobileDebugEvent("E", "[DEBUG] Admin route params resolved.", {
+      hasAdminJwt: Boolean(adminJwt),
+      isAdminAccessReady,
+      pathname: "/admin",
+      routeWorkspaceId,
+      routeWorkspaceName,
+      sectionFocus,
+      workspaceId,
+    });
+    // #endregion
+  }, [
+    adminJwt,
+    isAdminAccessReady,
+    routeWorkspaceId,
+    routeWorkspaceName,
+    sectionFocus,
+    workspaceId,
+  ]);
 
   useEffect(() => {
     if (!adminJwt && routeAdminJwt) {
@@ -77,7 +123,26 @@ export function AdminPanelRoute({
     let cancelled = false;
 
     async function loadShell() {
-      if (!adminJwt || !workspaceId) {
+      let currentAdminJwt = adminJwt;
+      let currentWorkspaceId = workspaceId;
+      let currentWorkspaceName = workspaceName;
+
+      if (!currentAdminJwt || !currentWorkspaceId) {
+        const storedSession = await loadAdminSession();
+        if (storedSession) {
+          currentAdminJwt = storedSession.adminJwt;
+          currentWorkspaceId = storedSession.workspaceId;
+          currentWorkspaceName = storedSession.workspaceName ?? null;
+
+          if (!cancelled) {
+            setAdminJwt(currentAdminJwt);
+            setWorkspaceId(currentWorkspaceId);
+            setWorkspaceName(currentWorkspaceName);
+          }
+        }
+      }
+
+      if (!currentAdminJwt || !currentWorkspaceId) {
         if (!cancelled) {
           setBundle(null);
           setShellErrorMessage(null);
@@ -91,9 +156,9 @@ export function AdminPanelRoute({
 
       try {
         const nextBundle = await loadAdminPanelShell({
-          adminJwt,
-          workspaceId,
-          workspaceName,
+          adminJwt: currentAdminJwt,
+          workspaceId: currentWorkspaceId,
+          workspaceName: currentWorkspaceName,
         });
 
         if (!cancelled) {
@@ -105,6 +170,13 @@ export function AdminPanelRoute({
           setShellErrorMessage(
             error instanceof Error ? error.message : ADMIN_PANEL_ERROR_MESSAGE,
           );
+          // On auth errors, clear session
+          if (
+            error instanceof Error &&
+            error.message.includes("Unauthorized")
+          ) {
+            await clearAdminSession();
+          }
         }
       } finally {
         if (!cancelled) {
@@ -385,19 +457,4 @@ export function AdminPanelRoute({
       viewModel={bundle}
     />
   );
-}
-
-function normalizeSearchParam(
-  value: string | string[] | undefined,
-): string | null {
-  if (typeof value === "string" && value.trim()) {
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    const firstValue = value.find((entry) => entry.trim().length > 0);
-    return firstValue ?? null;
-  }
-
-  return null;
 }

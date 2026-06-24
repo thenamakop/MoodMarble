@@ -132,6 +132,26 @@ export const moodSubmissions = pgTable(
 );
 
 /**
+ * admin_credentials
+ * Used for admin panel login.
+ */
+export const adminCredentials = pgTable(
+  "admin_credentials",
+  {
+    id: text("id").primaryKey(),
+    email: text("email").notNull(),
+    passwordHash: text("password_hash").notNull(),
+    active: smallint("active").notNull().default(1),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    emailUnique: uniqueIndex("admin_credentials_email_unique").on(table.email),
+  }),
+);
+
+/**
  * Relations
  */
 export const workspacesRelations = relations(workspaces, ({ many }) => ({

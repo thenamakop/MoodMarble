@@ -231,6 +231,7 @@ export function SettingsScreen({
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
+          testID="settings-scroll-view"
           style={styles.scrollView}
           contentContainerStyle={styles.contentContainer}
         >

@@ -205,6 +205,7 @@ Run the database setup before using the API locally:
 cd apps/backend
 pnpm db:migrate
 pnpm db:seed
+pnpm seed:admin
 pnpm dev
 ```
 
@@ -225,6 +226,7 @@ The local seed creates:
 - workspace: `ws_localdemo`
 - join code: `ABC123`
 - teams: `tm_product`, `tm_engineering`
+- admin account: `admin@example.com` (password: `change-this-password-in-prod`)
 
 ---
 
@@ -253,6 +255,7 @@ PORT=3000
 cd apps/backend
 pnpm db:migrate
 pnpm db:seed
+pnpm seed:admin
 pnpm dev
 ```
 
@@ -535,6 +538,8 @@ Mobile E2E flow from the repo root:
 pnpm e2e:android:metro
 ```
 
+This starts Metro for the Android development build. Detox installs and launches the build during the test run.
+
 In a second terminal:
 
 ```bash
@@ -550,6 +555,8 @@ cd apps/mobile
 pnpm e2e:android:preflight
 pnpm e2e:android:metro
 ```
+
+This app-local Metro command keeps the Android dev-client bundle available for Detox without requiring a preinstalled build before the test phase.
 
 In a second terminal:
 

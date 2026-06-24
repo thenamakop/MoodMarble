@@ -193,6 +193,7 @@ export function MarbleTrayScreen({
             styles.contentContainer,
             { paddingBottom: safeBottomPadding },
           ]}
+          testID="marble-tray-scroll-view"
         >
           <View style={styles.heroSection}>
             <ThemedText type="title" style={styles.title}>

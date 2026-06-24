@@ -23,12 +23,14 @@ const ADMIN_JOIN_CODE_ERROR_MESSAGE = "Unable to load join code right now.";
 const ADMIN_JOIN_CODE_ROTATE_ERROR_MESSAGE =
   "Unable to refresh join code right now.";
 const ADMIN_EXPORT_ERROR_MESSAGE = "Unable to export CSV right now.";
+const ADMIN_LOGIN_ERROR_MESSAGE = "Unable to login right now.";
 const SAFE_ADMIN_ERROR_MESSAGES = new Set([
   "Unauthorized",
   "Forbidden",
   "Join code not found.",
   "Workspace not found.",
   "Team not found.",
+  "Invalid email or password.",
   ADMIN_ACCESS_MISSING_MESSAGE,
 ]);
 const ADMIN_BOOTSTRAP_HEADER = "x-admin-bootstrap-secret";
@@ -47,6 +49,40 @@ interface CreateAdminWorkspaceInput {
 interface AdminWorkspaceSession {
   adminJwt: string;
   workspaceId: string;
+}
+
+interface AdminLoginResponse {
+  admin_jwt: string;
+  workspace: {
+    id: string;
+    name: string;
+  };
+}
+
+export async function loginAdmin(input: {
+  email: string;
+  password: string;
+}): Promise<AdminLoginResponse> {
+  const response = await fetch(createApiUrl("/auth/login"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input),
+  });
+
+  if (!response.ok) {
+    let errorMsg = ADMIN_LOGIN_ERROR_MESSAGE;
+    try {
+      const data = await response.json();
+      if (data.message && SAFE_ADMIN_ERROR_MESSAGES.has(data.message)) {
+        errorMsg = data.message;
+      } else if (response.status === 429) {
+        errorMsg = "Too many login attempts. Please try again later.";
+      }
+    } catch {}
+    throw new Error(errorMsg);
+  }
+
+  return response.json() as Promise<AdminLoginResponse>;
 }
 
 interface CreateAdminTeamInput extends AdminWorkspaceSession {

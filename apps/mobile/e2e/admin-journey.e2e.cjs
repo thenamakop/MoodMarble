@@ -1,4 +1,4 @@
-const { by, device, element, expect, waitFor } = require("detox");
+const { by, element, expect, waitFor } = require("detox");
 
 const {
   createAdminLaunchUrl,
@@ -9,7 +9,6 @@ const {
 describe("admin panel journey", () => {
   beforeAll(async () => {
     await launchExpoDevClient();
-    await device.disableSynchronization();
     await openUrlWithRetries(createAdminLaunchUrl());
   });
 

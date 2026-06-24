@@ -10,6 +10,8 @@ import { RedisSubmissionRateLimiter } from "./services/submission-rate-limit";
 import { PostgresTeamMembershipStore } from "./services/team-members";
 import { PostgresWorkspaceDirectory } from "./services/workspace-directory";
 
+// Removed debug-point instrumentation
+
 async function startServer(): Promise<void> {
   const env = getAppEnv();
   const databaseClient = createDatabaseClient(env.DATABASE_URL);
@@ -23,6 +25,7 @@ async function startServer(): Promise<void> {
   const app = await buildApp({
     jwtSecret: env.JWT_SECRET,
     adminBootstrapSecret: env.ADMIN_BOOTSTRAP_SECRET,
+    databaseClient,
     adminApiService: new PostgresAdminApiService({
       databaseClient,
       jwtSecret: env.JWT_SECRET,
@@ -34,6 +37,16 @@ async function startServer(): Promise<void> {
     submissionRateLimiter: new RedisSubmissionRateLimiter(redis),
     teamMembershipStore: new PostgresTeamMembershipStore(databaseClient),
     workspaceDirectory: new PostgresWorkspaceDirectory(databaseClient),
+  });
+
+  app.addHook("onRequest", async (request, reply) => {
+    console.log(`[REQ] ${request.method} ${request.url}`);
+  });
+  app.addHook("onResponse", async (request, reply) => {
+    console.log(`[RES] ${request.method} ${request.url} - ${reply.statusCode}`);
+  });
+  app.addHook("onError", async (request, reply, error) => {
+    console.error(`[ERR] ${request.method} ${request.url}`, error);
   });
 
   app.addHook("onClose", async () => {

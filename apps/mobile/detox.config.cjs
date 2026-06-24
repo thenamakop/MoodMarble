@@ -35,6 +35,14 @@ module.exports = {
           screenshot: "failing",
         },
       },
+      behavior: {
+        init: {},
+        cleanup: {
+          // Keep emulator warm between runs — rebooting adds 60–120 s and
+          // resets adb reverse tunnels.
+          shutdownDevice: false,
+        },
+      },
     },
   },
 };

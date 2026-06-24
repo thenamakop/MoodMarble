@@ -86,6 +86,7 @@ import androidx.test.filters.LargeTest;
 import androidx.test.rule.ActivityTestRule;
 
 import com.wix.detox.Detox;
+import com.wix.detox.config.DetoxConfig;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -100,7 +101,12 @@ public class DetoxTest {
 
   @Test
   public void runDetoxTests() {
-    Detox.runTests(activityRule);
+    DetoxConfig detoxConfig = new DetoxConfig();
+    detoxConfig.idlePolicyConfig.masterTimeoutSec = 90;
+    detoxConfig.idlePolicyConfig.idleResourceTimeoutSec = 60;
+    detoxConfig.rnContextLoadTimeoutSec = (BuildConfig.DEBUG ? 180 : 60);
+
+    Detox.runTests(activityRule, detoxConfig);
   }
 }
 `;

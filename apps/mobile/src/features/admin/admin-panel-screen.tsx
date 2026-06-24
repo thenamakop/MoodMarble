@@ -7,11 +7,13 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { Link } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { clearAdminSession } from "./session";
 
 import type { AdminSectionFocus } from "./route-state";
 import type { AdminTeam } from "@/contracts/admin";
@@ -166,21 +168,41 @@ export function AdminPanelScreen({
               </ThemedText>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={onReturnHome}
-              style={({ pressed }) => [
-                styles.returnButton,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.backgroundSelected,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-              testID="admin-panel-return-home"
-            >
-              <ThemedText type="smallBold">Return to app</ThemedText>
-            </Pressable>
+            <View style={styles.headerActionRow}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onReturnHome}
+                style={({ pressed }) => [
+                  styles.returnButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="admin-panel-return-home"
+              >
+                <ThemedText type="smallBold">Return to app</ThemedText>
+              </Pressable>
+              <Pressable
+                accessibilityRole="button"
+                onPress={async () => {
+                  await clearAdminSession();
+                  onReturnHome?.();
+                }}
+                style={({ pressed }) => [
+                  styles.returnButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="admin-panel-logout"
+              >
+                <ThemedText type="smallBold">Sign out</ThemedText>
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.navRow}>
@@ -240,19 +262,41 @@ export function AdminPanelScreen({
               title="Admin access required"
               testID="admin-panel-guarded-state"
             >
-              <Pressable
-                accessibilityRole="button"
-                onPress={onReturnHome}
-                style={[
-                  styles.stateButton,
-                  {
-                    backgroundColor: theme.backgroundSelected,
-                  },
-                ]}
-                testID="admin-panel-guarded-return-home"
-              >
-                <ThemedText type="smallBold">Return to app</ThemedText>
-              </Pressable>
+              <View style={styles.guardedActionRow}>
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={onReturnHome}
+                  style={[
+                    styles.stateButton,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                    },
+                  ]}
+                  testID="admin-panel-guarded-return-home"
+                >
+                  <ThemedText type="smallBold">Return to app</ThemedText>
+                </Pressable>
+
+                <Link href="/admin-login" asChild>
+                  <Pressable
+                    accessibilityRole="button"
+                    style={[
+                      styles.stateButton,
+                      {
+                        backgroundColor: "#208AEF",
+                      },
+                    ]}
+                    testID="admin-panel-guarded-login"
+                  >
+                    <ThemedText
+                      type="smallBold"
+                      style={styles.primaryButtonText}
+                    >
+                      Admin login
+                    </ThemedText>
+                  </Pressable>
+                </Link>
+              </View>
 
               <WorkspaceSetupForm
                 bootstrapSecretDraft={bootstrapSecretDraft}
@@ -809,6 +853,10 @@ const styles = StyleSheet.create({
   headerCopy: {
     gap: Spacing.two,
   },
+  headerActionRow: {
+    flexDirection: "row",
+    gap: Spacing.two,
+  },
   kickerRow: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -872,6 +920,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
     alignSelf: "flex-start",
+  },
+  guardedActionRow: {
+    flexDirection: "row",
+    gap: Spacing.two,
+    marginBottom: Spacing.two,
   },
   readyLayout: {
     gap: Spacing.three,

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState, useMemo } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,6 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { Link } from "expo-router";
 
 import {
   JoinCodeSchema,
@@ -429,6 +430,18 @@ export function OnboardingScreen({
           {errorMessage ? (
             <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
           ) : null}
+
+          {!workspaceResult && !isShowingIntro && (
+            <View style={styles.adminEntryContainer}>
+              <Link href="/admin-login" asChild>
+                <Pressable testID="admin-entry-link">
+                  <ThemedText type="small" themeColor="textSecondary">
+                    Admin access
+                  </ThemedText>
+                </Pressable>
+              </Link>
+            </View>
+          )}
         </ThemedView>
       </ScrollView>
     </SafeAreaView>
@@ -574,5 +587,10 @@ const styles = StyleSheet.create({
   },
   errorText: {
     color: "#b42318",
+  },
+  adminEntryContainer: {
+    alignItems: "center",
+    marginTop: Spacing.four,
+    opacity: 0.7,
   },
 });
