@@ -9,6 +9,7 @@ import { registerDashboardWeeklyRoute } from "./routes/dashboard-weekly";
 import { registerHealthRoutes } from "./routes/health";
 import { registerMoodRoute } from "./routes/mood";
 import { registerWorkspaceJoinRoute } from "./routes/workspace-join";
+import { registerTestRoutes } from "./routes/test-fixtures";
 import {
   InMemoryAdminApiService,
   NotImplementedAdminApiService,
@@ -73,6 +74,12 @@ export async function buildApp(
       jwtSecret: options.jwtSecret,
       databaseClient: options.databaseClient,
     });
+    
+    if (process.env.NODE_ENV !== "production") {
+      await registerTestRoutes(app, {
+        databaseClient: options.databaseClient,
+      });
+    }
   }
   await registerAdminRoutes(app, {
     jwtSecret: options.jwtSecret,

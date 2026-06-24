@@ -37,8 +37,8 @@ describe("admin panel journey", () => {
       
     await element(by.id("admin-panel-logout")).tap();
     
-    // Should return to the join code screen
-    await waitFor(element(by.id("join-code-input")))
+    // Should return to the start of onboarding
+    await waitFor(element(by.id("onboarding-next-button")))
       .toBeVisible()
       .withTimeout(10000);
   });

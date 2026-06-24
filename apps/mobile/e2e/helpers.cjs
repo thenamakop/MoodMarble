@@ -27,7 +27,22 @@ const BOOTSTRAP_READY_TEST_IDS = [
   "admin-panel-screen",
 ];
 
+async function resetBackendTestState() {
+  const backendUrl = DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000") + "/__test/reset";
+  try {
+    const response = await fetch(backendUrl, { method: "POST" });
+    if (!response.ok) {
+      console.warn(`[DEBUG] Failed to reset backend state. Status: ${response.status}`);
+    } else {
+      console.log("[DEBUG] Backend test state reset successfully.");
+    }
+  } catch (error) {
+    console.warn("[DEBUG] Could not reach backend to reset test state.", error);
+  }
+}
+
 async function resetToOnboardingIfNeeded() {
+  await resetBackendTestState();
   await launchExpoDevClient();
 
   if (await isVisible("join-code-input", 4000)) {
@@ -588,8 +603,8 @@ async function loginAsAdmin(
     .withTimeout(5000);
 
   // Fill in credentials
-  await element(by.id("admin-login-email")).replaceText(email);
-  await element(by.id("admin-login-password")).replaceText(password);
+  await element(by.id("admin-email-input")).replaceText(email);
+  await element(by.id("admin-password-input")).replaceText(password);
 
   // Submit
   await element(by.id("admin-login-submit-button")).tap();
