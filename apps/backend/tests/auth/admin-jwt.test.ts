@@ -88,5 +88,38 @@ describe("admin jwt auth", () => {
       verifyAdminJwt(`Bearer ${expiredAdminJwt}`, JWT_SECRET),
     ).toThrowError(UnauthorizedError);
   });
-});
 
+  it("rejects a device jwt at the admin boundary", () => {
+    const deviceJwt = jwt.sign(
+      {
+        device_token: "550e8400-e29b-41d4-a716-446655440000",
+        workspace_id: WORKSPACE_ID,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: "30d",
+      },
+    );
+
+    expect(() =>
+      verifyAdminJwt(`Bearer ${deviceJwt}`, JWT_SECRET),
+    ).toThrowError(UnauthorizedError);
+  });
+
+  it("rejects a jwt signed with a different secret", () => {
+    const wrongSecretJwt = jwt.sign(
+      {
+        workspace_id: WORKSPACE_ID,
+        role: "admin",
+      },
+      "completely-different-secret",
+      {
+        expiresIn: "30d",
+      },
+    );
+
+    expect(() =>
+      verifyAdminJwt(`Bearer ${wrongSecretJwt}`, JWT_SECRET),
+    ).toThrowError(UnauthorizedError);
+  });
+});

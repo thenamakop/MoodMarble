@@ -1,3 +1,19 @@
+/**
+ * Admin routes for MoodMarble workspace management.
+ *
+ * Auth boundaries:
+ *
+ * 1. **Bootstrap** (`POST /admin/workspace`)
+ *    Static secret via `x-admin-bootstrap-secret` header.
+ *    Used for first-workspace creation only.
+ *
+ * 2. **Admin JWT** (all other `/admin/*` routes)
+ *    Workspace-scoped admin token with `role: "admin"`.
+ *    Manager and device tokens are rejected by Zod schema validation.
+ *
+ * 3. **Public**
+ *    None in this module.
+ */
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError, z } from "zod";
 
@@ -28,6 +44,30 @@ import {
   type AdminApiService,
 } from "../services/admin-api";
 
+/**
+ * Thrown when an admin JWT's workspace_id does not match
+ * the workspace targeted by the request URL parameter.
+ */
+export class ForbiddenError extends Error {
+  constructor() {
+    super("Forbidden");
+  }
+}
+
+/**
+ * Asserts that the admin JWT's workspace scope matches the
+ * workspace referenced in the route params. Throws ForbiddenError
+ * on mismatch so the caller never forgets the check.
+ */
+function assertWorkspaceScope(
+  jwtWorkspaceId: string,
+  paramWorkspaceId: string,
+): void {
+  if (jwtWorkspaceId !== paramWorkspaceId) {
+    throw new ForbiddenError();
+  }
+}
+
 const AdminWorkspaceParamsSchema = z
   .object({
     workspaceId: WorkspaceIdSchema,
@@ -50,6 +90,7 @@ export async function registerAdminRoutes(
   app: FastifyInstance,
   options: RegisterAdminRoutesOptions,
 ): Promise<void> {
+  // --- Bootstrap route (static secret, not admin JWT) ---
   app.post(
     "/admin/workspace",
     async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
@@ -74,6 +115,7 @@ export async function registerAdminRoutes(
     },
   );
 
+  // --- Admin JWT-protected routes ---
   app.post(
     "/admin/team",
     async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
@@ -149,11 +191,7 @@ export async function registerAdminRoutes(
           request.params,
         );
 
-        if (adminJwt.workspace_id !== workspaceId) {
-          return reply.status(403).send({
-            message: "Forbidden",
-          });
-        }
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         const response = AdminTeamListResponseSchema.parse(
           await options.adminApiService.listTeams(workspaceId),
@@ -187,11 +225,7 @@ export async function registerAdminRoutes(
           request.params,
         );
 
-        if (adminJwt.workspace_id !== workspaceId) {
-          return reply.status(403).send({
-            message: "Forbidden",
-          });
-        }
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         const response = AdminJoinCodeResponseSchema.parse(
           await options.adminApiService.getJoinCode(workspaceId),
@@ -225,11 +259,7 @@ export async function registerAdminRoutes(
           request.params,
         );
 
-        if (adminJwt.workspace_id !== workspaceId) {
-          return reply.status(403).send({
-            message: "Forbidden",
-          });
-        }
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         const response = AdminJoinCodeResponseSchema.parse(
           await options.adminApiService.rotateJoinCode(workspaceId),
@@ -265,11 +295,7 @@ export async function registerAdminRoutes(
         );
         const query = AdminExportQuerySchema.parse(request.query ?? {});
 
-        if (adminJwt.workspace_id !== workspaceId) {
-          return reply.status(403).send({
-            message: "Forbidden",
-          });
-        }
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         const records = z
           .array(AdminExportRecordSchema)
@@ -321,12 +347,15 @@ function handleAdminError(
     return reply.status(501).send({ message: error.message });
   }
 
-  if (error instanceof AdminWorkspaceNotFoundError) {
-    return reply.status(404).send({ message: error.message });
+  if (error instanceof ForbiddenError) {
+    return reply.status(403).send({ message: "Forbidden" });
   }
 
-  if (error instanceof AdminTeamNotFoundError) {
-    return reply.status(404).send({ message: error.message });
+  if (
+    error instanceof AdminWorkspaceNotFoundError ||
+    error instanceof AdminTeamNotFoundError
+  ) {
+    return reply.status(404).send({ message: "Resource not found." });
   }
 
   if (error instanceof ZodError) {

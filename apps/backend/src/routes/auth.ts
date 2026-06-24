@@ -53,7 +53,6 @@ export async function registerAuthRoutes(
       if (rateLimitRecord && rateLimitRecord.expiresAt > now) {
         if (rateLimitRecord.count >= MAX_LOGIN_ATTEMPTS) {
           return reply.status(429).send({
-            error: "Too Many Requests",
             message: "Too many login attempts. Please try again later.",
           });
         }
@@ -69,7 +68,6 @@ export async function registerAuthRoutes(
 
       if (!parsedBody.success) {
         return reply.status(400).send({
-          error: "Bad Request",
           message: "Valid email and password are required.",
         });
       }
@@ -90,7 +88,6 @@ export async function registerAuthRoutes(
 
       if (!admin || !isValid || admin.active !== 1) {
         return reply.status(401).send({
-          error: "Unauthorized",
           message: "Invalid email or password.",
         });
       }
@@ -103,7 +100,6 @@ export async function registerAuthRoutes(
 
       if (!workspace) {
         return reply.status(500).send({
-          error: "Internal Server Error",
           message: "No workspace exists for admin login.",
         });
       }

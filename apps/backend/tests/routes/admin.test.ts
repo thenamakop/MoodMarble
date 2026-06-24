@@ -1,3 +1,4 @@
+import jwt from "jsonwebtoken";
 import { inject } from "./http-client";
 import {
   AdminJoinCodeResponseSchema,
@@ -8,6 +9,7 @@ import {
 import { buildApp } from "../../src/app";
 import { ADMIN_BOOTSTRAP_HEADER } from "../../src/auth/admin-bootstrap";
 import { createAdminJwt } from "../../src/auth/admin-jwt";
+import { createDeviceJwt } from "../../src/auth/device-jwt";
 import { createManagerJwt } from "../../src/auth/manager-jwt";
 import type { AdminApiService } from "../../src/services/admin-api";
 
@@ -430,6 +432,122 @@ describe("admin routes", () => {
     expect(invalidExportResponse.json()).toMatchObject({
       message: "Invalid admin export request.",
     });
+  });
+
+  it("rejects device tokens on all protected admin endpoints", async () => {
+    const { deviceJwt } = createDeviceJwt(
+      JWT_SECRET,
+      TEST_WORKSPACE_ID,
+      "550e8400-e29b-41d4-a716-446655440000",
+    );
+
+    const protectedRequests = [
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/teams`,
+      },
+      {
+        method: "POST" as const,
+        url: "/admin/team",
+        payload: {
+          name: "Product",
+        },
+      },
+      {
+        method: "PATCH" as const,
+        url: `/admin/team/${TEST_TEAM_ID}`,
+        payload: {
+          name: "Engineering",
+        },
+      },
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
+      },
+      {
+        method: "POST" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/join-code`,
+      },
+      {
+        method: "GET" as const,
+        url: `/admin/workspace/${TEST_WORKSPACE_ID}/export?start_date=2026-06-01&end_date=2026-06-30`,
+      },
+    ];
+
+    for (const request of protectedRequests) {
+      const response = await inject(app, {
+        ...request,
+        headers: {
+          authorization: `Bearer ${deviceJwt}`,
+        },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(response.json()).toEqual({
+        message: "Unauthorized",
+      });
+    }
+  });
+
+  it("rejects expired admin tokens on protected admin endpoints", async () => {
+    const expiredAdminJwt = jwt.sign(
+      {
+        workspace_id: TEST_WORKSPACE_ID,
+        role: "admin",
+      },
+      JWT_SECRET,
+      {
+        expiresIn: -1,
+      },
+    );
+
+    const response = await inject(app, {
+      method: "GET",
+      url: `/admin/workspace/${TEST_WORKSPACE_ID}/teams`,
+      headers: {
+        authorization: `Bearer ${expiredAdminJwt}`,
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json()).toEqual({
+      message: "Unauthorized",
+    });
+  });
+
+  it("forbids rotate join-code outside the token workspace scope", async () => {
+    const rotateResponse = await inject(app, {
+      method: "POST",
+      url: `/admin/workspace/${OTHER_WORKSPACE_ID}/join-code`,
+      headers: {
+        authorization: createAdminAuthorizationHeader(),
+      },
+    });
+
+    expect(rotateResponse.statusCode).toBe(403);
+    expect(rotateResponse.json()).toEqual({
+      message: "Forbidden",
+    });
+  });
+
+  it("never includes raw note text or a note column header in CSV export", async () => {
+    const exportResponse = await inject(app, {
+      method: "GET",
+      url: `/admin/workspace/${TEST_WORKSPACE_ID}/export?start_date=2026-06-01&end_date=2026-06-30`,
+      headers: {
+        authorization: createAdminAuthorizationHeader(),
+      },
+    });
+
+    expect(exportResponse.statusCode).toBe(200);
+    const [headerRow] = exportResponse.body.trim().split("\n");
+    const columns = headerRow.split(",");
+
+    // The export header must not include a "note" column (only "note_hash" is allowed)
+    expect(columns).not.toContain("note");
+    expect(columns).toContain("note_hash");
+    // Raw note text must not appear in the body
+    expect(exportResponse.body).not.toContain("raw note text");
   });
 });
 
