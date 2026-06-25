@@ -337,29 +337,26 @@ async function advanceToJoinCode() {
     return;
   }
 
-  // Wait for the onboarding scroll view — the JS bundle may still be
-  // hydrating after a cold launch.
+  // Wait for the onboarding scroll view — JS bundle may still be hydrating.
   await waitFor(element(by.id("onboarding-scroll-view")))
     .toBeVisible()
     .withTimeout(20000);
 
-  // Scroll to absolute top so the Skip / Next button is never clipped.
-  // This mirrors how the admin journey calls scrollTo("top") on its scroll
-  // view before any button tap.
+  // Scroll to top so Skip is never clipped below the safe-area.
   await element(by.id("onboarding-scroll-view")).scrollTo("top");
 
-  // Use a direct waitFor + tap — the same pattern the admin journey uses —
-  // rather than isVisible() which treats a 75%-coverage miss as "not found".
-  // Skip is visible on slides 0–1; the last slide shows Next instead.
-  if (await isVisible("skip-onboarding-button", 3000)) {
+  // Try Skip first (slides 0–N-1). On the last slide Skip is hidden, so fall
+  // back to Next. Both buttons call handleCompleteIntro() which navigates to
+  // the join-code screen when no session exists.
+  try {
     await waitFor(element(by.id("skip-onboarding-button")))
       .toBeVisible()
-      .withTimeout(5000);
+      .withTimeout(4000);
     await element(by.id("skip-onboarding-button")).tap();
-  } else {
+  } catch {
     await waitFor(element(by.id("next-onboarding-button")))
       .toBeVisible()
-      .withTimeout(5000);
+      .withTimeout(4000);
     await element(by.id("next-onboarding-button")).tap();
   }
 

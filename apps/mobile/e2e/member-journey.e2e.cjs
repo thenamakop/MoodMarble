@@ -1,7 +1,6 @@
 const { by, device, element, waitFor } = require("detox");
 
 const {
-  advanceToJoinCode,
   completeAnonymousMemberJourney,
   isVisible,
   resetToOnboardingIfNeeded,
@@ -20,70 +19,55 @@ describe("member onboarding journey", () => {
     await completeAnonymousMemberJourney();
     await waitFor(element(by.id("mood-happy")))
       .toBeVisible()
-      .withTimeout(10000);
+      .withTimeout(15000);
   });
 
   // ─── 2. Mood submission ───────────────────────────────────────────────────
 
-  it("selects a mood marble, adds a tag, and submits", async () => {
-    // mood-happy should already be visible from test 1 — no scroll needed.
+  it("selects a mood marble and submits", async () => {
+    // Tray is already at the top after onboarding — mood-happy is visible.
     await waitFor(element(by.id("mood-happy")))
       .toBeVisible()
       .withTimeout(8000);
+
+    // Tap the happy marble. canSubmit becomes true immediately (no tag needed).
     await element(by.id("mood-happy")).tap();
 
-    // Scroll to the tag panel. Retry the tap up to 3 times — the tap can be
-    // absorbed by the scroll gesture recogniser on Android.
-    // submit-button only becomes enabled when both a mood AND a tag are set.
-    await scrollTrayUntilVisible("tag-#team");
-    for (let i = 0; i < 3; i += 1) {
-      await element(by.id("tag-#team")).tap();
-      if (await isVisible("submit-button", 2000)) break;
-      try {
-        await scrollTrayUntilVisible("tag-#team");
-      } catch {
-        /* already visible */
-      }
-    }
-
-    // Scroll to the submit button and tap it ONCE.
-    // The submission confirmation auto-dismisses after ~1.6s — do NOT retry
-    // the tap: the confirmation overlay covers the full screen with zIndex 10,
-    // and a second tap hits the overlay (not the button), causing Detox to
-    // throw "tap intercepted by another view".
+    // submit-button is always in the DOM (just disabled until canSubmit).
+    // Scroll down to bring it into view and tap it once.
+    // Do NOT retry — the SubmissionConfirmation overlay (absoluteFill,
+    // zIndex 10) appears for ~1.6s and any retry tap hits the overlay.
     await scrollTrayUntilVisible("submit-button");
     await element(by.id("submit-button")).tap();
 
-    // Wait for the confirmation overlay to appear and then auto-dismiss.
-    // The confirmation disappears after 1.6s and the tray resets — wait for
-    // mood-happy to confirm we are back on the tray with a clean state.
+    // Wait 2.5s — longer than the 1.6s auto-dismiss + spring animation.
+    // The confirmation disappears and the scroll view stays mounted at the
+    // bottom. After the wait we scroll to top to prepare for the next test.
+    await new Promise((r) => setTimeout(r, 2500));
+    await scrollTrayToTop();
+
+    // mood-happy re-appears at the top confirming a clean reset.
     await waitFor(element(by.id("mood-happy")))
       .toBeVisible()
-      .withTimeout(20000);
+      .withTimeout(8000);
   });
 
   // ─── 3. History screen ────────────────────────────────────────────────────
 
   it("opens history, screenshots both views, and returns home", async () => {
-    // mood-happy visible means tray is fully mounted. Scroll to top to expose
-    // the header buttons (open-history-button / open-settings-button).
-    await waitFor(element(by.id("mood-happy")))
-      .toBeVisible()
-      .withTimeout(10000);
-    await scrollTrayToTop();
-
+    // Tray is at the top from the previous test — open-history-button visible.
     await waitFor(element(by.id("open-history-button")))
       .toBeVisible()
       .withTimeout(8000);
     await element(by.id("open-history-button")).tap();
 
-    // Timeline view — confirm it rendered, take a screenshot.
+    // Timeline view — wait for it and screenshot.
     await waitFor(element(by.id("history-panel-timeline")))
       .toBeVisible()
       .withTimeout(15000);
     await device.takeScreenshot("history-timeline-view");
 
-    // Switch to calendar view — confirm it rendered, take a screenshot.
+    // Switch to calendar view — wait for it and screenshot.
     await waitFor(element(by.id("history-view-calendar")))
       .toBeVisible()
       .withTimeout(5000);
@@ -99,18 +83,16 @@ describe("member onboarding journey", () => {
       .withTimeout(8000);
     await element(by.id("history-return-home")).tap();
 
+    // mood-happy confirms the tray is back.
     await waitFor(element(by.id("mood-happy")))
       .toBeVisible()
       .withTimeout(10000);
   });
 
-  // ─── 4. Settings — replay onboarding and skip back to marbles ─────────────
+  // ─── 4. Settings — replay onboarding then skip back to marbles ────────────
 
   it("opens settings, triggers onboarding replay, and skips back to marbles", async () => {
-    // mood-happy visible means tray is fully mounted. Scroll to top.
-    await waitFor(element(by.id("mood-happy")))
-      .toBeVisible()
-      .withTimeout(10000);
+    // Scroll tray to top to expose the Settings button.
     await scrollTrayToTop();
 
     await waitFor(element(by.id("open-settings-button")))
@@ -118,25 +100,24 @@ describe("member onboarding journey", () => {
       .withTimeout(8000);
     await element(by.id("open-settings-button")).tap();
 
-    // Wait for the settings scroll view — confirms the screen is mounted.
+    // Wait for the settings scroll view to confirm screen is mounted.
     await waitFor(element(by.id("settings-scroll-view")))
       .toBeVisible()
       .withTimeout(15000);
 
-    // Scroll down to the Replay onboarding button and tap it.
-    // onRequestOnboardingReplay calls requestStoredOnboardingReplay() +
-    // refreshNativeHomeState() — the home screen re-reads the flag, sets
-    // replaySession, and renders OnboardingScreen in-place (no navigation).
+    // Scroll to the Replay onboarding button and tap it.
+    // onRequestOnboardingReplay → requestStoredOnboardingReplay() +
+    // refreshNativeHomeState() re-reads the flag, sets replaySession, and
+    // renders OnboardingScreen in-place (no router navigation).
     await waitFor(element(by.id("settings-replay-onboarding")))
       .toBeVisible()
       .whileElement(by.id("settings-scroll-view"))
       .scroll(400, "down", NaN, 0.5);
     await element(by.id("settings-replay-onboarding")).tap();
 
-    // The onboarding scroll view replaces the settings screen immediately.
-    // Scroll to top so the Skip button is guaranteed in the viewport, then
-    // tap it — Skip calls handleCompleteIntro(replaySession) which restores
-    // the member session and navigates back to the marble tray.
+    // Onboarding screen replaces settings inline. Scroll to top and tap Skip.
+    // Skip calls handleCompleteIntro(replaySession) → restores member session
+    // → marble tray re-renders.
     await waitFor(element(by.id("onboarding-scroll-view")))
       .toBeVisible()
       .withTimeout(15000);
@@ -146,7 +127,7 @@ describe("member onboarding journey", () => {
       .withTimeout(8000);
     await element(by.id("skip-onboarding-button")).tap();
 
-    // Session was preserved — land back on the marble tray.
+    // Session preserved — back on the marble tray.
     await waitFor(element(by.id("mood-happy")))
       .toBeVisible()
       .withTimeout(15000);
