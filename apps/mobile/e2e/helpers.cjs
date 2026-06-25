@@ -314,22 +314,13 @@ async function advanceToJoinCode() {
     return;
   }
 
-  for (let attempt = 0; attempt < 3; attempt += 1) {
-    if (await isVisible("join-code-input", 1000)) {
-      return;
-    }
-
-    if (await isVisible("next-onboarding-button", 1000)) {
-      await element(by.id("next-onboarding-button")).tap();
-      continue;
-    }
-
-    if (await isVisible("skip-onboarding-button", 1000)) {
-      await element(by.id("skip-onboarding-button")).tap();
-      continue;
-    }
-
-    break;
+  // Tap Skip if it's visible (slides 0–1) to jump straight to the join code
+  // screen in one tap rather than stepping through every slide.
+  if (await isVisible("skip-onboarding-button", 3000)) {
+    await element(by.id("skip-onboarding-button")).tap();
+  } else if (await isVisible("next-onboarding-button", 3000)) {
+    // On the last slide Skip is hidden — tap Next/Get started instead.
+    await element(by.id("next-onboarding-button")).tap();
   }
 
   await waitFor(element(by.id("join-code-input")))
@@ -646,10 +637,8 @@ async function loginAsAdmin() {
   await resetBackendTestState();
   await launchExpoDevClient();
 
-  // Wait for the onboarding screen, then tap the "Admin access" link.
-  await waitFor(element(by.id("join-code-input")))
-    .toBeVisible()
-    .withTimeout(15000);
+  // Skip the intro slides to reach the join code screen, then tap "Admin access".
+  await advanceToJoinCode();
   await element(by.id("admin-entry-link")).tap();
 
   // Wait for the admin login screen to appear.

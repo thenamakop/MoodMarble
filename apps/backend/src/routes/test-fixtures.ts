@@ -3,6 +3,7 @@ import { sql } from "drizzle-orm";
 import type { DatabaseClient } from "../db/client";
 import { seedAdmin } from "../../scripts/seed-admin";
 import { workspaces, teams, managerCodes } from "../db/schema";
+import { clearLoginRateLimit } from "./auth";
 
 export interface TestFixturesOptions {
   databaseClient: DatabaseClient;
@@ -18,6 +19,10 @@ export async function registerTestRoutes(
     }
 
     const { databaseClient } = options;
+
+    // Always clear the in-memory login rate limit first so that previous
+    // failed login attempts during a test run never block the next run.
+    clearLoginRateLimit();
 
     try {
       // 1. Clear tables in reverse FK dependency order.

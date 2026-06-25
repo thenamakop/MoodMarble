@@ -27,6 +27,11 @@ const loginRateLimitMap = new Map<
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
+/** Clears all in-memory login rate limit entries. Only for use in tests. */
+export function clearLoginRateLimit(): void {
+  loginRateLimitMap.clear();
+}
+
 export async function registerAuthRoutes(
   app: FastifyInstance,
   options: AuthRouteOptions,
@@ -138,10 +143,12 @@ export async function registerAuthRoutes(
       | undefined;
 
     try {
-      codeRecord = await options.databaseClient.db.query.managerCodes.findFirst({
-        where: eq(managerCodes.code, code),
-        with: { team: true },
-      });
+      codeRecord = await options.databaseClient.db.query.managerCodes.findFirst(
+        {
+          where: eq(managerCodes.code, code),
+          with: { team: true },
+        },
+      );
     } catch {
       return reply.status(500).send({ message: "Unable to validate code." });
     }
