@@ -337,9 +337,19 @@ async function advanceToJoinCode() {
 
   // The JS bundle may still be hydrating after a cold launch — wait longer
   // for the first onboarding button to appear before attempting any taps.
-  // Retry the tap up to 3 times: the first tap can be swallowed while React
-  // is still reconciling the initial render on the emulator.
-  for (let attempt = 0; attempt < 3; attempt += 1) {
+  // Retry the tap up to 4 times.  Before each attempt scroll the onboarding
+  // scroll view to the top — the skip button sits in the top-right corner and
+  // can be off the visible viewport if the card has been pushed down.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    // Scroll onboarding card to top so skip/next buttons are guaranteed visible.
+    if (await isVisible("onboarding-scroll-view", 2000)) {
+      try {
+        await element(by.id("onboarding-scroll-view")).scrollTo("top");
+      } catch {
+        /* already at top */
+      }
+    }
+
     if (await isVisible("skip-onboarding-button", 6000)) {
       await element(by.id("skip-onboarding-button")).tap();
     } else if (await isVisible("next-onboarding-button", 6000)) {
