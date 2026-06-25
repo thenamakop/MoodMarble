@@ -646,14 +646,26 @@ async function loginAsAdmin(
   await resetToOnboardingIfNeeded();
   await advanceToJoinCode();
 
-  // Navigate to the admin login screen.  We use a deep-link instead of
-  // tapping the in-ScrollView `admin-entry-link` Pressable because Detox's
-  // tap injection on Android is frequently swallowed by the ScrollView
-  // gesture recogniser (the touch is treated as a scroll-start rather than
-  // a press).  The deep-link goes through +native-intent.tsx → /admin-login
-  // and is completely reliable.
-  const adminLoginUrl = `${DEFAULT_DEV_CLIENT_SCHEME}://admin-login`;
-  await openUrlWithRetries(adminLoginUrl);
+  // Scroll the admin entry link into view
+  try {
+    await waitFor(element(by.id("admin-entry-link")))
+      .toBeVisible()
+      .whileElement(by.id("onboarding-scroll-view"))
+      .scroll(200, "down");
+  } catch {
+    // Ignore if not scrollable or already visible
+  }
+
+  // Tap the admin entry link with retries — a single tap can be swallowed
+  // when the app's JS thread is still settling after a cold start.
+  for (let tapAttempt = 0; tapAttempt < 4; tapAttempt += 1) {
+    await element(by.id("admin-entry-link")).tap();
+    await sleep(500);
+
+    if (await isVisible("admin-login-root", 10000)) {
+      break;
+    }
+  }
 
   await waitFor(element(by.id("admin-login-root")))
     .toBeVisible()

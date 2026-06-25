@@ -4,12 +4,8 @@ const {
   advanceToJoinCode,
   isVisible,
   launchExpoDevClient,
-  openUrlWithRetries,
   resetBackendTestState,
 } = require("./helpers.cjs");
-
-const DEFAULT_DEV_CLIENT_SCHEME =
-  process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
 
 // The seeded manager code inserted by /__test/reset
 const SEEDED_MANAGER_CODE = "MGR001";
@@ -29,15 +25,18 @@ describe("manager join-code journey", () => {
   });
 
   it("navigates to the manager join screen via the link", async () => {
-    // Navigate via deep-link instead of tapping the in-ScrollView Pressable,
-    // because Detox's tap injection on Android is frequently swallowed by the
-    // ScrollView gesture recogniser.
-    const joinManagerUrl = `${DEFAULT_DEV_CLIENT_SCHEME}://join-manager`;
-    await openUrlWithRetries(joinManagerUrl);
+    // Tap with retries — the first tap can be swallowed when the JS thread
+    // is still settling after launch.
+    for (let tapAttempt = 0; tapAttempt < 4; tapAttempt += 1) {
+      await element(by.id("manager-code-link")).tap();
+      if (await isVisible("manager-join-screen", 8000)) {
+        break;
+      }
+    }
 
     await waitFor(element(by.id("manager-join-screen")))
       .toBeVisible()
-      .withTimeout(20000);
+      .withTimeout(15000);
 
     await expect(element(by.id("manager-code-input"))).toBeVisible();
     await expect(element(by.id("manager-code-submit-btn"))).toBeVisible();
@@ -46,8 +45,7 @@ describe("manager join-code journey", () => {
   it("shows an inline error for a short or malformed code without making an API call", async () => {
     // Ensure we are on the manager join screen
     if (!(await isVisible("manager-join-screen", 3000))) {
-      const joinManagerUrl = `${DEFAULT_DEV_CLIENT_SCHEME}://join-manager`;
-      await openUrlWithRetries(joinManagerUrl);
+      await element(by.id("manager-code-link")).tap();
       await waitFor(element(by.id("manager-join-screen")))
         .toBeVisible()
         .withTimeout(15000);
