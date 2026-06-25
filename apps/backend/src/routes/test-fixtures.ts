@@ -1,9 +1,147 @@
 import type { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
+import crypto from "node:crypto";
 import type { DatabaseClient } from "../db/client";
 import { seedAdmin } from "../../scripts/seed-admin";
-import { workspaces, teams, managerCodes } from "../db/schema";
+import {
+  workspaces,
+  teams,
+  managerCodes,
+  teamMembers,
+  moodSubmissions,
+} from "../db/schema";
 import { clearLoginRateLimit } from "./auth";
+
+// ---------------------------------------------------------------------------
+// Dashboard fixture seeder — clears and re-populates team_members and
+// mood_submissions for tm_product so all privacy thresholds are cleared:
+//   • minimum_submissions      ≥ 5  → visible (not hidden)
+//   • minimum_members_for_precise_values ≥ 5  → precise (not blurred)
+//   • minimum_hourly_submissions ≥ 3  → each seeded hour bucket visible
+//
+// Submissions are anchored to today (UTC) for the daily view and spread
+// across the current ISO week (Mon–Sun) for the weekly view.
+// ---------------------------------------------------------------------------
+export async function seedDashboardFixtures(
+  databaseClient: DatabaseClient,
+  teamId = "tm_product",
+): Promise<void> {
+  // Today in UTC — daily dashboard queries this exact date.
+  const todayKey = new Date().toISOString().slice(0, 10);
+
+  // Start of current ISO week (Monday) for the weekly window.
+  const todayDate = new Date(todayKey + "T00:00:00Z");
+  const dayOfWeek = todayDate.getUTCDay(); // 0=Sun … 6=Sat
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  const weekStart = new Date(todayDate);
+  weekStart.setUTCDate(weekStart.getUTCDate() - daysFromMonday);
+  const weekDates = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(weekStart);
+    d.setUTCDate(d.getUTCDate() + i);
+    return d.toISOString().slice(0, 10);
+  });
+
+  // Seed 6 distinct team members (> threshold of 5).
+  const memberDeviceTokens = Array.from({ length: 6 }, () =>
+    crypto.randomUUID(),
+  );
+  for (const deviceToken of memberDeviceTokens) {
+    await databaseClient.db
+      .insert(teamMembers)
+      .values({
+        id: `seed-member-${deviceToken.slice(0, 8)}`,
+        teamId,
+        deviceToken,
+        role: "member",
+      })
+      .onConflictDoNothing();
+  }
+
+  // Build submissions — diverse moods/tags across the week.
+  // Rules:
+  //   1. Today gets 8 submissions spread across 3 hours (≥ 3 per hour → each
+  //      hour bucket is visible in the daily heatmap).
+  //   2. The rest of the current week gets 2 submissions per day (so the
+  //      weekly window always has well over 5 total).
+  //   3. All previous days in the week use noon (hour 12) to keep it simple.
+  type MoodType =
+    | "energised"
+    | "happy"
+    | "calm"
+    | "focused"
+    | "neutral"
+    | "tired"
+    | "stressed"
+    | "sad"
+    | "unheard";
+  const todaySubmissions: Array<{
+    moodType: MoodType;
+    tags: string[];
+    hour: number;
+  }> = [
+    // Hour 9 — 3 submissions (meets minimum_hourly_submissions)
+    { moodType: "happy", tags: ["#team"], hour: 9 },
+    { moodType: "energised", tags: ["#workload"], hour: 9 },
+    { moodType: "calm", tags: [], hour: 9 },
+    // Hour 14 — 3 submissions
+    { moodType: "stressed", tags: ["#workload", "#deadlines"], hour: 14 },
+    { moodType: "tired", tags: ["#deadlines"], hour: 14 },
+    { moodType: "focused", tags: ["#team"], hour: 14 },
+    // Hour 17 — 2 extra (bonus variety)
+    { moodType: "neutral", tags: [], hour: 17 },
+    { moodType: "happy", tags: ["#team"], hour: 17 },
+  ];
+
+  for (const { moodType, tags, hour } of todaySubmissions) {
+    await databaseClient.db
+      .insert(moodSubmissions)
+      .values({
+        id: `seed-today-${crypto.randomUUID().slice(0, 8)}`,
+        teamId,
+        moodType,
+        tags,
+        hourOfDay: hour,
+        submissionDate: todayKey,
+      })
+      .onConflictDoNothing();
+  }
+
+  // Add 2 submissions per earlier day in the week (skip today — already done).
+  const weeklyMoods: MoodType[] = [
+    "calm",
+    "focused",
+    "happy",
+    "energised",
+    "neutral",
+    "tired",
+  ];
+  for (const [index, date] of weekDates.entries()) {
+    if (date === todayKey) continue;
+    const mood1 = weeklyMoods[index % weeklyMoods.length]!;
+    const mood2 = weeklyMoods[(index + 1) % weeklyMoods.length]!;
+    await databaseClient.db
+      .insert(moodSubmissions)
+      .values([
+        {
+          id: `seed-week-${date}-a`,
+          teamId,
+          moodType: mood1,
+          tags: ["#team"],
+          hourOfDay: 10,
+          submissionDate: date,
+        },
+        {
+          id: `seed-week-${date}-b`,
+          teamId,
+          moodType: mood2,
+          tags: [],
+          hourOfDay: 15,
+          submissionDate: date,
+        },
+      ])
+      .onConflictDoNothing();
+  }
+}
 
 export interface TestFixturesOptions {
   databaseClient: DatabaseClient;
@@ -95,6 +233,10 @@ export async function registerTestRoutes(
           "[test-reset] Could not seed manager code (migration may be pending)",
         );
       }
+
+      // 6. Seed dashboard fixtures so all privacy thresholds are cleared
+      //    — both for manual dev sessions and E2E tests.
+      await seedDashboardFixtures(databaseClient);
 
       return reply.status(200).send({ status: "reset_ok" });
     } catch (error) {

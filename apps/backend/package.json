@@ -9,6 +9,7 @@
     "db:migrate": "tsx src/db/migrate.ts",
     "db:seed": "tsx src/db/seed.ts",
     "seed:admin": "tsx scripts/seed-admin.ts",
+    "seed:dashboard": "tsx scripts/seed-dashboard.ts",
     "test": "jest --runInBand",
     "test:coverage": "jest --runInBand --coverage"
   },
