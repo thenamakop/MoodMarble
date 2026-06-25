@@ -103,9 +103,32 @@ async function completeAnonymousMemberJourney() {
   await element(by.id("team-option-tm_product")).tap();
   await element(by.id("complete-onboarding-button")).tap();
 
+  // Wait for the marble tray — mood-happy is always at the top of the grid.
   await waitFor(element(by.id("mood-happy")))
     .toBeVisible()
     .withTimeout(15000);
+}
+
+// Scrolls the marble tray downward until testID is visible on screen.
+async function scrollTrayUntilVisible(testID) {
+  await waitFor(element(by.id("marble-tray-scroll-view")))
+    .toBeVisible()
+    .withTimeout(10000);
+  await waitFor(element(by.id(testID)))
+    .toBeVisible()
+    .whileElement(by.id("marble-tray-scroll-view"))
+    .scroll(180, "down", NaN, 0.85);
+}
+
+// Scrolls the marble tray upward until testID is visible on screen.
+async function scrollTrayUntilVisibleUp(testID) {
+  await waitFor(element(by.id("marble-tray-scroll-view")))
+    .toBeVisible()
+    .withTimeout(10000);
+  await waitFor(element(by.id(testID)))
+    .toBeVisible()
+    .whileElement(by.id("marble-tray-scroll-view"))
+    .scroll(300, "up", NaN, 0.5);
 }
 
 function createExpoDevClientLaunchUrl() {
@@ -312,13 +335,21 @@ async function advanceToJoinCode() {
     return;
   }
 
-  // Tap Skip if it's visible (slides 0–1) to jump straight to the join code
-  // screen in one tap rather than stepping through every slide.
-  if (await isVisible("skip-onboarding-button", 3000)) {
-    await element(by.id("skip-onboarding-button")).tap();
-  } else if (await isVisible("next-onboarding-button", 3000)) {
-    // On the last slide Skip is hidden — tap Next/Get started instead.
-    await element(by.id("next-onboarding-button")).tap();
+  // The JS bundle may still be hydrating after a cold launch — wait longer
+  // for the first onboarding button to appear before attempting any taps.
+  // Retry the tap up to 3 times: the first tap can be swallowed while React
+  // is still reconciling the initial render on the emulator.
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    if (await isVisible("skip-onboarding-button", 6000)) {
+      await element(by.id("skip-onboarding-button")).tap();
+    } else if (await isVisible("next-onboarding-button", 6000)) {
+      // Last slide — Skip is hidden, tap the Next / Get started button.
+      await element(by.id("next-onboarding-button")).tap();
+    }
+
+    if (await isVisible("join-code-input", 3000)) {
+      return;
+    }
   }
 
   await waitFor(element(by.id("join-code-input")))
@@ -675,5 +706,7 @@ module.exports = {
   relaunchExpoDevClient,
   resetBackendTestState,
   resetToOnboardingIfNeeded,
+  scrollTrayUntilVisible,
+  scrollTrayUntilVisibleUp,
   waitForBootstrappedApp,
 };
