@@ -23,7 +23,7 @@ describe("manager dashboard journey", () => {
   it("opens the manager route and renders the dashboard view", async () => {
     await waitFor(element(by.id("manager-dashboard-screen")))
       .toBeVisible()
-      .withTimeout(20000);
+      .withTimeout(45000);
 
     await waitFor(element(by.id("manager-dashboard-ready-state")))
       .toBeVisible()

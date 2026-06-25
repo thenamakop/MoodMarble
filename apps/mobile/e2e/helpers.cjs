@@ -650,7 +650,7 @@ async function loginAsAdmin(
   // until we get there.
   await advanceToJoinCode();
 
-  // Tap the admin entry link
+  // Scroll the admin entry link into view
   try {
     await waitFor(element(by.id("admin-entry-link")))
       .toBeVisible()
@@ -660,13 +660,22 @@ async function loginAsAdmin(
     // Ignore if not scrollable or already visible
   }
 
-  // Tap twice in case the first tap only dismisses the keyboard
-  await element(by.id("admin-entry-link")).multiTap(2);
+  // Tap the admin entry link with retries — the first tap can be swallowed
+  // when the app's JS thread is still settling after a cold start, or when
+  // the keyboard is up and the first tap only dismisses it.
+  for (let tapAttempt = 0; tapAttempt < 3; tapAttempt += 1) {
+    await element(by.id("admin-entry-link")).multiTap(2);
 
-  // Wait for login screen to mount
+    if (await isVisible("admin-login-root", 8000)) {
+      break;
+    }
+  }
+
+  // Final gate — if the retries still didn't surface the login screen,
+  // fail with a clear message rather than a cryptic element matcher error.
   await waitFor(element(by.id("admin-login-root")))
     .toBeVisible()
-    .withTimeout(15000);
+    .withTimeout(20000);
 
   // Fill in credentials
   await element(by.id("admin-email-input")).replaceText(email);

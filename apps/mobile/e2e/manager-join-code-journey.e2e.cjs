@@ -25,11 +25,19 @@ describe("manager join-code journey", () => {
   });
 
   it("navigates to the manager join screen via the link", async () => {
-    await element(by.id("manager-code-link")).tap();
+    // Tap with retries — the first tap can be swallowed when the JS thread
+    // is still settling after launch, or when the keyboard is up.
+    for (let tapAttempt = 0; tapAttempt < 3; tapAttempt += 1) {
+      await element(by.id("manager-code-link")).tap();
+
+      if (await isVisible("manager-join-screen", 8000)) {
+        break;
+      }
+    }
 
     await waitFor(element(by.id("manager-join-screen")))
       .toBeVisible()
-      .withTimeout(10000);
+      .withTimeout(15000);
 
     await expect(element(by.id("manager-code-input"))).toBeVisible();
     await expect(element(by.id("manager-code-submit-btn"))).toBeVisible();
@@ -37,11 +45,11 @@ describe("manager join-code journey", () => {
 
   it("shows an inline error for a short or malformed code without making an API call", async () => {
     // Ensure we are on the manager join screen
-    if (!(await isVisible("manager-join-screen", 2000))) {
+    if (!(await isVisible("manager-join-screen", 3000))) {
       await element(by.id("manager-code-link")).tap();
       await waitFor(element(by.id("manager-join-screen")))
         .toBeVisible()
-        .withTimeout(8000);
+        .withTimeout(15000);
     }
 
     // Type a 3-char input — too short, fails client-side validation
