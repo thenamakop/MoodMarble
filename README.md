@@ -253,6 +253,45 @@ The administrative auth flow is isolated:
 - All administrative routes (`/admin/*`) strictly verify the `admin_jwt` payload.
 - Manager and member roles cannot be elevated to administrative privileges through the application UI.
 
+### Admin Login
+
+Administrators authenticate via email and password through the mobile app.
+There is no public sign-up flow. The admin account is created once using
+the `seed:admin` script. Admin authentication is credential-only — no admin
+join code exists by design (see `docs/SECURITY.md`).
+
+**Creating the admin account (run once):**
+
+```bash
+cd apps/backend
+# Set ADMIN_EMAIL and ADMIN_PASSWORD (min 12 chars) in .env
+pnpm seed:admin
+```
+
+The admin login screen is accessed via the small "Admin access" link at the
+bottom of the onboarding join-code step in the app.
+
+### Manager Join Codes _(Post-Scope Addition)_
+
+The original project specification provides no mobile-safe authentication path
+for managers on Android. Manager join codes address this gap.
+
+An admin generates a 6-character code per team from the Admin Panel →
+Manager codes section. Codes are valid for 7 days and can only be redeemed
+once. The manager taps "Have a manager code?" on the onboarding screen, enters
+the code, and the app navigates directly to the manager dashboard.
+
+This feature was introduced after the Week 8 internship deliverables were
+finalised. It is not part of `MoodMarble_Project_Specification.docx`. All
+tests are in `apps/mobile/e2e/manager-join-code-journey.e2e.cjs`.
+
+**Implementation pointers:**
+
+- Backend endpoint: `POST /auth/redeem-manager-code` in `src/routes/auth.ts`
+- Admin generate/list/revoke: `src/routes/admin.ts`
+- Mobile entry screen: `src/app/join-manager.tsx`
+- Security properties: `docs/SECURITY.md`
+
 ---
 
 ## Backend Postman Workflow
@@ -698,6 +737,7 @@ pnpm e2e:android:test:headless
 
 | Document                         | Purpose                                                |
 | -------------------------------- | ------------------------------------------------------ |
+| `docs/SECURITY.md`               | Authentication model and security properties           |
 | `docs/architecture.md`           | System architecture and implementation blueprint       |
 | `docs/week-3-workspace-audit.md` | Week 3 audit and scope alignment notes                 |
 | `docs/week-4-handoff.md`         | Week 4 local-history boundary and verification notes   |
