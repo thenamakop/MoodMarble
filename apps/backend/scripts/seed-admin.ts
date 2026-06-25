@@ -11,22 +11,29 @@ export async function seedAdmin(
   adminPassword = process.env.ADMIN_PASSWORD,
   databaseClientOverride?: any,
 ) {
-  loadLocalEnvFile();
-  const env = getAppEnv();
+  // Only load env and create a DB client when no override is provided.
+  // When called from a route handler (e.g. test-fixtures.ts), the caller
+  // passes its own databaseClient — env loading is neither needed nor safe.
+  let databaseClient: typeof databaseClientOverride;
+  if (databaseClientOverride) {
+    databaseClient = databaseClientOverride;
+  } else {
+    loadLocalEnvFile();
+    const env = getAppEnv();
+    databaseClient = createDatabaseClient(env.DATABASE_URL);
+  }
 
   if (!adminEmail || !adminPassword) {
     console.error(
       "ADMIN_EMAIL and ADMIN_PASSWORD must be provided in the environment.",
     );
-    process.exit(1);
+    return 1;
   }
 
-  if (adminPassword.length < 8) {
-    console.error("ADMIN_PASSWORD must be at least 8 characters long.");
-    process.exit(1);
+  if (adminPassword.length < 12) {
+    console.error("ADMIN_PASSWORD must be at least 12 characters long.");
+    return 1;
   }
-
-  const databaseClient = databaseClientOverride || createDatabaseClient(env.DATABASE_URL);
 
   try {
     const existingAdmin = await databaseClient.db

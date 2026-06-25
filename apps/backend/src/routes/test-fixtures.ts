@@ -20,25 +20,46 @@ export async function registerTestRoutes(
     const { databaseClient } = options;
 
     try {
-      // 1. Clear database state
-      await databaseClient.db.execute(sql`
-        TRUNCATE TABLE workspaces, teams, team_members, mood_submissions, admin_credentials CASCADE;
-      `);
+      // 1. Clear tables in reverse FK dependency order.
+      //    Using individual DELETE statements instead of a single TRUNCATE so
+      //    that a missing table (e.g. migration not yet run) skips gracefully
+      //    instead of aborting the entire reset.
+      const tablesToClear = [
+        "mood_submissions",
+        "team_members",
+        "admin_credentials",
+        "teams",
+        "workspaces",
+      ] as const;
 
-      // 2. Reseed workspace & team
+      for (const table of tablesToClear) {
+        try {
+          await databaseClient.db.execute(
+            sql.raw(`DELETE FROM "${table}"`),
+          );
+        } catch (tableError) {
+          // Table may not exist yet if migrations are pending — log and continue.
+          console.warn(
+            `[test-reset] Skipped clearing "${table}": ${String(tableError)}`,
+          );
+        }
+      }
+
+      // 2. Reseed workspace
       await databaseClient.db.insert(workspaces).values({
         id: "ws_localdemo",
         name: "MoodMarble Local Workspace",
         joinCode: "ABC123",
       });
 
+      // 3. Reseed team
       await databaseClient.db.insert(teams).values({
         id: "tm_product",
         workspaceId: "ws_localdemo",
         name: "Product",
       });
 
-      // 3. Reseed admin account
+      // 4. Reseed admin account
       const seedExitCode = await seedAdmin(
         "admin@example.com",
         "change-this-password-in-prod",
@@ -46,13 +67,22 @@ export async function registerTestRoutes(
       );
 
       if (seedExitCode !== 0) {
-        return reply.status(500).send({ message: "Failed to seed admin" });
+        return reply.status(500).send({
+          message: "Failed to seed admin account",
+          hint: "Check that ADMIN_EMAIL and ADMIN_PASSWORD are valid and bcryptjs is installed.",
+        });
       }
 
       return reply.status(200).send({ status: "reset_ok" });
     } catch (error) {
-      console.error("Test reset failed:", error);
-      return reply.status(500).send({ message: "Test reset failed", error: String(error) });
+      // Return the actual error message so it is visible in E2E console output
+      // without having to tail server logs. Never do this in production.
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[test-reset] Reset failed:", errorMessage);
+      return reply.status(500).send({
+        message: "Test reset failed",
+        error: errorMessage,
+      });
     }
   });
 }
