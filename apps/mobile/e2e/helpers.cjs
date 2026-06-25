@@ -644,35 +644,17 @@ async function loginAsAdmin(
 ) {
   // Try to start from the root onboarding screen
   await resetToOnboardingIfNeeded();
-
-  // If the admin access link isn't immediately visible, we may need to navigate
-  // to the join code screen. `advanceToJoinCode` will handle pressing 'next'
-  // until we get there.
   await advanceToJoinCode();
 
-  // Scroll the admin entry link into view
-  try {
-    await waitFor(element(by.id("admin-entry-link")))
-      .toBeVisible()
-      .whileElement(by.id("onboarding-scroll-view"))
-      .scroll(200, "down");
-  } catch {
-    // Ignore if not scrollable or already visible
-  }
+  // Navigate to the admin login screen.  We use a deep-link instead of
+  // tapping the in-ScrollView `admin-entry-link` Pressable because Detox's
+  // tap injection on Android is frequently swallowed by the ScrollView
+  // gesture recogniser (the touch is treated as a scroll-start rather than
+  // a press).  The deep-link goes through +native-intent.tsx → /admin-login
+  // and is completely reliable.
+  const adminLoginUrl = `${DEFAULT_DEV_CLIENT_SCHEME}://admin-login`;
+  await openUrlWithRetries(adminLoginUrl);
 
-  // Tap the admin entry link with retries — the first tap can be swallowed
-  // when the app's JS thread is still settling after a cold start, or when
-  // the keyboard is up and the first tap only dismisses it.
-  for (let tapAttempt = 0; tapAttempt < 3; tapAttempt += 1) {
-    await element(by.id("admin-entry-link")).multiTap(2);
-
-    if (await isVisible("admin-login-root", 8000)) {
-      break;
-    }
-  }
-
-  // Final gate — if the retries still didn't surface the login screen,
-  // fail with a clear message rather than a cryptic element matcher error.
   await waitFor(element(by.id("admin-login-root")))
     .toBeVisible()
     .withTimeout(20000);
