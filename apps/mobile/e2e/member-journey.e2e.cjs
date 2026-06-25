@@ -25,13 +25,20 @@ describe("member onboarding journey", () => {
   // ─── 2. Mood submission ───────────────────────────────────────────────────
 
   it("selects a mood marble and submits", async () => {
-    // Tray is already at the top after onboarding — mood-happy is visible.
+    // mood-happy is the first marble in the grid — its visibility confirms the
+    // tray is fully mounted and the marble grid is rendered.
     await waitFor(element(by.id("mood-happy")))
       .toBeVisible()
       .withTimeout(8000);
 
-    // Tap the happy marble. canSubmit becomes true immediately (no tag needed).
-    await element(by.id("mood-happy")).tap();
+    // Tap the stressed marble. canSubmit becomes true immediately (no tag needed).
+    await element(by.id("mood-stressed")).tap();
+
+    // Scroll to the tag panel and tap workload + deadlines.
+    await scrollTrayUntilVisible("tag-#workload");
+    await element(by.id("tag-#workload")).tap();
+    await scrollTrayUntilVisible("tag-#deadlines");
+    await element(by.id("tag-#deadlines")).tap();
 
     // submit-button is always in the DOM (just disabled until canSubmit).
     // Scroll down to bring it into view and tap it once.
