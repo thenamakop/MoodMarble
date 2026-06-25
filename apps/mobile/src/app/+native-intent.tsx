@@ -1,25 +1,3 @@
-const DEBUG_SERVER_URL = "http://10.0.2.2:7777/event";
-const DEBUG_SESSION_ID = "e2e-manual-edit-audit";
-
-function reportMobileDebugEvent(
-  hypothesisId: string,
-  msg: string,
-  data: Record<string, unknown>,
-) {
-  fetch(DEBUG_SERVER_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      runId: "pre-fix",
-      hypothesisId,
-      location: "apps/mobile/src/app/+native-intent.tsx",
-      msg,
-      data,
-      ts: Date.now(),
-    }),
-  }).catch(() => {});
-}
-
 /**
  * +native-intent.tsx
  *
@@ -38,16 +16,6 @@ export function resolveSystemHref(url: string): string {
     // moodmarble://manager → /manager (with all query params preserved)
     if (parsed.hostname === "manager") {
       const qs = parsed.searchParams.toString();
-      // #region debug-point E:native-intent-manager
-      reportMobileDebugEvent(
-        "E",
-        "[DEBUG] resolveSystemHref normalized manager URL.",
-        {
-          url,
-          normalizedHref: qs ? `/manager?${qs}` : "/manager",
-        },
-      );
-      // #endregion
       return qs ? `/manager?${qs}` : "/manager";
     }
 
@@ -66,28 +34,9 @@ export function resolveSystemHref(url: string): string {
 
   // If it's the dev client launch URL, just return root so the app boots normally
   if (url.includes("expo-development-client")) {
-    // #region debug-point E:native-intent-dev-client
-    reportMobileDebugEvent(
-      "E",
-      "[DEBUG] resolveSystemHref normalized Expo dev-client URL.",
-      {
-        url,
-        normalizedHref: "/",
-      },
-    );
-    // #endregion
     return "/";
   }
 
-  // #region debug-point E:native-intent-fallback
-  reportMobileDebugEvent(
-    "E",
-    "[DEBUG] resolveSystemHref returned fallback URL.",
-    {
-      url,
-    },
-  );
-  // #endregion
   return url;
 }
 

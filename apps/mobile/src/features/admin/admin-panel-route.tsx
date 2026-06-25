@@ -25,28 +25,6 @@ import {
 import { shareAdminCsv } from "@/features/admin/share";
 import { loadAdminSession, clearAdminSession } from "@/features/admin/session";
 
-const DEBUG_SERVER_URL = "http://10.0.2.2:7777/event";
-const DEBUG_SESSION_ID = "e2e-manual-edit-audit";
-
-function reportMobileDebugEvent(
-  hypothesisId: string,
-  msg: string,
-  data: Record<string, unknown>,
-) {
-  fetch(DEBUG_SERVER_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      runId: "pre-fix",
-      hypothesisId,
-      location: "apps/mobile/src/features/admin/admin-panel-route.tsx",
-      msg,
-      data,
-      ts: Date.now(),
-    }),
-  }).catch(() => {});
-}
-
 interface AdminPanelRouteProps {
   sectionFocus?: AdminSectionFocus;
 }
@@ -79,27 +57,6 @@ export function AdminPanelRoute({
   );
   const [reloadKey, setReloadKey] = useState(0);
   const isAdminAccessReady = hasAdminAccess(adminJwt, workspaceId);
-
-  useEffect(() => {
-    // #region debug-point E:admin-route-params
-    reportMobileDebugEvent("E", "[DEBUG] Admin route params resolved.", {
-      hasAdminJwt: Boolean(adminJwt),
-      isAdminAccessReady,
-      pathname: "/admin",
-      routeWorkspaceId,
-      routeWorkspaceName,
-      sectionFocus,
-      workspaceId,
-    });
-    // #endregion
-  }, [
-    adminJwt,
-    isAdminAccessReady,
-    routeWorkspaceId,
-    routeWorkspaceName,
-    sectionFocus,
-    workspaceId,
-  ]);
 
   useEffect(() => {
     if (!adminJwt && routeAdminJwt) {

@@ -16,28 +16,6 @@ import {
   resolveSelectedTeam,
 } from "@/features/dashboard/route-state";
 
-const DEBUG_SERVER_URL = "http://10.0.2.2:7777/event";
-const DEBUG_SESSION_ID = "e2e-manual-edit-audit";
-
-function reportMobileDebugEvent(
-  hypothesisId: string,
-  msg: string,
-  data: Record<string, unknown>,
-) {
-  fetch(DEBUG_SERVER_URL, {
-    method: "POST",
-    body: JSON.stringify({
-      sessionId: DEBUG_SESSION_ID,
-      runId: "pre-fix",
-      hypothesisId,
-      location: "apps/mobile/src/app/manager.tsx",
-      msg,
-      data,
-      ts: Date.now(),
-    }),
-  }).catch(() => {});
-}
-
 export default function ManagerDashboardRoute() {
   const router = useRouter();
   const params = useLocalSearchParams<{
@@ -69,29 +47,6 @@ export default function ManagerDashboardRoute() {
   const [bundle, setBundle] = useState<ManagerDashboardBundle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const isManagerAccessReady = hasManagerAccess(managerJwt, selectedTeam);
-
-  useEffect(() => {
-    // #region debug-point E:manager-route-params
-    reportMobileDebugEvent("E", "[DEBUG] Manager route params resolved.", {
-      date: selectedDate.date,
-      hasManagerJwt: Boolean(managerJwt),
-      isManagerAccessReady,
-      managerTeamsCount: managerTeams.length,
-      pathname: "/manager",
-      selectedTeamId: selectedTeam?.teamId ?? null,
-      startDate: selectedDate.startDate,
-      teamIdParam,
-    });
-    // #endregion
-  }, [
-    isManagerAccessReady,
-    managerJwt,
-    managerTeams.length,
-    selectedDate.date,
-    selectedDate.startDate,
-    selectedTeam?.teamId,
-    teamIdParam,
-  ]);
 
   useEffect(() => {
     let cancelled = false;
