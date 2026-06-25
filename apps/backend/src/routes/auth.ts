@@ -78,11 +78,13 @@ export async function registerAuthRoutes(
         where: eq(adminCredentials.email, email),
       });
 
-      // To reduce timing attacks, we always compare hashes.
-      // If the admin doesn't exist, we compare against a dummy hash.
-      const dummyHash =
-        "$2a$12$xG1QkL2Z3YxQkL2Z3YxQkO1QkL2Z3YxQkL2Z3YxQkL2Z3YxQkL2Z"; // A valid bcrypt hash structure
-      const hashToCompare = admin?.passwordHash ?? dummyHash;
+      // Pre-computed bcrypt hash of the string "DUMMY" at saltRounds=12.
+      // Used so that login attempts for unknown emails take the same time as
+      // attempts for known emails — prevents user enumeration via timing.
+      // Generated once with: bcrypt.hashSync("DUMMY", 12). Safe to hardcode.
+      const DUMMY_HASH =
+        "$2a$12$KIXBp4PoFGmHn0EbVFd12eqB9LH3V6VbBjkHC6vGf3F1emLe4KGLG";
+      const hashToCompare = admin?.passwordHash ?? DUMMY_HASH;
 
       const isValid = await bcrypt.compare(password, hashToCompare);
 
@@ -91,9 +93,6 @@ export async function registerAuthRoutes(
           message: "Invalid email or password.",
         });
       }
-
-      // On success, reset rate limit
-      loginRateLimitMap.delete(ip);
 
       // Find the first workspace to use as the context
       const workspace = await databaseClient.db.query.workspaces.findFirst();
