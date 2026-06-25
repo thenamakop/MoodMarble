@@ -120,14 +120,15 @@ async function scrollTrayUntilVisible(testID) {
     .scroll(180, "down", NaN, 0.85);
 }
 
-// Scrolls the marble tray all the way to the top using scrollTo("top"),
-// then waits for testID to be visible. Use this before tapping header
-// elements (open-history-button / open-settings-button) that live at the
-// very top of the tray ScrollView.
+// Waits for the marble tray to be on screen, then scrolls to the top.
+// Use this before tapping header elements (open-history-button /
+// open-settings-button) that live at the very top of the tray ScrollView.
+// Waits up to 15s for the tray — after a submission the tray unmounts
+// briefly while the confirmation overlay is active.
 async function scrollTrayToTop() {
   await waitFor(element(by.id("marble-tray-scroll-view")))
     .toBeVisible()
-    .withTimeout(10000);
+    .withTimeout(15000);
   await element(by.id("marble-tray-scroll-view")).scrollTo("top");
 }
 
