@@ -216,14 +216,46 @@ function fail(message) {
   console.error(`[fail] ${message}`);
 }
 
-function checkUrl(name, url) {
-  const result = runCommand("curl", ["-I", "--max-time", "3", url]);
+function checkUrl(name, url, attempts = 5, maxTimeSeconds = 8, delayMs = 1500) {
+  // A GET that discards the body and prints only the status code. Using GET
+  // (not HEAD/-I) because Metro's /status endpoint answers GET reliably, and a
+  // generous per-attempt timeout plus retries absorb the slow responses that
+  // happen while Metro is mid-bundle (e.g. right after a --clear cache rebuild).
+  const nullDevice = process.platform === "win32" ? "NUL" : "/dev/null";
 
-  if (result.status !== 0 || !/HTTP\/[0-9.]+ 2[0-9][0-9]/.test(result.stdout)) {
-    fail(
-      `${name} is not reachable at ${url}. Start the Metro server and backend before running Detox.`,
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    const result = runCommand(
+      "curl",
+      [
+        "-s",
+        "-o",
+        nullDevice,
+        "-w",
+        "%{http_code}",
+        "--max-time",
+        String(maxTimeSeconds),
+        url,
+      ],
+      (maxTimeSeconds + 2) * 1000,
     );
-  } else {
-    ok(`${name} is reachable at ${url}.`);
+    const httpCode = (result.stdout || "").trim();
+
+    if (result.status === 0 && /^2\d\d$/.test(httpCode)) {
+      ok(`${name} is reachable at ${url}.`);
+      return;
+    }
+
+    if (attempt < attempts) {
+      sleepMs(delayMs);
+    }
   }
+
+  fail(
+    `${name} is not reachable at ${url} after ${attempts} attempts. Start the Metro server and backend before running Detox.`,
+  );
+}
+
+function sleepMs(ms) {
+  // Synchronous sleep so retries work inside this fully synchronous script.
+  Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms);
 }
