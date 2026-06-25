@@ -147,11 +147,12 @@ if (hasFailure) {
 
 ok("Android E2E preflight passed.");
 
-function runCommand(command, args) {
+function runCommand(command, args, timeoutMs = 15000) {
   return spawnSync(command, args, {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     shell: false,
+    timeout: timeoutMs,
   });
 }
 
@@ -176,7 +177,7 @@ function parseAdbDevices(output) {
 }
 
 function getEmulatorAvdName(serial) {
-  const result = runCommand("adb", ["-s", serial, "emu", "avd", "name"]);
+  const result = runCommand("adb", ["-s", serial, "emu", "avd", "name"], 5000);
 
   if (result.status !== 0) {
     return null;
