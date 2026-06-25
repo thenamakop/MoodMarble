@@ -63,9 +63,6 @@ async function resetToOnboardingIfNeeded() {
       .toBeVisible()
       .withTimeout(4000);
     await element(by.id("settings-confirm-clear-local-data")).tap();
-    await waitFor(element(by.id("join-code-input")))
-      .toBeVisible()
-      .withTimeout(10000);
   } else if (await isVisible("settings-scroll-view", 2000)) {
     // If we're on the settings screen but clear local data is off-screen,
     // we need to scroll down.
@@ -81,13 +78,14 @@ async function resetToOnboardingIfNeeded() {
         .whileElement(by.id("settings-scroll-view"))
         .scroll(300, "down", NaN, 0.85);
       await element(by.id("settings-confirm-clear-local-data")).tap();
-      await waitFor(element(by.id("join-code-input")))
-        .toBeVisible()
-        .withTimeout(10000);
     } catch {
       // Ignore if it fails, maybe it's already cleared or something else
     }
   }
+
+  // Whether we cleared a session or the app started fresh on intro slides,
+  // skip through to the join code screen.
+  await advanceToJoinCode();
 }
 
 async function completeAnonymousMemberJourney() {
