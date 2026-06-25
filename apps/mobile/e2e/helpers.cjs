@@ -331,35 +331,35 @@ async function relaunchExpoDevClient() {
 }
 
 async function advanceToJoinCode() {
+  // Fast-exit: already on the join-code screen.
   if (await isVisible("join-code-input", 2000)) {
     return;
   }
 
-  // The JS bundle may still be hydrating after a cold launch — wait longer
-  // for the first onboarding button to appear before attempting any taps.
-  // Retry the tap up to 4 times.  Before each attempt scroll the onboarding
-  // scroll view to the top — the skip button sits in the top-right corner and
-  // can be off the visible viewport if the card has been pushed down.
-  for (let attempt = 0; attempt < 4; attempt += 1) {
-    // Scroll onboarding card to top so skip/next buttons are guaranteed visible.
-    if (await isVisible("onboarding-scroll-view", 2000)) {
-      try {
-        await element(by.id("onboarding-scroll-view")).scrollTo("top");
-      } catch {
-        /* already at top */
-      }
-    }
+  // Wait for the onboarding scroll view — the JS bundle may still be
+  // hydrating after a cold launch.
+  await waitFor(element(by.id("onboarding-scroll-view")))
+    .toBeVisible()
+    .withTimeout(20000);
 
-    if (await isVisible("skip-onboarding-button", 6000)) {
-      await element(by.id("skip-onboarding-button")).tap();
-    } else if (await isVisible("next-onboarding-button", 6000)) {
-      // Last slide — Skip is hidden, tap the Next / Get started button.
-      await element(by.id("next-onboarding-button")).tap();
-    }
+  // Scroll to absolute top so the Skip / Next button is never clipped.
+  // This mirrors how the admin journey calls scrollTo("top") on its scroll
+  // view before any button tap.
+  await element(by.id("onboarding-scroll-view")).scrollTo("top");
 
-    if (await isVisible("join-code-input", 3000)) {
-      return;
-    }
+  // Use a direct waitFor + tap — the same pattern the admin journey uses —
+  // rather than isVisible() which treats a 75%-coverage miss as "not found".
+  // Skip is visible on slides 0–1; the last slide shows Next instead.
+  if (await isVisible("skip-onboarding-button", 3000)) {
+    await waitFor(element(by.id("skip-onboarding-button")))
+      .toBeVisible()
+      .withTimeout(5000);
+    await element(by.id("skip-onboarding-button")).tap();
+  } else {
+    await waitFor(element(by.id("next-onboarding-button")))
+      .toBeVisible()
+      .withTimeout(5000);
+    await element(by.id("next-onboarding-button")).tap();
   }
 
   await waitFor(element(by.id("join-code-input")))
