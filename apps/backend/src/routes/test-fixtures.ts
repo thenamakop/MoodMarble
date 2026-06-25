@@ -2,7 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
 import type { DatabaseClient } from "../db/client";
 import { seedAdmin } from "../../scripts/seed-admin";
-import { workspaces, teams } from "../db/schema";
+import { workspaces, teams, managerCodes } from "../db/schema";
 
 export interface TestFixturesOptions {
   databaseClient: DatabaseClient;
@@ -28,6 +28,7 @@ export async function registerTestRoutes(
         "mood_submissions",
         "team_members",
         "admin_credentials",
+        "manager_codes",
         "teams",
         "workspaces",
       ] as const;
@@ -71,6 +72,25 @@ export async function registerTestRoutes(
           message: "Failed to seed admin account",
           hint: "Check that ADMIN_EMAIL and ADMIN_PASSWORD are valid and bcryptjs is installed.",
         });
+      }
+
+      // 5. Seed a known manager code for E2E tests (6-char alphanumeric)
+      const codeExpiresAt = new Date();
+      codeExpiresAt.setDate(codeExpiresAt.getDate() + 30);
+
+      try {
+        await databaseClient.db.insert(managerCodes).values({
+          id: "mgr-code-e2e-001",
+          code: "MGR001",
+          workspaceId: "ws_localdemo",
+          teamId: "tm_product",
+          expiresAt: codeExpiresAt,
+        });
+      } catch {
+        // manager_codes table may not exist yet if migration is pending — non-fatal
+        console.warn(
+          "[test-reset] Could not seed manager code (migration may be pending)",
+        );
       }
 
       return reply.status(200).send({ status: "reset_ok" });

@@ -14,8 +14,10 @@
  * 3. **Public**
  *    None in this module.
  */
+import crypto from "node:crypto";
 import type { FastifyInstance, FastifyReply, FastifyRequest } from "fastify";
 import { ZodError, z } from "zod";
+import { and, eq } from "drizzle-orm";
 
 import {
   AdminExportRecordSchema,
@@ -27,6 +29,8 @@ import {
   AdminWorkspaceCreateRequestSchema,
   AdminWorkspaceCreateResponseSchema,
   AdminJoinCodeResponseSchema,
+  AdminGenerateManagerCodeResponseSchema,
+  AdminManagerCodeListResponseSchema,
   TeamIdSchema,
   WorkspaceIdSchema,
 } from "../../../../packages/shared";
@@ -43,6 +47,7 @@ import {
   AdminWorkspaceNotFoundError,
   type AdminApiService,
 } from "../services/admin-api";
+import { managerCodes, teams } from "../db/schema";
 
 /**
  * Thrown when an admin JWT's workspace_id does not match
@@ -312,6 +317,213 @@ export async function registerAdminRoutes(
           .send(csv);
       } catch (error) {
         return handleAdminError(error, reply, "Invalid admin export request.");
+      }
+    },
+  );
+
+  // --- Manager code routes ---
+  function generateManagerCode(): string {
+    const CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const bytes = crypto.randomBytes(6);
+    return Array.from({ length: 6 }, (_, i) => CHARS[bytes[i]! % 36]!).join("");
+  }
+
+  const GenerateManagerCodeBodySchema = z
+    .object({
+      team_id: z.string().min(1),
+      expires_in_days: z.number().int().min(1).max(30).default(7),
+    })
+    .strict();
+
+  const ManagerCodeParamsSchema = z
+    .object({
+      workspaceId: WorkspaceIdSchema,
+      teamId: TeamIdSchema,
+    })
+    .strict();
+
+  const RevokeManagerCodeParamsSchema = z
+    .object({
+      workspaceId: WorkspaceIdSchema,
+      codeId: z.string().min(1),
+    })
+    .strict();
+
+  function resolveManagerCodeStatus(row: {
+    isRevoked: number;
+    usedAt: Date | null;
+    expiresAt: Date;
+  }): "active" | "used" | "expired" | "revoked" {
+    if (row.isRevoked === 1) return "revoked";
+    if (row.usedAt !== null) return "used";
+    if (row.expiresAt < new Date()) return "expired";
+    return "active";
+  }
+
+  app.post(
+    "/admin/workspace/:workspaceId/manager-codes",
+    async (
+      request: FastifyRequest<{
+        Params: unknown;
+        Body: unknown;
+      }>,
+      reply: FastifyReply,
+    ) => {
+      try {
+        const adminJwt = verifyAdminJwt(
+          request.headers.authorization,
+          options.jwtSecret,
+        );
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
+          request.params,
+        );
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
+
+        const body = GenerateManagerCodeBodySchema.parse(request.body);
+
+        const team = await options.databaseClient.db.query.teams.findFirst({
+          where: and(
+            eq(teams.id, body.team_id),
+            eq(teams.workspaceId, workspaceId),
+          ),
+        });
+        if (!team) {
+          return reply.status(404).send({ message: "Team not found." });
+        }
+
+        let code: string | null = null;
+        for (let attempt = 0; attempt < 3; attempt++) {
+          const candidate = generateManagerCode();
+          const existing =
+            await options.databaseClient.db.query.managerCodes.findFirst({
+              where: eq(managerCodes.code, candidate),
+            });
+          if (!existing) {
+            code = candidate;
+            break;
+          }
+        }
+        if (!code) {
+          return reply
+            .status(500)
+            .send({ message: "Code generation failed, please try again." });
+        }
+
+        const expiresAt = new Date();
+        expiresAt.setDate(expiresAt.getDate() + body.expires_in_days);
+
+        await options.databaseClient.db.insert(managerCodes).values({
+          id: crypto.randomUUID(),
+          code,
+          workspaceId,
+          teamId: body.team_id,
+          expiresAt,
+        });
+
+        const response = AdminGenerateManagerCodeResponseSchema.parse({
+          code,
+          team_id: body.team_id,
+          expires_at: expiresAt.toISOString(),
+        });
+        return reply.status(201).send(response);
+      } catch (error) {
+        return handleAdminError(
+          error,
+          reply,
+          "Invalid manager code generation request.",
+        );
+      }
+    },
+  );
+
+  app.get(
+    "/admin/workspace/:workspaceId/team/:teamId/manager-codes",
+    async (
+      request: FastifyRequest<{
+        Params: unknown;
+      }>,
+      reply: FastifyReply,
+    ) => {
+      try {
+        const adminJwt = verifyAdminJwt(
+          request.headers.authorization,
+          options.jwtSecret,
+        );
+        const { workspaceId, teamId } = ManagerCodeParamsSchema.parse(
+          request.params,
+        );
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
+
+        const rows =
+          await options.databaseClient.db.query.managerCodes.findMany({
+            where: and(
+              eq(managerCodes.teamId, teamId),
+              eq(managerCodes.workspaceId, workspaceId),
+            ),
+            with: { team: true },
+            orderBy: (mc, { desc }) => [desc(mc.createdAt)],
+          });
+
+        const response = AdminManagerCodeListResponseSchema.parse({
+          codes: rows.map((r) => ({
+            id: r.id,
+            code: r.code,
+            team_id: r.teamId,
+            team_name: r.team.name,
+            expires_at: r.expiresAt.toISOString(),
+            used_at: r.usedAt?.toISOString() ?? null,
+            is_revoked: r.isRevoked === 1,
+            status: resolveManagerCodeStatus(r),
+          })),
+        });
+        return reply.status(200).send(response);
+      } catch (error) {
+        return handleAdminError(
+          error,
+          reply,
+          "Invalid manager code list request.",
+        );
+      }
+    },
+  );
+
+  app.delete(
+    "/admin/workspace/:workspaceId/manager-codes/:codeId",
+    async (
+      request: FastifyRequest<{
+        Params: unknown;
+      }>,
+      reply: FastifyReply,
+    ) => {
+      try {
+        const adminJwt = verifyAdminJwt(
+          request.headers.authorization,
+          options.jwtSecret,
+        );
+        const { workspaceId, codeId } = RevokeManagerCodeParamsSchema.parse(
+          request.params,
+        );
+        assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
+
+        const codeRecord =
+          await options.databaseClient.db.query.managerCodes.findFirst({
+            where: eq(managerCodes.id, codeId),
+          });
+        if (!codeRecord) {
+          return reply.status(404).send({ message: "Code not found." });
+        }
+        if (codeRecord.workspaceId !== workspaceId) {
+          return reply.status(403).send({ message: "Forbidden" });
+        }
+
+        await options.databaseClient.db
+          .update(managerCodes)
+          .set({ isRevoked: 1 })
+          .where(eq(managerCodes.id, codeId));
+
+        return reply.status(200).send({ success: true });
+      } catch (error) {
+        return handleAdminError(error, reply, "Invalid manager code revocation request.");
       }
     },
   );

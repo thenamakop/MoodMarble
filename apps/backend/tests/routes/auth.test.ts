@@ -151,4 +151,230 @@ describe("admin login auth flow", () => {
     expect(rateLimitedResponse.statusCode).toBe(429);
   });
 
+  describe("POST /auth/redeem-manager-code", () => {
+    const JWT_SECRET = "test-jwt-secret";
+
+    function buildMockDb(overrides: {
+      findFirst?: Record<string, unknown> | undefined;
+    } = {}) {
+      const mockUpdateWhere = jest.fn().mockResolvedValue(undefined);
+      const mockUpdateSet = jest.fn().mockReturnValue({ where: mockUpdateWhere });
+      const mockUpdate = jest.fn().mockReturnValue({ set: mockUpdateSet });
+
+      return {
+        db: {
+          query: {
+            managerCodes: {
+              findFirst: jest
+                .fn()
+                .mockResolvedValue(overrides.findFirst ?? undefined),
+            },
+          },
+          update: mockUpdate,
+        },
+      } as unknown as DatabaseClient;
+    }
+
+    it("returns a manager JWT for a valid, active code", async () => {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const mockDatabaseClient = buildMockDb({
+        findFirst: {
+          id: "code-1",
+          code: "MGR001",
+          workspaceId: "ws_localdemo",
+          teamId: "tm_product",
+          expiresAt,
+          usedAt: null,
+          isRevoked: 0,
+          team: { name: "Product", workspaceId: "ws_localdemo" },
+        },
+      });
+
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "MGR001" },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body).toHaveProperty("manager_jwt");
+      expect(body.workspace_id).toBe("ws_localdemo");
+      expect(body.team_id).toBe("tm_product");
+      expect(body.team_name).toBe("Product");
+      expect(body.manager_teams).toBe("tm_product:Product");
+    });
+
+    it("rejects a malformed code", async () => {
+      const mockDatabaseClient = buildMockDb();
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "TOO_LONG" },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().message).toBe(
+        "Manager code must be 6 uppercase letters or numbers.",
+      );
+    });
+
+    it("transforms lowercase code to uppercase", async () => {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const mockDatabaseClient = buildMockDb({
+        findFirst: {
+          id: "code-1",
+          code: "MGR001",
+          workspaceId: "ws_localdemo",
+          teamId: "tm_product",
+          expiresAt,
+          usedAt: null,
+          isRevoked: 0,
+          team: { name: "Product", workspaceId: "ws_localdemo" },
+        },
+      });
+
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "mgr001" },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toHaveProperty("manager_jwt");
+    });
+
+    it("returns 404 with identical message for a missing code", async () => {
+      const mockDatabaseClient = buildMockDb({ findFirst: undefined });
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "ABCXYZ" },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json().message).toBe("Invalid or expired manager code.");
+    });
+
+    it("returns 404 with identical message for a used code", async () => {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const mockDatabaseClient = buildMockDb({
+        findFirst: {
+          id: "code-1",
+          code: "MGR001",
+          workspaceId: "ws_localdemo",
+          teamId: "tm_product",
+          expiresAt,
+          usedAt: new Date(),
+          isRevoked: 0,
+          team: { name: "Product", workspaceId: "ws_localdemo" },
+        },
+      });
+
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "MGR001" },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json().message).toBe("Invalid or expired manager code.");
+    });
+
+    it("returns 404 with identical message for a revoked code", async () => {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+
+      const mockDatabaseClient = buildMockDb({
+        findFirst: {
+          id: "code-1",
+          code: "MGR001",
+          workspaceId: "ws_localdemo",
+          teamId: "tm_product",
+          expiresAt,
+          usedAt: null,
+          isRevoked: 1,
+          team: { name: "Product", workspaceId: "ws_localdemo" },
+        },
+      });
+
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "MGR001" },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json().message).toBe("Invalid or expired manager code.");
+    });
+
+    it("returns 404 with identical message for an expired code", async () => {
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() - 1);
+
+      const mockDatabaseClient = buildMockDb({
+        findFirst: {
+          id: "code-1",
+          code: "MGR001",
+          workspaceId: "ws_localdemo",
+          teamId: "tm_product",
+          expiresAt,
+          usedAt: null,
+          isRevoked: 0,
+          team: { name: "Product", workspaceId: "ws_localdemo" },
+        },
+      });
+
+      const app = await buildApp({
+        jwtSecret: JWT_SECRET,
+        databaseClient: mockDatabaseClient,
+      });
+
+      const response = await inject(app, {
+        method: "POST",
+        url: "/auth/redeem-manager-code",
+        payload: { code: "MGR001" },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json().message).toBe("Invalid or expired manager code.");
+    });
+  });
+
 });

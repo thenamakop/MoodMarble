@@ -3,9 +3,11 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { eq } from "drizzle-orm";
 
-import { adminCredentials, workspaces } from "../db/schema";
+import { adminCredentials, managerCodes, workspaces } from "../db/schema";
 import type { DatabaseClient } from "../db/client";
 import { createAdminJwt } from "../auth/admin-jwt";
+import { createManagerJwt } from "../auth/manager-jwt";
+import { RedeemManagerCodeRequestSchema } from "../../../../packages/shared";
 
 const LoginRequestSchema = z.object({
   email: z.string().email(),
@@ -117,4 +119,62 @@ export async function registerAuthRoutes(
       });
     },
   );
+
+  app.post("/auth/redeem-manager-code", async (request, reply) => {
+    const parsed = RedeemManagerCodeRequestSchema.safeParse(request.body);
+    if (!parsed.success) {
+      return reply.status(400).send({
+        message: "Manager code must be 6 uppercase letters or numbers.",
+      });
+    }
+
+    const { code } = parsed.data;
+    const now = new Date();
+
+    let codeRecord:
+      | (typeof managerCodes.$inferSelect & {
+          team: { name: string; workspaceId: string };
+        })
+      | undefined;
+
+    try {
+      codeRecord = await options.databaseClient.db.query.managerCodes.findFirst({
+        where: eq(managerCodes.code, code),
+        with: { team: true },
+      });
+    } catch {
+      return reply.status(500).send({ message: "Unable to validate code." });
+    }
+
+    // All failure paths return the same response — no state leakage
+    const INVALID = { message: "Invalid or expired manager code." } as const;
+
+    if (!codeRecord) return reply.status(404).send(INVALID);
+    if (codeRecord.isRevoked === 1) return reply.status(404).send(INVALID);
+    if (codeRecord.usedAt !== null) return reply.status(404).send(INVALID);
+    if (codeRecord.expiresAt < now) return reply.status(404).send(INVALID);
+
+    // Mark as used
+    await options.databaseClient.db
+      .update(managerCodes)
+      .set({ usedAt: now })
+      .where(eq(managerCodes.id, codeRecord.id));
+
+    const { managerJwt } = createManagerJwt(options.jwtSecret, {
+      workspace_id: codeRecord.workspaceId,
+      team_id: codeRecord.teamId,
+      role: "manager",
+    });
+
+    // manager_teams format expected by /manager route: "teamId:teamName"
+    const managerTeams = `${codeRecord.teamId}:${codeRecord.team.name}`;
+
+    return reply.status(200).send({
+      manager_jwt: managerJwt,
+      workspace_id: codeRecord.workspaceId,
+      team_id: codeRecord.teamId,
+      team_name: codeRecord.team.name,
+      manager_teams: managerTeams,
+    });
+  });
 }

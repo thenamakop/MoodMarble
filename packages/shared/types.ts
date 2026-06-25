@@ -47,6 +47,11 @@ import {
   WorkspaceJoinResponseSchema,
   WorkspaceNameSchema,
   WeeklyMoodPointSchema,
+  RedeemManagerCodeRequestSchema,
+  RedeemManagerCodeResponseSchema,
+  AdminGenerateManagerCodeResponseSchema,
+  AdminManagerCodeItemSchema,
+  AdminManagerCodeListResponseSchema,
 } from "./schemas";
 
 export type Mood = z.infer<typeof MoodSchema>;
@@ -115,3 +120,17 @@ export type DashboardWeekly = z.infer<typeof DashboardWeeklySchema>;
 export type DashboardTags = z.infer<typeof DashboardTagsSchema>;
 
 export type MarbleId = z.infer<typeof MarbleIdSchema>;
+
+export type RedeemManagerCodeRequest = z.infer<
+  typeof RedeemManagerCodeRequestSchema
+>;
+export type RedeemManagerCodeResponse = z.infer<
+  typeof RedeemManagerCodeResponseSchema
+>;
+export type AdminGenerateManagerCodeResponse = z.infer<
+  typeof AdminGenerateManagerCodeResponseSchema
+>;
+export type AdminManagerCodeItem = z.infer<typeof AdminManagerCodeItemSchema>;
+export type AdminManagerCodeListResponse = z.infer<
+  typeof AdminManagerCodeListResponseSchema
+>;

@@ -132,6 +132,38 @@ export const moodSubmissions = pgTable(
 );
 
 /**
+ * manager_codes
+ * One-time manager invitation codes.
+ */
+export const managerCodes = pgTable(
+  "manager_codes",
+  {
+    id: text("id").primaryKey(),
+    code: text("code").notNull(), // 6-char uppercase alphanumeric
+    workspaceId: text("workspace_id")
+      .notNull()
+      .references(() => workspaces.id, { onDelete: "cascade" }),
+    teamId: text("team_id")
+      .notNull()
+      .references(() => teams.id, { onDelete: "cascade" }),
+    expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+    usedAt: timestamp("used_at", { withTimezone: true }),
+    isRevoked: smallint("is_revoked").notNull().default(0),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => ({
+    codeUnique: uniqueIndex("manager_codes_code_unique").on(table.code),
+    teamIdx: index("manager_codes_team_id_idx").on(table.teamId),
+    workspaceIdx: index("manager_codes_workspace_id_idx").on(table.workspaceId),
+  }),
+);
+
+export type ManagerCode = typeof managerCodes.$inferSelect;
+export type NewManagerCode = typeof managerCodes.$inferInsert;
+
+/**
  * admin_credentials
  * Used for admin panel login.
  */
@@ -165,6 +197,7 @@ export const teamsRelations = relations(teams, ({ one, many }) => ({
   }),
   teamMembers: many(teamMembers),
   moodSubmissions: many(moodSubmissions),
+  managerCodes: many(managerCodes),
 }));
 
 export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
@@ -183,6 +216,17 @@ export const moodSubmissionsRelations = relations(
     }),
   }),
 );
+
+export const managerCodesRelations = relations(managerCodes, ({ one }) => ({
+  team: one(teams, {
+    fields: [managerCodes.teamId],
+    references: [teams.id],
+  }),
+  workspace: one(workspaces, {
+    fields: [managerCodes.workspaceId],
+    references: [workspaces.id],
+  }),
+}));
 
 /**
  * Optional exported types

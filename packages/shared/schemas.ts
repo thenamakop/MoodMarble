@@ -385,3 +385,50 @@ export const DashboardTagsSchema = z
     tag_counts: z.array(TagCountSchema),
   })
   .strict();
+
+export const ManagerCodeInputSchema = z
+  .string()
+  .trim()
+  .transform((v) => v.toUpperCase())
+  .refine((v) => /^[A-Z0-9]{6}$/.test(v), {
+    message: "Manager code must be 6 uppercase letters or numbers.",
+  });
+
+export const RedeemManagerCodeRequestSchema = z
+  .object({ code: ManagerCodeInputSchema })
+  .strict();
+
+export const RedeemManagerCodeResponseSchema = z
+  .object({
+    manager_jwt: z.string().min(1),
+    workspace_id: z.string().min(1),
+    team_id: z.string().min(1),
+    team_name: z.string().min(1),
+    manager_teams: z.string().min(1),
+  })
+  .strict();
+
+export const AdminGenerateManagerCodeResponseSchema = z
+  .object({
+    code: z.string().length(6),
+    team_id: z.string().min(1),
+    expires_at: z.string().min(1),
+  })
+  .strict();
+
+export const AdminManagerCodeItemSchema = z
+  .object({
+    id: z.string().min(1),
+    code: z.string().length(6),
+    team_id: z.string().min(1),
+    team_name: z.string().min(1),
+    expires_at: z.string().min(1),
+    used_at: z.string().nullable(),
+    is_revoked: z.boolean(),
+    status: z.enum(["active", "used", "expired", "revoked"]),
+  })
+  .strict();
+
+export const AdminManagerCodeListResponseSchema = z
+  .object({ codes: z.array(AdminManagerCodeItemSchema) })
+  .strict();
