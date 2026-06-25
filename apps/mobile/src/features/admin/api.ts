@@ -367,3 +367,82 @@ export {
   type CreateAdminWorkspaceInput,
   type LoadAdminPanelShellInput,
 };
+
+export interface AdminManagerCodeItem {
+  id: string;
+  code: string;
+  team_id: string;
+  team_name: string;
+  expires_at: string;
+  used_at: string | null;
+  is_revoked: boolean;
+  status: "active" | "used" | "expired" | "revoked";
+}
+
+export interface AdminManagerCodeListResult {
+  codes: AdminManagerCodeItem[];
+}
+
+export interface AdminGenerateManagerCodeResult {
+  code: string;
+  team_id: string;
+  expires_at: string;
+}
+
+const MANAGER_CODE_ERROR_MESSAGE = "Unable to manage codes right now.";
+
+export async function generateManagerCode(input: {
+  adminJwt: string;
+  workspaceId: string;
+  teamId: string;
+  expiresInDays?: number;
+}): Promise<AdminGenerateManagerCodeResult> {
+  const response = await fetch(
+    createApiUrl(`/admin/workspace/${input.workspaceId}/manager-codes`),
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${input.adminJwt}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        team_id: input.teamId,
+        expires_in_days: input.expiresInDays ?? 7,
+      }),
+    },
+  );
+  if (!response.ok) throw new Error(MANAGER_CODE_ERROR_MESSAGE);
+  return response.json() as Promise<AdminGenerateManagerCodeResult>;
+}
+
+export async function listManagerCodes(input: {
+  adminJwt: string;
+  workspaceId: string;
+  teamId: string;
+}): Promise<AdminManagerCodeListResult> {
+  const response = await fetch(
+    createApiUrl(
+      `/admin/workspace/${input.workspaceId}/team/${input.teamId}/manager-codes`,
+    ),
+    { headers: { Authorization: `Bearer ${input.adminJwt}` } },
+  );
+  if (!response.ok) throw new Error(MANAGER_CODE_ERROR_MESSAGE);
+  return response.json() as Promise<AdminManagerCodeListResult>;
+}
+
+export async function revokeManagerCode(input: {
+  adminJwt: string;
+  workspaceId: string;
+  codeId: string;
+}): Promise<void> {
+  const response = await fetch(
+    createApiUrl(
+      `/admin/workspace/${input.workspaceId}/manager-codes/${input.codeId}`,
+    ),
+    {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${input.adminJwt}` },
+    },
+  );
+  if (!response.ok) throw new Error(MANAGER_CODE_ERROR_MESSAGE);
+}

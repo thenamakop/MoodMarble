@@ -5,6 +5,7 @@ type AdminSectionFocus =
   | "workspace"
   | "team"
   | "join-code"
+  | "manager-codes"
   | "export";
 
 interface AdminTeamOption {

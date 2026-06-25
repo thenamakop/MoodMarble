@@ -30,6 +30,13 @@ interface AdminPanelViewModel {
   workspaceName: string | null;
   joinCode: string | null;
   teams: AdminTeam[];
+  managerCodes?: Array<{
+    id: string;
+    code: string;
+    team_name: string;
+    expires_at: string;
+    status: "active" | "used" | "expired" | "revoked";
+  }>;
 }
 
 interface AdminPanelScreenProps {
@@ -51,7 +58,9 @@ interface AdminPanelScreenProps {
     endDate: string;
     startDate: string;
   }) => void | Promise<void>;
+  onGenerateManagerCode?: (teamId: string) => void | Promise<void>;
   onReturnHome?: () => void;
+  onRevokeManagerCode?: (codeId: string) => void | Promise<void>;
   onRotateJoinCode?: () => void | Promise<void>;
   onRetry?: () => void;
   onUpdateTeam?: (input: {
@@ -68,6 +77,7 @@ const SECTION_ORDER: Array<{
   { focus: "workspace", label: "Workspace" },
   { focus: "team", label: "Teams" },
   { focus: "join-code", label: "Join code" },
+  { focus: "manager-codes", label: "Manager codes" },
   { focus: "export", label: "Export" },
 ];
 
@@ -81,7 +91,9 @@ export function AdminPanelScreen({
   onCreateTeam,
   onCreateWorkspace,
   onExport,
+  onGenerateManagerCode,
   onReturnHome,
+  onRevokeManagerCode,
   onRotateJoinCode,
   onRetry,
   onUpdateTeam,
@@ -537,6 +549,66 @@ export function AdminPanelScreen({
                     variant="secondary"
                   />
                 </View>
+              </AdminSectionCard>
+
+              <AdminSectionCard
+                body="Generate one-time 6-character codes for team managers. Each code can only be used once."
+                focus="manager-codes"
+                isActive={sectionFocus === "manager-codes"}
+                testID="admin-panel-manager-codes-section"
+                title="Manager codes"
+              >
+                {teams.length === 0 ? (
+                  <ThemedText themeColor="textSecondary" type="small">
+                    Add a team first to generate manager codes.
+                  </ThemedText>
+                ) : (
+                  <>
+                    {teams.map((team) => (
+                      <View key={team.id} style={styles.managerCodeTeamRow}>
+                        <ThemedText type="smallBold">{team.name}</ThemedText>
+                        <ActionButton
+                          disabled={isActionPending}
+                          label={isActionPending ? "Working…" : "Generate code"}
+                          onPress={() => {
+                            void onGenerateManagerCode?.(team.id);
+                          }}
+                          testID={`admin-panel-generate-code-${team.id}`}
+                          theme={theme}
+                        />
+                      </View>
+                    ))}
+                    {(viewModel?.managerCodes ?? []).length > 0 && (
+                      <View style={styles.managerCodeList}>
+                        {(viewModel?.managerCodes ?? []).map((mc) => (
+                          <View
+                            key={mc.id}
+                            style={styles.managerCodeItem}
+                            testID={`manager-code-item-${mc.id}`}
+                          >
+                            <ThemedText style={styles.managerCodeText}>
+                              {mc.code}
+                            </ThemedText>
+                            <ThemedText themeColor="textSecondary" type="small">
+                              {mc.team_name} · {mc.status}
+                            </ThemedText>
+                            {mc.status === "active" && (
+                              <ActionButton
+                                disabled={isActionPending}
+                                label="Revoke"
+                                onPress={() => {
+                                  void onRevokeManagerCode?.(mc.id);
+                                }}
+                                testID={`admin-panel-revoke-code-${mc.id}`}
+                                theme={theme}
+                              />
+                            )}
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                  </>
+                )}
               </AdminSectionCard>
 
               <AdminSectionCard
@@ -1003,5 +1075,26 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.five,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
+  },
+  managerCodeTeamRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: Spacing.two,
+  },
+  managerCodeList: {
+    gap: Spacing.two,
+    marginTop: Spacing.two,
+  },
+  managerCodeItem: {
+    gap: Spacing.one,
+    paddingVertical: Spacing.two,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: "rgba(0,0,0,0.08)",
+  },
+  managerCodeText: {
+    fontFamily: "monospace",
+    fontSize: 14,
+    letterSpacing: 2,
   },
 });

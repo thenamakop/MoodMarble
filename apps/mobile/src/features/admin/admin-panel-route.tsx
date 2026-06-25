@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { Alert } from "react-native";
 import * as Clipboard from "expo-clipboard";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
@@ -8,8 +9,10 @@ import {
   createAdminWorkspace,
   exportAdminCsv,
   fetchAdminJoinCode,
+  generateManagerCode,
   loadAdminPanelShell,
   rotateAdminJoinCode,
+  revokeManagerCode,
   updateAdminTeam,
   type AdminPanelShellBundle,
 } from "@/features/admin/api";
@@ -378,6 +381,78 @@ export function AdminPanelRoute({
     }
   }
 
+  async function refreshPanel() {
+    setReloadKey((currentValue) => currentValue + 1);
+  }
+
+  async function handleGenerateManagerCode(teamId: string) {
+    if (!adminJwt || !workspaceId) return;
+    setIsActionPending(true);
+    try {
+      const result = await generateManagerCode({
+        adminJwt,
+        workspaceId,
+        teamId,
+      });
+      Alert.alert(
+        "Manager Code Generated",
+        `${result.code}\n\nShare this with the manager. Valid for 7 days, one-time use only.`,
+        [
+          {
+            text: "Copy & Done",
+            onPress: async () => {
+              try {
+                const { setStringAsync } = await import("expo-clipboard");
+                await setStringAsync(result.code);
+              } catch {}
+            },
+          },
+          { text: "Done" },
+        ],
+      );
+    } catch (error) {
+      setFeedbackState({
+        kind: "error",
+        message:
+          error instanceof Error ? error.message : "Failed to generate code.",
+      });
+    } finally {
+      setIsActionPending(false);
+    }
+  }
+
+  async function handleRevokeManagerCode(codeId: string) {
+    if (!adminJwt || !workspaceId) return;
+    Alert.alert(
+      "Revoke Code",
+      "This code will no longer work. This cannot be undone.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Revoke",
+          style: "destructive",
+          onPress: async () => {
+            setIsActionPending(true);
+            try {
+              await revokeManagerCode({ adminJwt, workspaceId, codeId });
+              await refreshPanel();
+            } catch (error) {
+              setFeedbackState({
+                kind: "error",
+                message:
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to revoke code.",
+              });
+            } finally {
+              setIsActionPending(false);
+            }
+          },
+        },
+      ],
+    );
+  }
+
   async function handleExport(input: { startDate: string; endDate: string }) {
     if (!adminJwt || !workspaceId) {
       return;
@@ -450,7 +525,9 @@ export function AdminPanelRoute({
       onCreateTeam={handleCreateTeam}
       onCreateWorkspace={handleCreateWorkspace}
       onExport={handleExport}
+      onGenerateManagerCode={handleGenerateManagerCode}
       onReturnHome={() => router.replace("/")}
+      onRevokeManagerCode={handleRevokeManagerCode}
       onRotateJoinCode={handleRotateJoinCode}
       onRetry={handleRetry}
       onUpdateTeam={handleUpdateTeam}
