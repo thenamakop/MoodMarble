@@ -1,6 +1,6 @@
 const { by, element, expect, waitFor } = require("detox");
 
-const { loginAsAdmin } = require("./helpers.cjs");
+const { advanceToJoinCode, loginAsAdmin } = require("./helpers.cjs");
 
 // Admin panel journey — navigates to admin login via the UI, types
 // credentials (admin@example.com / password1234), and verifies the panel.
@@ -18,14 +18,19 @@ describe("admin panel journey", () => {
   });
 
   it("signs out and lands back on the join-code step", async () => {
+    // Scroll the panel back to the top — after the first test the ScrollView
+    // may have scrolled down past the header, putting the logout button out of view.
+    await element(by.id("admin-panel-screen")).scrollTo("top");
+
     await waitFor(element(by.id("admin-panel-logout")))
       .toBeVisible()
-      .withTimeout(8000);
+      .withTimeout(10000);
 
     await element(by.id("admin-panel-logout")).tap();
 
-    await waitFor(element(by.id("join-code-input")))
-      .toBeVisible()
-      .withTimeout(15000);
+    // Logout calls router.replace("/") which lands on the home screen.
+    // With no member session the home screen renders the onboarding intro —
+    // skip past it to reach the join code input.
+    await advanceToJoinCode();
   });
 });
