@@ -5,11 +5,13 @@
 This handoff closes the Admin Authentication rebuild and E2E coverage sprint. The administrative login flow is now complete, verified, and integrated into both the backend API and the mobile application.
 
 The source of truth remains:
+
 - `MoodMarble_Project_Specification.docx`
 
 ## Week 8 Admin Auth & E2E Stable State
 
 The repository has been updated with the following completed capabilities:
+
 - A secure, dedicated `/auth/login` flow for administrators.
 - Rejection of unregistered or invalid admin login attempts safely, yielding proper `401 Unauthorized`.
 - An idempotent backend seed script `pnpm seed:admin` that cleanly sets up the admin identity.
@@ -20,6 +22,7 @@ The repository has been updated with the following completed capabilities:
 - Validated E2E journey via `admin-journey.e2e.cjs` covering login, session restoration across restarts, and secure logout.
 
 These capabilities touch:
+
 - `apps/backend/src/app.ts`
 - `apps/backend/src/routes/auth.ts`
 - `apps/backend/scripts/seed-admin.ts`
@@ -32,6 +35,7 @@ These capabilities touch:
 ## Verified Baseline
 
 The following previously implemented features remain explicitly verified and unmodified during this sprint:
+
 - Week 3: Anonymous onboarding and session persistence.
 - Week 4: Local-only personal history.
 - Week 5: Manager dashboard queries, privacy thresholds, and analytics.
@@ -45,20 +49,24 @@ The new auth features fit naturally into this ecosystem without leaking identiti
 To boot the repository with the new admin capabilities locally:
 
 1. **Seed the Database:**
+
    ```bash
    cd apps/backend
    pnpm db:seed
    pnpm seed:admin
    ```
-   *(This uses environment variables `ADMIN_EMAIL`, `ADMIN_PASSWORD` from `.env` to create the admin account idempotently).*
+
+   _(This uses environment variables `ADMIN_EMAIL`, `ADMIN_PASSWORD` from `.env` to create the admin account idempotently)._
 
 2. **Run Backend:**
+
    ```bash
    cd apps/backend
    pnpm dev
    ```
 
 3. **Run Mobile Client:**
+
    ```bash
    cd apps/mobile
    pnpm start
@@ -72,9 +80,20 @@ To boot the repository with the new admin capabilities locally:
    pnpm e2e:android:test:headless
    ```
 
+## Post-Week 8 Hardening
+
+After the Week 8 deliverables were finalised, the following fixes and operational improvements landed:
+
+- **Dashboard seeding for visible E2E data:** `seedDashboardFixtures()` in `apps/backend/src/routes/test-fixtures.ts` now seeds 6 deterministic team members and 8 submissions per day across the E2E manager window (`2026-06-16` → `2026-06-22`) and the current ISO week. `pnpm seed:dashboard` is available for manual dev runs, and `POST /__test/reset` automatically calls the same seeder.
+- **Dashboard privacy thresholds remain enforced:** the backend still hides/blurs output below 5 submissions in a window, 5 team members, or 3 submissions in an hour bucket.
+- **Daily heatmap label fix:** overlapping per-point labels in `apps/mobile/src/features/dashboard/dashboard-charts.tsx` (and its web variant) were removed, eliminating the unreadable black line above the heatmap squares.
+- **Member journey E2E hardening:** `apps/mobile/e2e/member-journey.e2e.cjs` and `apps/mobile/e2e/helpers.cjs` were stabilised around onboarding skip reliability, history navigation, settings scroll position, submission-confirmation overlay timing, and the on-screen keyboard.
+- **Manager join-code flow:** remains verified via `apps/mobile/e2e/manager-join-code-journey.e2e.cjs` and the direct manager deep-link in `apps/mobile/e2e/manager-journey.e2e.cjs`.
+
 ## Remaining Gaps / Intentionally Out of Scope
 
 The following features remain explicitly omitted from the MVP scope and the current codebase:
+
 - **Admin "Forgot Password" or Sign-Up:** There is no public interface to register a new admin or reset a password. The system is closed by design. Password recovery requires database intervention or using the `seed:admin` script with an alternate email.
 - **Multiple Administrators:** The UI assumes a single admin context based on the seeded credentials.
 - **iOS E2E Testing:** E2E test suites remain strictly focused on Android emulator behavior (Pixel 8) to reduce environment setup complexity.

@@ -180,7 +180,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W5-01 - Implement aggregated dashboard backend endpoints
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `large`
 - Dependencies: `MM-W3-05`
@@ -194,7 +194,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W5-02 - Enforce minimum anonymity thresholds
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P0`
 - Estimated effort: `medium`
 - Dependencies: `MM-W5-01`
@@ -207,7 +207,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W5-03 - Build the manager dashboard widgets
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P2`
 - Estimated effort: `large`
 - Dependencies: `MM-W5-01`, `MM-W5-02`
@@ -222,7 +222,7 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W5-04 - Add manager JWT authorization flow
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P1`
 - Estimated effort: `medium`
 - Dependencies: `MM-W5-01`
@@ -399,6 +399,19 @@ The intended Week 5 touch points are limited to:
 - Acceptance criteria:
 - lint and format hooks run before commit
 - environment-specific assumptions are documented
+
+### MM-W8-04 - Harden E2E and seed dashboard fixtures for visible manager charts
+
+- Status: `done`
+- Priority: `P1`
+- Estimated effort: `medium`
+- Dependencies: `MM-W5-03`, `MM-W8-01`
+- Scope: ensure the manager dashboard renders visible charts during E2E and manual dev, and stabilise the member journey E2E suite
+- Acceptance criteria:
+- `POST /__test/reset` seeds enough team members and submissions to clear all dashboard privacy thresholds
+- `pnpm seed:dashboard` is available for manual seeding
+- manager dashboard daily heatmap labels no longer overlap
+- member journey E2E passes reliably on the Android dev-client build
 
 ## Dependency map
 

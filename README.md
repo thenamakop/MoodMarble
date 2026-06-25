@@ -206,8 +206,11 @@ cd apps/backend
 pnpm db:migrate
 pnpm db:seed
 pnpm seed:admin
+pnpm seed:dashboard
 pnpm dev
 ```
+
+`pnpm seed:dashboard` populates the demo team with enough anonymous submissions and team members to clear the manager-dashboard privacy thresholds, so charts render immediately instead of staying hidden.
 
 Expected:
 
@@ -227,6 +230,7 @@ The local seed creates:
 - join code: `ABC123`
 - teams: `tm_product`, `tm_engineering`
 - admin account: `admin@example.com` (password: `password1234`)
+- manager dashboard fixtures: 6+ team members and submissions across the current ISO week and the E2E manager window (via `pnpm seed:dashboard`)
 
 ### Administrative Setup & Authentication
 
@@ -502,6 +506,40 @@ Use only these spec-aligned values in Postman.
 
 ---
 
+## Manager Dashboard (Browser / Direct Link)
+
+You can open the manager dashboard directly in a web browser for quick local verification without launching the mobile app.
+
+### 1. Generate a manager JWT
+
+```bash
+cd apps/backend
+node -e "const jwt=require('jsonwebtoken'); console.log(jwt.sign({workspace_id:'ws_localdemo',team_id:'tm_product',role:'manager'}, process.env.JWT_SECRET || 'local-dev-jwt-secret-change-me', {expiresIn:'30d'}));"
+```
+
+### 2. Open the dashboard
+
+Replace `<JWT>` with the token printed above and visit:
+
+```text
+http://localhost:8081/manager?manager_jwt=<JWT>&manager_teams=tm_product:Product&team_id=tm_product&team_name=Product&date=2026-06-22&start_date=2026-06-16
+```
+
+The query parameters mirror the deep-link shape used by the mobile app. The `start_date` and `date` values control the weekly window and the daily heatmap respectively.
+
+### Manual demo server
+
+`apps/backend/scripts/manual-dashboard-server.ts` starts a self-contained demo backend on port `3001` and prints a ready-made dashboard link:
+
+```bash
+cd apps/backend
+npx tsx scripts/manual-dashboard-server.ts
+```
+
+Note that this demo server uses an **in-memory data source** and a hardcoded JWT secret, so it is only useful for UI layout checks. Use the real backend link above to verify the seeded data.
+
+---
+
 ## Run Mobile App
 
 ```bash
@@ -589,7 +627,13 @@ pnpm test:mobile
 
 #### Deterministic Data & Backend Seed
 
-The tests depend on a seeded test workspace and use an idempotent setup function. At the start of each E2E test file, a helper called `resetBackendTestState()` sends a request to the `POST /__test/reset` backend route. This safely truncates the database and explicitly seeds the `ws_localdemo` workspace, the `tm_product` team, and the test admin account.
+The tests depend on a seeded test workspace and use an idempotent setup function. At the start of each E2E test file, a helper called `resetBackendTestState()` sends a request to the `POST /__test/reset` backend route. This safely truncates the database and explicitly seeds the `ws_localdemo` workspace, the `tm_product` team, the test admin account, and dashboard fixtures for `tm_product`.
+
+The dashboard fixtures are designed to clear every privacy threshold used by the manager dashboard:
+
+- `minimum_submissions`: 5 submissions in the selected window
+- `minimum_members_for_precise_values`: 5 team members
+- `minimum_hourly_submissions`: 3 submissions in an hour bucket
 
 If the backend is not running, the deep links for the manager and admin journeys will fail to load their workspace shells. Ensure the backend is running before launching tests:
 
@@ -628,6 +672,8 @@ pnpm e2e:android:test:headless
 
 - The debug app automatically rewrites `localhost` network requests to `10.0.2.2`, so Android emulator traffic successfully targets `http://10.0.2.2:3000`.
 - The manager and admin journeys use the `exp+moodmarble://` scheme and JWTs generated at test runtime to bypass the UI flow and deep-link directly into the authenticated view.
+- The manager dashboard E2E window (`start_date=2026-06-16`, `date=2026-06-22`) is now seeded with visible data, so the dashboard renders charts instead of hidden placeholders.
+- The member journey E2E has been hardened against onboarding skip issues, keyboard overlay, history navigation, settings scroll position, and the submission confirmation overlay.
 - These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic MVP.
 
 ### Android And Windows Notes

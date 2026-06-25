@@ -1,7 +1,5 @@
 # MoodMarble Architecture
 
-  
-
 > **Purpose**
 
 > This document defines the implementation blueprint for the MoodMarble MVP. It translates the project specification into a buildable system design.
@@ -12,23 +10,13 @@
 
 > The project specification is the source of truth. If anything here conflicts with it, the specification takes precedence.
 
-  
-
 ---
-
-  
 
 ## 1) Product overview
 
-  
-
 MoodMarble is a **free, anonymous, privacy-first team mood app**.
 
-  
-
 The MVP has three responsibilities:
-
-  
 
 1. Let a team member log a mood in a few taps.
 
@@ -36,11 +24,7 @@ The MVP has three responsibilities:
 
 3. Keep personal mood history **on-device only**.
 
-  
-
 ### Non-negotiable rules
-
-  
 
 - No names.
 
@@ -58,15 +42,9 @@ The MVP has three responsibilities:
 
 - No individual mood entries exposed to managers.
 
-  
-
 ---
 
-  
-
 ## 2) System overview
-
-  
 
 | Layer | Choice | Why it exists |
 
@@ -102,15 +80,9 @@ The MVP has three responsibilities:
 
 | API docs | Swagger | Generated from route schemas |
 
-  
-
 ---
 
-  
-
 ## 3) Architecture at a glance
-
-  
 
 ```text
 
@@ -142,37 +114,21 @@ Manager Dashboard
 
 ```
 
-  
-
 ### Design principle
 
-  
-
 Mood data is split into two worlds:
-
-  
 
 - **On-device only:** personal history, prompt preferences, local UI state
 
 - **Backend only:** anonymised mood submissions and aggregated summaries
 
-  
-
 That separation is the core privacy model.
-
-  
 
 ---
 
-  
-
 ## 4) Data flow
 
-  
-
 ### Submission flow
-
-  
 
 1. A team member opens the app and taps a marble.
 
@@ -198,11 +154,7 @@ That separation is the core privacy model.
 
 6. The app shows a confirmation animation.
 
-  
-
 ### Dashboard flow
-
-  
 
 1. A manager opens the dashboard.
 
@@ -212,23 +164,13 @@ That separation is the core privacy model.
 
 4. The dashboard renders charts without any individual entry.
 
-  
-
 ---
-
-  
 
 ## 5) Privacy rules
 
-  
-
 These are hard rules, not suggestions.
 
-  
-
 ### Never collect
-
-  
 
 - name
 
@@ -244,11 +186,7 @@ These are hard rules, not suggestions.
 
 - raw note text on the backend
 
-  
-
 ### Collect only what the MVP needs
-
-  
 
 - mood type
 
@@ -260,11 +198,7 @@ These are hard rules, not suggestions.
 
 - hashed note value for deduplication only
 
-  
-
 ### Important threshold rules
-
-  
 
 - Dashboard data appears only when there are **5+ submissions** in the selected time window.
 
@@ -272,33 +206,21 @@ These are hard rules, not suggestions.
 
 - If a specific hour has **fewer than 3 submissions**, managers cannot drill into that hour.
 
-  
+These rules are implemented in `apps/backend/src/services/dashboard-privacy.ts` and are constant across the daily, weekly, and tag routes. For local development and E2E, `apps/backend/src/routes/test-fixtures.ts` seeds enough team members and submissions to clear all three thresholds.
 
 ### Practical rule for developers
 
-  
-
 If a feature creates a chance to identify a person, it does not ship without explicit approval.
-
-  
 
 ---
 
-  
-
 ## 6) Database model
 
-  
-
 ### Tables
-
-  
 
 #### `workspaces`
 
 Top-level organisation container.
-
-  
 
 Key fields:
 
@@ -310,21 +232,15 @@ Key fields:
 
 - `created_at`
 
-  
-
 Purpose:
 
 - hold one organisation
 
 - create a unique 6-character join code
 
-  
-
 #### `teams`
 
 Workspaces can have multiple teams.
-
-  
 
 Key fields:
 
@@ -336,19 +252,13 @@ Key fields:
 
 - `created_at`
 
-  
-
 Purpose:
 
 - scope mood reporting to a team
 
-  
-
 #### `mood_submissions`
 
 Anonymous mood events.
-
-  
 
 Key fields:
 
@@ -366,13 +276,9 @@ Key fields:
 
 - `submission_date`
 
-  
-
 Purpose:
 
 - store only anonymised mood data
-
-  
 
 Important:
 
@@ -382,13 +288,9 @@ Important:
 
 - no device identifier in this table
 
-  
-
 #### `team_members`
 
 Anonymous membership mapping.
-
-  
 
 Key fields:
 
@@ -402,15 +304,11 @@ Key fields:
 
 - `joined_at`
 
-  
-
 Purpose:
 
 - track anonymous device membership
 
 - support permissions and rate limiting
-
-  
 
 Important:
 
@@ -418,13 +316,9 @@ Important:
 
 - it is not linked to any account identity
 
-  
-
 #### `notification_schedules`
 
 Local-only concept.
-
-  
 
 Important:
 
@@ -432,23 +326,13 @@ Important:
 
 - it lives on the device only
 
-  
-
 ---
-
-  
 
 ## 7) API contract
 
-  
-
 ### Authentication model
 
-  
-
 MoodMarble uses an anonymous device token plus JWTs for role-based access.
-
-  
 
 - `device_token`: anonymous device identity for rate limiting
 
@@ -458,17 +342,11 @@ MoodMarble uses an anonymous device token plus JWTs for role-based access.
 
 - `Admin JWT`: allows workspace and team management
 
-  
-
 ### MVP endpoints
-
-  
 
 #### `POST /workspace/join`
 
 Joins a workspace using a 6-character join code.
-
-  
 
 Returns:
 
@@ -476,13 +354,9 @@ Returns:
 
 - signed device JWT
 
-  
-
 #### `POST /mood`
 
 Submits one anonymous mood entry.
-
-  
 
 Rules:
 
@@ -494,103 +368,63 @@ Rules:
 
 - stores hour-of-day only
 
-  
-
 #### `GET /dashboard/team/:teamId/daily`
 
 Returns today’s hourly mood aggregations for a team.
-
-  
 
 #### `GET /dashboard/team/:teamId/weekly`
 
 Returns the 7-day mood trend for a team.
 
-  
-
 #### `GET /dashboard/team/:teamId/tags`
 
 Returns top tags for the current week.
-
-  
 
 #### `GET /health`
 
 Simple health check for deployment and monitoring.
 
-  
-
 #### `POST /admin/team`
 
 Creates a new team inside a workspace.
-
-  
 
 #### `GET /admin/workspace/:id/export`
 
 Exports anonymised mood data as CSV for a date range.
 
-  
-
 ---
-
-  
 
 ## 8) Key payload example
 
-  
-
 ### Mood submission
 
-  
-
 ```json
-
 {
+  "team_id": "tm_abc123",
 
-  "team_id": "tm_abc123",
+  "mood_type": "stressed",
 
-  "mood_type": "stressed",
+  "tags": ["#workload", "#deadlines"],
 
-  "tags": ["#workload", "#deadlines"],
-
-  "hour_of_day": 14
-
+  "hour_of_day": 14
 }
-
 ```
-
-  
 
 ### Success response
 
-  
-
 ```json
-
 {
+  "status": "received",
 
-  "status": "received",
-
-  "marble_id": "mr_9x2yz"
-
+  "marble_id": "mr_9x2yz"
 }
-
 ```
-
-  
 
 ---
 
-  
-
 ## 9) Mobile app screens
 
-  
-
 ### Required MVP screens
-
-  
 
 - Onboarding
 
@@ -608,71 +442,45 @@ Exports anonymised mood data as CSV for a date range.
 
 - Settings
 
-  
-
 ### Screen intent
-
-  
 
 #### Onboarding
 
 Explain privacy, join by code, and move the user into the app quickly.
 
-  
-
 #### Home / Marble Tray
 
 The primary action screen. This is where mood submissions happen.
-
-  
 
 #### Submission Confirmation
 
 Short, joyful feedback after a successful submission.
 
-  
-
 #### My History
 
 Local-only timeline, streaks, and mood calendar.
-
-  
 
 #### Daily Prompts Settings
 
 User-configured reminder times and opt-out.
 
-  
-
 #### Manager Dashboard
 
 Aggregated charts, no individual records.
-
-  
 
 #### Admin Panel
 
 Workspace and team setup, join code management, export.
 
-  
-
 #### Settings
 
 Local preferences, onboarding replay, and local data deletion.
 
-  
-
 ---
-
-  
 
 ## 10) Visual system
 
-  
-
 ### Marble moods
-
-  
 
 | Mood | Colour | Meaning |
 
@@ -696,11 +504,7 @@ Local preferences, onboarding replay, and local data deletion.
 
 | Unheard | `#4B5563` | Concern ignored |
 
-  
-
 ### UI principles
-
-  
 
 - Frictionless: log mood in under 5 seconds
 
@@ -712,15 +516,9 @@ Local preferences, onboarding replay, and local data deletion.
 
 - Accessible: strong contrast and clear labels
 
-  
-
 ---
 
-  
-
 ## 11) Performance and reliability targets
-
-  
 
 | Area | Target |
 
@@ -738,11 +536,7 @@ Local preferences, onboarding replay, and local data deletion.
 
 | Offline behavior | queue locally, sync when online |
 
-  
-
 ### Security targets
-
-  
 
 - HTTPS only
 
@@ -752,15 +546,9 @@ Local preferences, onboarding replay, and local data deletion.
 
 - no sensitive data in error messages
 
-  
-
 ---
 
-  
-
 ## 12) Repository structure
-
-  
 
 ```text
 
@@ -808,15 +596,9 @@ moodmarble/
 
 ```
 
-  
-
 ---
 
-  
-
 ## 13) Development milestones
-
-  
 
 ### Week 1 — Setup & architecture
 
@@ -828,8 +610,6 @@ moodmarble/
 
 - README started
 
-  
-
 ### Week 2 — Core submission flow
 
 - marble tray UI
@@ -839,8 +619,6 @@ moodmarble/
 - rate limiting
 
 - confirmation animation
-
-  
 
 ### Week 3 — Onboarding & auth
 
@@ -852,8 +630,6 @@ moodmarble/
 
 - workspace/team setup
 
-  
-
 ### Week 4 — Personal history
 
 - local mood history
@@ -864,8 +640,6 @@ moodmarble/
 
 - streak counter
 
-  
-
 ### Week 5 — Dashboard
 
 - aggregated API endpoints
@@ -874,8 +648,6 @@ moodmarble/
 
 - daily and weekly views
 
-  
-
 ### Week 6 — Notifications & settings
 
 - push notifications
@@ -883,8 +655,6 @@ moodmarble/
 - configurable prompt times
 
 - settings screen
-
-  
 
 ### Week 7 — Admin panel & export
 
@@ -895,8 +665,6 @@ moodmarble/
 - CSV export
 
 - join code generation
-
-  
 
 ### Week 8 — Polish, testing & deployment
 
@@ -910,15 +678,9 @@ moodmarble/
 
 - Render / Railway deploy
 
-  
-
 ---
 
-  
-
 ## 14) Testing strategy
-
-  
 
 ### Backend
 
@@ -928,8 +690,6 @@ moodmarble/
 
 - focus on routes, anonymity, rate limiting, aggregation
 
-  
-
 ### Frontend
 
 - Jest + React Native Testing Library
@@ -937,8 +697,6 @@ moodmarble/
 - minimum 40% coverage
 
 - focus on marble selection, validation, local storage
-
-  
 
 ### E2E
 
@@ -950,8 +708,6 @@ moodmarble/
 
   - manager login → view dashboard
 
-  
-
 ### Manual
 
 - physical device + simulator
@@ -962,8 +718,6 @@ moodmarble/
 
 - verify accessibility and consistency
 
-  
-
 ### Privacy audit
 
 - inspect logs
@@ -972,19 +726,11 @@ moodmarble/
 
 - confirm no PII is exposed anywhere
 
-  
-
 ---
-
-  
 
 ## 15) Definition of done
 
-  
-
 The MVP is complete only when all of the following are true:
-
-  
 
 - all MVP features work on iOS and Android
 
@@ -998,19 +744,11 @@ The MVP is complete only when all of the following are true:
 
 - README includes setup, environment variables, and deployment steps
 
-  
-
 ---
-
-  
 
 ## 16) Build rule
 
-  
-
 Development should follow this order:
-
-  
 
 1. read the specification
 
@@ -1031,8 +769,6 @@ Development should follow this order:
 9. test everything
 
 10. deploy only after the definition of done is met
-
-  
 
 > **Final reminder**
 
