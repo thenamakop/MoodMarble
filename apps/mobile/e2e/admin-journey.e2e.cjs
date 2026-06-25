@@ -10,16 +10,18 @@ describe("admin panel journey", () => {
   });
 
   it("opens the admin panel and renders the dashboard", async () => {
+    // The panel header is immediately visible. Scroll down to bring
+    // admin-panel-ready-state into view before asserting on it.
     await waitFor(element(by.id("admin-panel-ready-state")))
       .toBeVisible()
-      .withTimeout(45000);
+      .whileElement(by.id("admin-panel-screen"))
+      .scroll(400, "down", NaN, 0.5);
 
     await expect(element(by.id("admin-panel-screen"))).toBeVisible();
   });
 
   it("signs out and lands back on the join-code step", async () => {
-    // Scroll the panel back to the top — after the first test the ScrollView
-    // may have scrolled down past the header, putting the logout button out of view.
+    // Scroll back to the top so the logout button in the header is fully visible.
     await element(by.id("admin-panel-screen")).scrollTo("top");
 
     await waitFor(element(by.id("admin-panel-logout")))

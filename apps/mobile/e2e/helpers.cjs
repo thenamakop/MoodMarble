@@ -651,8 +651,10 @@ async function loginAsAdmin() {
   await element(by.id("admin-password-input")).replaceText(adminPassword);
   await element(by.id("admin-login-submit-button")).tap();
 
-  // Wait for the admin panel to become ready.
-  await waitFor(element(by.id("admin-panel-ready-state")))
+  // Wait for the admin panel ScrollView to appear — this is at the very top
+  // of the screen so the scroll position stays at zero after login.
+  // The individual tests are responsible for scrolling to their own content.
+  await waitFor(element(by.id("admin-panel-screen")))
     .toBeVisible()
     .withTimeout(45000);
 }
