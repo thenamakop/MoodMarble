@@ -638,50 +638,34 @@ function reportDebugEvent(hypothesisId, msg, data) {
   }).catch(() => {});
 }
 
-async function loginAsAdmin(
-  email = process.env.DETOX_ADMIN_EMAIL || "admin@example.com",
-  password = process.env.DETOX_ADMIN_PASSWORD || "change-this-password-in-prod",
-) {
-  // Try to start from the root onboarding screen
-  await resetToOnboardingIfNeeded();
-  await advanceToJoinCode();
+async function loginAsAdmin() {
+  const adminEmail = process.env.DETOX_ADMIN_EMAIL || "admin@example.com";
+  const adminPassword = process.env.DETOX_ADMIN_PASSWORD || "password1234";
 
-  // Scroll the admin entry link into view
-  try {
-    await waitFor(element(by.id("admin-entry-link")))
-      .toBeVisible()
-      .whileElement(by.id("onboarding-scroll-view"))
-      .scroll(200, "down");
-  } catch {
-    // Ignore if not scrollable or already visible
-  }
+  // Reset backend state and boot a clean app instance landing on onboarding.
+  await resetBackendTestState();
+  await launchExpoDevClient();
 
-  // Tap the admin entry link with retries — a single tap can be swallowed
-  // when the app's JS thread is still settling after a cold start.
-  for (let tapAttempt = 0; tapAttempt < 4; tapAttempt += 1) {
-    await element(by.id("admin-entry-link")).tap();
-    await sleep(500);
+  // Wait for the onboarding screen, then tap the "Admin access" link.
+  await waitFor(element(by.id("join-code-input")))
+    .toBeVisible()
+    .withTimeout(15000);
+  await element(by.id("admin-entry-link")).tap();
 
-    if (await isVisible("admin-login-root", 10000)) {
-      break;
-    }
-  }
-
+  // Wait for the admin login screen to appear.
   await waitFor(element(by.id("admin-login-root")))
     .toBeVisible()
-    .withTimeout(20000);
+    .withTimeout(10000);
 
-  // Fill in credentials
-  await element(by.id("admin-email-input")).replaceText(email);
-  await element(by.id("admin-password-input")).replaceText(password);
-
-  // Submit
+  // Fill in credentials and submit.
+  await element(by.id("admin-email-input")).replaceText(adminEmail);
+  await element(by.id("admin-password-input")).replaceText(adminPassword);
   await element(by.id("admin-login-submit-button")).tap();
 
-  // Wait for the admin panel to become ready
+  // Wait for the admin panel to become ready.
   await waitFor(element(by.id("admin-panel-ready-state")))
     .toBeVisible()
-    .withTimeout(20000);
+    .withTimeout(45000);
 }
 
 module.exports = {

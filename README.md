@@ -226,7 +226,7 @@ The local seed creates:
 - workspace: `ws_localdemo`
 - join code: `ABC123`
 - teams: `tm_product`, `tm_engineering`
-- admin account: `admin@example.com` (password: `change-this-password-in-prod`)
+- admin account: `admin@example.com` (password: `password1234`)
 
 ### Administrative Setup & Authentication
 
@@ -235,7 +235,7 @@ The administrative surface is fully protected by a dedicated login flow. There i
 To create an administrator, you must use the backend seed script. It uses the following environment variables (defined in `.env`):
 
 - `ADMIN_EMAIL` (default: `admin@example.com`)
-- `ADMIN_PASSWORD` (default: `change-this-password-in-prod`)
+- `ADMIN_PASSWORD` (default: `password1234`)
 - `ADMIN_BOOTSTRAP_SECRET` (default: `local-admin-bootstrap-secret-change-me`)
 
 To provision the admin account:

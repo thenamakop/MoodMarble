@@ -35,9 +35,7 @@ export async function registerTestRoutes(
 
       for (const table of tablesToClear) {
         try {
-          await databaseClient.db.execute(
-            sql.raw(`DELETE FROM "${table}"`),
-          );
+          await databaseClient.db.execute(sql.raw(`DELETE FROM "${table}"`));
         } catch (tableError) {
           // Table may not exist yet if migrations are pending — log and continue.
           console.warn(
@@ -63,7 +61,7 @@ export async function registerTestRoutes(
       // 4. Reseed admin account
       const seedExitCode = await seedAdmin(
         "admin@example.com",
-        "change-this-password-in-prod",
+        "password1234",
         databaseClient,
       );
 
@@ -97,7 +95,8 @@ export async function registerTestRoutes(
     } catch (error) {
       // Return the actual error message so it is visible in E2E console output
       // without having to tail server logs. Never do this in production.
-      const errorMessage = error instanceof Error ? error.message : String(error);
+      const errorMessage =
+        error instanceof Error ? error.message : String(error);
       console.error("[test-reset] Reset failed:", errorMessage);
       return reply.status(500).send({
         message: "Test reset failed",

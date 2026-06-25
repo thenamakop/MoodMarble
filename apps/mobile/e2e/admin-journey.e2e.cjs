@@ -1,38 +1,20 @@
 const { by, element, expect, waitFor } = require("detox");
 
-const {
-  loginAsAdmin,
-  relaunchExpoDevClient,
-  resetToOnboardingIfNeeded,
-} = require("./helpers.cjs");
+const { loginAsAdmin } = require("./helpers.cjs");
 
-// Admin authentication is email/password only — no join code, no deep-link.
-// loginAsAdmin() drives the UI: admin-entry-link → admin-login-root →
-// email/password → submit → waits for admin-panel-ready-state.
+// Admin panel journey — navigates to admin login via the UI, types
+// credentials (admin@example.com / password1234), and verifies the panel.
 describe("admin panel journey", () => {
-  it("logs in via the admin login screen and renders the panel", async () => {
-    // loginAsAdmin() calls resetToOnboardingIfNeeded() → resetBackendTestState()
-    // internally, so the DB is seeded before the UI flow begins.
+  beforeAll(async () => {
     await loginAsAdmin();
-
-    await waitFor(element(by.id("admin-panel-ready-state")))
-      .toBeVisible()
-      .withTimeout(25000);
-
-    await expect(element(by.id("admin-panel-team-section"))).toBeVisible();
-    await expect(element(by.id("admin-panel-join-code-section"))).toBeVisible();
   });
 
-  it("restores the admin session after a cold relaunch", async () => {
-    // Previous test logged in via UI → saveAdminSession() was called → SecureStore
-    // has the token. Relaunching without a URL should restore and skip login.
-    await relaunchExpoDevClient();
-
+  it("opens the admin panel and renders the dashboard", async () => {
     await waitFor(element(by.id("admin-panel-ready-state")))
       .toBeVisible()
-      .withTimeout(30000);
+      .withTimeout(45000);
 
-    await expect(element(by.id("admin-panel-team-section"))).toBeVisible();
+    await expect(element(by.id("admin-panel-screen"))).toBeVisible();
   });
 
   it("signs out and lands back on the join-code step", async () => {

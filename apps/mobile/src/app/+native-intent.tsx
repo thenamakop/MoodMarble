@@ -60,22 +60,6 @@ export function resolveSystemHref(url: string): string {
     if (parsed.hostname === "join-manager") {
       return "/join-manager";
     }
-
-    // moodmarble://admin → /admin (future-proofing)
-    if (parsed.hostname === "admin") {
-      const qs = parsed.searchParams.toString();
-      // #region debug-point E:native-intent-admin
-      reportMobileDebugEvent(
-        "E",
-        "[DEBUG] resolveSystemHref normalized admin URL.",
-        {
-          url,
-          normalizedHref: qs ? `/admin?${qs}` : "/admin",
-        },
-      );
-      // #endregion
-      return qs ? `/admin?${qs}` : "/admin";
-    }
   } catch {
     // malformed URL — let the default handler run
   }
