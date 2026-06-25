@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   Pressable,
@@ -7,6 +7,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import type { ScrollView as ScrollViewType } from "react-native";
 import { Link } from "expo-router";
 
 import { ThemedText } from "@/components/themed-text";
@@ -99,6 +100,12 @@ export function AdminPanelScreen({
   onUpdateTeam,
 }: AdminPanelScreenProps) {
   const theme = useTheme();
+  const scrollViewRef = useRef<ScrollViewType>(null);
+  const sectionOffsetsRef = useRef<Partial<Record<AdminSectionFocus, number>>>(
+    {},
+  );
+  const [activeFocus, setActiveFocus] =
+    useState<AdminSectionFocus>(sectionFocus);
   const [workspaceNameDraft, setWorkspaceNameDraft] = useState("");
   const [bootstrapSecretDraft, setBootstrapSecretDraft] = useState("");
   const [newTeamNameDraft, setNewTeamNameDraft] = useState("");
@@ -106,6 +113,14 @@ export function AdminPanelScreen({
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [exportStartDate, setExportStartDate] = useState("");
   const [exportEndDate, setExportEndDate] = useState("");
+
+  function handleNavChipPress(focus: AdminSectionFocus) {
+    setActiveFocus(focus);
+    const y = sectionOffsetsRef.current[focus];
+    if (y !== undefined) {
+      scrollViewRef.current?.scrollTo({ y, animated: true });
+    }
+  }
   const workspaceName = viewModel?.workspaceName ?? "No workspace connected";
   const workspaceId = viewModel?.workspaceId ?? "Pending";
   const joinCode = viewModel?.joinCode ?? "Not generated yet";
@@ -142,6 +157,7 @@ export function AdminPanelScreen({
   return (
     <ThemedView style={styles.screen}>
       <ScrollView
+        ref={scrollViewRef}
         contentContainerStyle={styles.scrollContent}
         testID="admin-panel-screen"
       >
@@ -183,21 +199,6 @@ export function AdminPanelScreen({
             <View style={styles.headerActionRow}>
               <Pressable
                 accessibilityRole="button"
-                onPress={onReturnHome}
-                style={({ pressed }) => [
-                  styles.returnButton,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    borderColor: theme.backgroundSelected,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-                testID="admin-panel-return-home"
-              >
-                <ThemedText type="smallBold">Return to app</ThemedText>
-              </Pressable>
-              <Pressable
-                accessibilityRole="button"
                 onPress={async () => {
                   await clearAdminSession();
                   onReturnHome?.();
@@ -219,22 +220,30 @@ export function AdminPanelScreen({
 
           <View style={styles.navRow}>
             {SECTION_ORDER.map((section) => (
-              <ThemedView
+              <Pressable
                 key={section.focus}
-                style={[
-                  styles.navChip,
-                  {
-                    backgroundColor:
-                      section.focus === sectionFocus
-                        ? theme.backgroundSelected
-                        : theme.backgroundElement,
-                  },
-                ]}
+                accessibilityRole="button"
+                onPress={() => handleNavChipPress(section.focus)}
                 testID={`admin-panel-nav-${section.focus}`}
-                type="backgroundElement"
               >
-                <ThemedText type="smallBold">{section.label}</ThemedText>
-              </ThemedView>
+                {({ pressed }) => (
+                  <ThemedView
+                    style={[
+                      styles.navChip,
+                      {
+                        backgroundColor:
+                          section.focus === activeFocus
+                            ? theme.backgroundSelected
+                            : theme.backgroundElement,
+                        opacity: pressed ? 0.75 : 1,
+                      },
+                    ]}
+                    type="backgroundElement"
+                  >
+                    <ThemedText type="smallBold">{section.label}</ThemedText>
+                  </ThemedView>
+                )}
+              </Pressable>
             ))}
           </View>
 
@@ -378,8 +387,11 @@ export function AdminPanelScreen({
                 body="Set up the workspace name and keep the admin shell scoped to one organization at a time."
                 focus="workspace"
                 isActive={
-                  sectionFocus === "workspace" || sectionFocus === "overview"
+                  activeFocus === "workspace" || activeFocus === "overview"
                 }
+                onLayout={(y) => {
+                  sectionOffsetsRef.current.workspace = y;
+                }}
                 testID="admin-panel-workspace-section"
                 title="Workspace"
               >
@@ -397,7 +409,10 @@ export function AdminPanelScreen({
               <AdminSectionCard
                 body="Create, rename, and review team groups without exposing member identities."
                 focus="team"
-                isActive={sectionFocus === "team"}
+                isActive={activeFocus === "team"}
+                onLayout={(y) => {
+                  sectionOffsetsRef.current.team = y;
+                }}
                 testID="admin-panel-team-section"
                 title="Team management"
               >
@@ -519,7 +534,10 @@ export function AdminPanelScreen({
               <AdminSectionCard
                 body="View the active join code and keep member entry anonymous."
                 focus="join-code"
-                isActive={sectionFocus === "join-code"}
+                isActive={activeFocus === "join-code"}
+                onLayout={(y) => {
+                  sectionOffsetsRef.current["join-code"] = y;
+                }}
                 testID="admin-panel-join-code-section"
                 title="Join code"
               >
@@ -554,7 +572,10 @@ export function AdminPanelScreen({
               <AdminSectionCard
                 body="Generate one-time 6-character codes for team managers. Each code can only be used once."
                 focus="manager-codes"
-                isActive={sectionFocus === "manager-codes"}
+                isActive={activeFocus === "manager-codes"}
+                onLayout={(y) => {
+                  sectionOffsetsRef.current["manager-codes"] = y;
+                }}
                 testID="admin-panel-manager-codes-section"
                 title="Manager codes"
               >
@@ -614,7 +635,10 @@ export function AdminPanelScreen({
               <AdminSectionCard
                 body="Trigger anonymized CSV export without revealing raw notes, device tokens, or member identities."
                 focus="export"
-                isActive={sectionFocus === "export"}
+                isActive={activeFocus === "export"}
+                onLayout={(y) => {
+                  sectionOffsetsRef.current.export = y;
+                }}
                 testID="admin-panel-export-section"
                 title="Export"
               >
@@ -720,6 +744,7 @@ function AdminSectionCard({
   testID,
   isActive,
   focus,
+  onLayout,
   children,
 }: {
   title: string;
@@ -727,6 +752,7 @@ function AdminSectionCard({
   testID: string;
   isActive: boolean;
   focus: AdminSectionFocus;
+  onLayout?: (y: number) => void;
   children: React.ReactNode;
 }) {
   const theme = useTheme();
@@ -741,6 +767,7 @@ function AdminSectionCard({
       ]}
       testID={testID}
       type="backgroundElement"
+      onLayout={(e) => onLayout?.(e.nativeEvent.layout.y)}
     >
       <View style={styles.sectionHeader}>
         <View style={styles.sectionHeaderCopy}>
