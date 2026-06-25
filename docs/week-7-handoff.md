@@ -120,3 +120,5 @@ The following remain explicitly out of scope until a new task says otherwise:
 - pre-commit tooling work
 - any new identity model
 - any Week 8 implementation item in `docs/task-tracker.md`
+
+> **Note:** The broad E2E expansion and dashboard fixture seeding were later completed in the post-Week 8 hardening pass. See `docs/week-8-handoff.md`, `docs/android-e2e-stability-report.md`, and `README.md` for the current state.

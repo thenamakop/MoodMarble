@@ -12,6 +12,8 @@ This audit records the current repository state for MoodMarble against the actua
 
 The goal is to measure the repository against the real specification during the current Week 3 phase.
 
+> **Note:** This audit captures the repository state during Week 3. Many items listed as missing below — including Detox E2E coverage, manager dashboard endpoints, privacy-threshold enforcement, and admin auth — have been implemented in subsequent sprints. See the Week 5–8 handoffs and `README.md` for the current state.
+
 ## Source of truth
 
 The specification is now available at:
