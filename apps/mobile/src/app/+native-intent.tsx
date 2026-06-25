@@ -51,6 +51,11 @@ export function resolveSystemHref(url: string): string {
       return qs ? `/manager?${qs}` : "/manager";
     }
 
+    // moodmarble://admin-login → /admin-login
+    if (parsed.hostname === "admin-login") {
+      return "/admin-login";
+    }
+
     // moodmarble://admin → /admin (future-proofing)
     if (parsed.hostname === "admin") {
       const qs = parsed.searchParams.toString();

@@ -24,6 +24,7 @@ module.exports = {
       device: {
         avdName: process.env.DETOX_AVD_NAME ?? "Pixel_8",
       },
+      bootArgs: "-no-audio -no-boot-anim -no-snapshot-load",
     },
   },
   configurations: {

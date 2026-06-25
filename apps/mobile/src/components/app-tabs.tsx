@@ -22,6 +22,7 @@ export default function AppTabs() {
       </NativeTabs.Trigger>
       <NativeTabs.Trigger hidden name="history" />
       <NativeTabs.Trigger hidden name="settings" />
+      <NativeTabs.Trigger hidden name="admin-login" />
     </NativeTabs>
   );
 }
