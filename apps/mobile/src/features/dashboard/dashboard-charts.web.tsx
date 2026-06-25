@@ -62,8 +62,8 @@ export function ManagerDashboardCharts({
               y: 1,
               size: 16,
               fill: getHeatmapFill(cell.scoreValue, cell.visibility),
-              label: `${cell.hourLabel}: ${cell.submissionsLabel} submissions, score ${cell.scoreLabel}`,
             }))}
+            labels={() => null}
             style={{
               data: {
                 fill: ({ datum }) => datum.fill,
