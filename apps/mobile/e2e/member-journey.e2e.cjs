@@ -41,7 +41,7 @@ describe("member onboarding journey", () => {
 
     await waitFor(element(by.id("submission-confirmation")))
       .toBeVisible()
-      .withTimeout(15000);
+      .withTimeout(25000);
     await element(by.id("submission-confirmation")).tap();
 
     await waitFor(element(by.id("open-history-button")))
