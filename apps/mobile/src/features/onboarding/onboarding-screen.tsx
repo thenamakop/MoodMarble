@@ -8,7 +8,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 
 import {
   JoinCodeSchema,
@@ -62,6 +62,7 @@ export function OnboardingScreen({
   onJoinWorkspace = joinWorkspace,
   replaySession,
 }: OnboardingScreenProps) {
+  const router = useRouter();
   const theme = useTheme();
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [joinCode, setJoinCode] = useState("");
@@ -178,6 +179,7 @@ export function OnboardingScreen({
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        testID="onboarding-scroll-view"
       >
         <ThemedView style={styles.container}>
           {isShowingIntro ? (
@@ -433,13 +435,22 @@ export function OnboardingScreen({
 
           {!workspaceResult && !isShowingIntro && (
             <View style={styles.adminEntryContainer}>
-              <Link href="/admin-login" asChild>
-                <Pressable testID="admin-entry-link">
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Admin access
-                  </ThemedText>
-                </Pressable>
-              </Link>
+              <Pressable
+                testID="admin-entry-link"
+                onPress={() => router.push("/admin-login")}
+              >
+                <ThemedText type="small" themeColor="textSecondary">
+                  Admin access
+                </ThemedText>
+              </Pressable>
+              <Pressable
+                testID="manager-code-link"
+                onPress={() => router.push("/join-manager")}
+              >
+                <ThemedText type="small" themeColor="textSecondary">
+                  Have a manager code?
+                </ThemedText>
+              </Pressable>
             </View>
           )}
         </ThemedView>
