@@ -120,15 +120,15 @@ async function scrollTrayUntilVisible(testID) {
     .scroll(180, "down", NaN, 0.85);
 }
 
-// Scrolls the marble tray upward until testID is visible on screen.
-async function scrollTrayUntilVisibleUp(testID) {
+// Scrolls the marble tray all the way to the top using scrollTo("top"),
+// then waits for testID to be visible. Use this before tapping header
+// elements (open-history-button / open-settings-button) that live at the
+// very top of the tray ScrollView.
+async function scrollTrayToTop() {
   await waitFor(element(by.id("marble-tray-scroll-view")))
     .toBeVisible()
     .withTimeout(10000);
-  await waitFor(element(by.id(testID)))
-    .toBeVisible()
-    .whileElement(by.id("marble-tray-scroll-view"))
-    .scroll(300, "up", NaN, 0.5);
+  await element(by.id("marble-tray-scroll-view")).scrollTo("top");
 }
 
 function createExpoDevClientLaunchUrl() {
@@ -706,7 +706,7 @@ module.exports = {
   relaunchExpoDevClient,
   resetBackendTestState,
   resetToOnboardingIfNeeded,
+  scrollTrayToTop,
   scrollTrayUntilVisible,
-  scrollTrayUntilVisibleUp,
   waitForBootstrappedApp,
 };
