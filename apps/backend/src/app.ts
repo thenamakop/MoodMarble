@@ -91,6 +91,7 @@ export async function buildApp(
         workspaceDirectory,
         moodSubmissionStore,
       }),
+    databaseClient: options.databaseClient,
   });
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,

@@ -48,6 +48,7 @@ import {
   type AdminApiService,
 } from "../services/admin-api";
 import { managerCodes, teams } from "../db/schema";
+import type { DatabaseClient } from "../db/client";
 
 /**
  * Thrown when an admin JWT's workspace_id does not match
@@ -89,6 +90,7 @@ interface RegisterAdminRoutesOptions {
   jwtSecret?: string;
   adminBootstrapSecret?: string;
   adminApiService: AdminApiService;
+  databaseClient?: DatabaseClient;
 }
 
 export async function registerAdminRoutes(
