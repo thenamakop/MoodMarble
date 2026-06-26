@@ -7,7 +7,16 @@ build
 coverage
 MoodMarble_Project_Specification.docx
 .idea/
+.vscode/
+.trae/
+.dbg/
 android-current.png
 android-window.xml
+# root-level debug screenshots, UI dumps, and trace logs
+/*.png
+/*.xml
+/*_trace.txt
+/*.ndjson
 apps/mobile/artifacts/
+apps/mobile/.claude/
 PROJECT_CONTEXT_REPORT.md
