@@ -46,7 +46,6 @@ export async function registerMoodRoute(
         if (deviceJwt.workspace_id !== parsedSubmission.workspace_id) {
           return reply.status(400).send({
             message: "Invalid mood submission payload.",
-            message: "Invalid mood submission payload.",
             issues: [
               {
                 path: "workspace_id",
