@@ -195,6 +195,11 @@ export default function HomeScreen() {
           await refreshNativeHomeState();
         }}
         onReturnHome={() => setActiveNativeScreen("marbles")}
+        onSignOut={async () => {
+          setIsLoadingSession(true);
+          await clearLocalDeviceData();
+          await refreshNativeHomeState();
+        }}
       />
     );
   }

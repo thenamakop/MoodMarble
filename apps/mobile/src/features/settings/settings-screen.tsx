@@ -35,6 +35,7 @@ interface SettingsScreenProps {
   onClearLocalData?: () => Promise<void> | void;
   onRequestOnboardingReplay?: () => Promise<void> | void;
   onReturnHome?: () => void;
+  onSignOut?: () => Promise<void> | void;
   saveSettings?: (settings: LocalSettings) => Promise<LocalSettings>;
 }
 
@@ -43,6 +44,7 @@ export function SettingsScreen({
   onClearLocalData = clearLocalDeviceData,
   onRequestOnboardingReplay = requestStoredOnboardingReplay,
   onReturnHome,
+  onSignOut,
   saveSettings = persistLocalReminderSettings,
 }: SettingsScreenProps) {
   const theme = useTheme();
@@ -246,21 +248,41 @@ export function SettingsScreen({
               </ThemedText>
             </View>
 
-            <Pressable
-              accessibilityRole="button"
-              onPress={onReturnHome}
-              style={({ pressed }) => [
-                styles.backButton,
-                {
-                  backgroundColor: theme.backgroundElement,
-                  borderColor: theme.backgroundSelected,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-              testID="settings-return-home"
-            >
-              <ThemedText type="smallBold">Back to marbles</ThemedText>
-            </Pressable>
+            <View style={styles.heroActionRow}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={onReturnHome}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="settings-return-home"
+              >
+                <ThemedText type="smallBold">Back to marbles</ThemedText>
+              </Pressable>
+
+              <Pressable
+                accessibilityRole="button"
+                onPress={async () => {
+                  await onSignOut?.();
+                }}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="settings-sign-out"
+              >
+                <ThemedText type="smallBold">Sign out</ThemedText>
+              </Pressable>
+            </View>
           </View>
 
           <ThemedView type="backgroundElement" style={styles.panel}>
@@ -581,6 +603,11 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     maxWidth: 560,
+  },
+  heroActionRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.two,
   },
   backButton: {
     alignSelf: "flex-start",

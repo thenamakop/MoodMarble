@@ -74,6 +74,15 @@ describe("SettingsScreen", () => {
     );
   });
 
+  it("renders the Sign out button and calls onSignOut when tapped", async () => {
+    const onSignOut = jest.fn().mockResolvedValue(undefined);
+    const view = await renderScreen({ onSignOut });
+
+    expect(view.getByTestId("settings-sign-out")).toBeTruthy();
+    fireEvent.press(view.getByTestId("settings-sign-out"));
+    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+  });
+
   it("toggles reminders on and persists the local opt-in state", async () => {
     const saveSettings = jest.fn(async (settings) => settings);
     const view = await renderScreen({ saveSettings });
@@ -160,6 +169,7 @@ async function renderScreen(
       onClearLocalData={jest.fn()}
       onRequestOnboardingReplay={jest.fn()}
       onReturnHome={jest.fn()}
+      onSignOut={jest.fn()}
       saveSettings={jest.fn().mockResolvedValue(defaultSettings)}
       {...overrides}
     />,

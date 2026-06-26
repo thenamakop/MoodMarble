@@ -15,6 +15,7 @@ import {
   resolveSelectedDate,
   resolveSelectedTeam,
 } from "@/features/dashboard/route-state";
+import { clearAnonymousSession } from "@/features/onboarding/session";
 
 export default function ManagerDashboardRoute() {
   const router = useRouter();
@@ -142,6 +143,11 @@ export default function ManagerDashboardRoute() {
     });
   }
 
+  async function handleSignOut() {
+    await clearAnonymousSession();
+    router.replace("/");
+  }
+
   return (
     <ManagerDashboardScreen
       contentState={contentState}
@@ -150,6 +156,7 @@ export default function ManagerDashboardRoute() {
       onReturnHome={() => router.replace("/")}
       onSelectDate={handleSelectDate}
       onSelectTeam={handleSelectTeam}
+      onSignOut={handleSignOut}
       selectedDateLabel={selectedDate.label}
       selectedTeamLabel={selectedTeam?.label ?? "Manager team"}
       viewModel={viewModel}

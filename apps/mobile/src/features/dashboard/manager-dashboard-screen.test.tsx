@@ -1,4 +1,4 @@
-import { fireEvent, render } from "@testing-library/react-native";
+import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { ManagerDashboardScreen } from "@/features/dashboard/manager-dashboard-screen";
 
@@ -33,6 +33,20 @@ describe("ManagerDashboardScreen", () => {
     expect(view.getByTestId("manager-dashboard-team-selector")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-export-button")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-ready-state")).toBeTruthy();
+  });
+
+  it("renders the Sign out button and calls onSignOut when tapped", async () => {
+    const onSignOut = jest.fn().mockResolvedValue(undefined);
+    const view = await render(
+      <ManagerDashboardScreen
+        contentState={{ kind: "ready" }}
+        onSignOut={onSignOut}
+      />,
+    );
+
+    expect(view.getByTestId("manager-dashboard-logout")).toBeTruthy();
+    fireEvent.press(view.getByTestId("manager-dashboard-logout"));
+    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
   });
 
   it("renders the loading state", async () => {

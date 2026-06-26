@@ -41,6 +41,7 @@ interface ManagerDashboardScreenProps {
   onSelectDate?: () => void;
   onSelectTeam?: () => void;
   onReturnHome?: () => void;
+  onSignOut?: () => Promise<void> | void;
 }
 
 export function ManagerDashboardScreen({
@@ -53,6 +54,7 @@ export function ManagerDashboardScreen({
   onSelectDate,
   onSelectTeam,
   onReturnHome,
+  onSignOut,
 }: ManagerDashboardScreenProps) {
   const theme = useTheme();
 
@@ -99,6 +101,26 @@ export function ManagerDashboardScreen({
                 theme={theme}
                 value="Coming soon"
               />
+            </View>
+
+            <View style={styles.headerActionRow}>
+              <Pressable
+                accessibilityRole="button"
+                onPress={async () => {
+                  await onSignOut?.();
+                }}
+                style={({ pressed }) => [
+                  styles.signOutButton,
+                  {
+                    backgroundColor: theme.backgroundElement,
+                    borderColor: theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="manager-dashboard-logout"
+              >
+                <ThemedText type="smallBold">Sign out</ThemedText>
+              </Pressable>
             </View>
           </View>
 
@@ -330,6 +352,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: Spacing.two,
+  },
+  headerActionRow: {
+    flexDirection: "row",
+    gap: Spacing.two,
+  },
+  signOutButton: {
+    borderRadius: Spacing.three,
+    borderWidth: 1,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    alignSelf: "flex-start",
   },
   controlButton: {
     minWidth: 160,

@@ -79,4 +79,21 @@ describe("manager join-code journey", () => {
 
     await expect(element(by.id("manager-dashboard-date-picker"))).toBeVisible();
   });
+
+  it("signs out from the manager dashboard and lands back on the onboarding intro", async () => {
+    // Scroll back to the top so the Sign out button in the header is visible.
+    await element(by.id("manager-dashboard-screen")).scrollTo("top");
+
+    await waitFor(element(by.id("manager-dashboard-logout")))
+      .toBeVisible()
+      .withTimeout(10000);
+
+    await element(by.id("manager-dashboard-logout")).tap();
+
+    // Sign-out clears the anonymous session and calls router.replace("/").
+    // The home screen finds no session and renders the onboarding intro.
+    await waitFor(element(by.id("next-onboarding-button")))
+      .toBeVisible()
+      .withTimeout(15000);
+  });
 });

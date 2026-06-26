@@ -139,4 +139,35 @@ describe("member onboarding journey", () => {
       .toBeVisible()
       .withTimeout(15000);
   });
+
+  // ─── 5. Sign out ──────────────────────────────────────────────────────────
+
+  it("opens settings, taps Sign out, and returns to the onboarding intro", async () => {
+    // Scroll tray to top to expose the Settings button.
+    await scrollTrayToTop();
+
+    await waitFor(element(by.id("open-settings-button")))
+      .toBeVisible()
+      .withTimeout(8000);
+    await element(by.id("open-settings-button")).tap();
+
+    await waitFor(element(by.id("settings-scroll-view")))
+      .toBeVisible()
+      .withTimeout(15000);
+
+    // Sign out button is in the hero section at the top — scroll to top to
+    // make sure it is visible, then tap.
+    await element(by.id("settings-scroll-view")).scrollTo("top");
+    await waitFor(element(by.id("settings-sign-out")))
+      .toBeVisible()
+      .withTimeout(8000);
+    await element(by.id("settings-sign-out")).tap();
+
+    // clearLocalDeviceData() removes the anonymous session. The home screen
+    // re-runs syncSession, finds no session, and renders OnboardingScreen.
+    // next-onboarding-button is the first element of the intro slide.
+    await waitFor(element(by.id("next-onboarding-button")))
+      .toBeVisible()
+      .withTimeout(15000);
+  });
 });
