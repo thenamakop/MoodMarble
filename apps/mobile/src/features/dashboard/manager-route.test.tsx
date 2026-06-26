@@ -8,6 +8,7 @@ import {
 import ManagerDashboardRoute from "@/app/manager";
 import { buildManagerDashboardViewModel } from "@/features/dashboard/chart-model";
 import { loadManagerDashboardBundle } from "@/features/dashboard/api";
+import * as onboardingSession from "@/features/onboarding/session";
 
 jest.mock("expo-router", () => ({
   useLocalSearchParams: jest.fn(),
@@ -34,6 +35,7 @@ jest.mock("@/features/dashboard/manager-dashboard-screen", () => {
       onReturnHome,
       onSelectDate,
       onSelectTeam,
+      onSignOut,
       selectedDateLabel,
       selectedTeamLabel,
       viewModel,
@@ -44,6 +46,7 @@ jest.mock("@/features/dashboard/manager-dashboard-screen", () => {
       onReturnHome?: () => void;
       onSelectDate?: () => void;
       onSelectTeam?: () => void;
+      onSignOut?: () => void;
       selectedDateLabel?: string;
       selectedTeamLabel?: string;
       viewModel?: unknown;
@@ -63,6 +66,9 @@ jest.mock("@/features/dashboard/manager-dashboard-screen", () => {
         </Pressable>
         <Pressable onPress={onReturnHome} testID="manager-route-return-home">
           <Text>return-home</Text>
+        </Pressable>
+        <Pressable onPress={onSignOut} testID="manager-route-sign-out">
+          <Text>sign-out</Text>
         </Pressable>
       </View>
     ),
@@ -138,6 +144,28 @@ describe("ManagerDashboardRoute", () => {
 
     fireEvent.press(view.getByTestId("manager-route-return-home"));
 
+    expect(replace).toHaveBeenCalledWith("/");
+  });
+
+  it("clears the anonymous session and navigates home when signing out", async () => {
+    currentParams = {
+      date: "2026-06-18",
+      manager_jwt: "manager-jwt-token",
+      manager_teams: "tm_product:Product",
+      start_date: "2026-06-16",
+      team_id: "tm_product",
+      team_name: "Product",
+    };
+
+    const clearAnonymousSession = jest
+      .spyOn(onboardingSession, "clearAnonymousSession")
+      .mockResolvedValue(undefined);
+
+    const view = await render(<ManagerDashboardRoute />);
+
+    fireEvent.press(view.getByTestId("manager-route-sign-out"));
+
+    await waitFor(() => expect(clearAnonymousSession).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith("/");
   });
 

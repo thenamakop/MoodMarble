@@ -11,7 +11,7 @@ import { createApiUrl, getApiRequestErrorMessage } from "@/lib/api";
 const MANAGER_DASHBOARD_ERROR_MESSAGE =
   "Unable to load manager dashboard right now.";
 const MANAGER_ACCESS_MISSING_MESSAGE =
-  "Manager access missing. Open the dashboard from a manager link again.";
+  "Manager access missing. Please use your manager code to sign in.";
 
 interface LoadManagerDashboardBundleInput {
   teamId: string;

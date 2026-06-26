@@ -132,7 +132,7 @@ export function ManagerDashboardScreen({
             >
               <ThemedText type="subtitle">Manager access required</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
-                Open this route from a manager dashboard link with team access.
+                Use your 6-character manager code to access the dashboard.
                 Anonymous member sessions cannot view manager analytics.
               </ThemedText>
               <Pressable
