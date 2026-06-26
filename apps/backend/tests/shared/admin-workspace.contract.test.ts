@@ -1,4 +1,3 @@
-
 import {
   AdminExportQuerySchema,
   AdminExportRecordSchema,
@@ -90,7 +89,6 @@ describe("admin workspace and team contract schemas", () => {
       team_name: "Product",
       mood_type: "focused",
       tags: ["#workload", "#deadlines"],
-      note_hash: "sha256:abc123",
       hour_of_day: 14,
       submission_date: "2026-06-22",
     });
@@ -101,7 +99,6 @@ describe("admin workspace and team contract schemas", () => {
       team_name: "Product",
       mood_type: "focused",
       tags: ["#workload", "#deadlines"],
-      note_hash: "sha256:abc123",
       hour_of_day: 14,
       submission_date: "2026-06-22",
     });
@@ -122,26 +119,39 @@ describe("admin workspace and team contract schemas", () => {
       }),
     ).toThrow();
 
+    // Raw note text must never appear in an export record
     expect(() =>
       AdminExportRecordSchema.parse({
         team_id: "tm_product",
         team_name: "Product",
         mood_type: "focused",
         tags: [],
-        note_hash: null,
         note: "Raw notes must never be exported.",
         hour_of_day: 14,
         submission_date: "2026-06-22",
       }),
     ).toThrow();
 
+    // note_hash was removed — it must also be rejected as an unknown field
     expect(() =>
       AdminExportRecordSchema.parse({
         team_id: "tm_product",
         team_name: "Product",
         mood_type: "focused",
         tags: [],
-        note_hash: null,
+        note_hash: "sha256:abc123",
+        hour_of_day: 14,
+        submission_date: "2026-06-22",
+      }),
+    ).toThrow();
+
+    // Device tokens must never appear in an export record
+    expect(() =>
+      AdminExportRecordSchema.parse({
+        team_id: "tm_product",
+        team_name: "Product",
+        mood_type: "focused",
+        tags: [],
         device_token: "550e8400-e29b-41d4-a716-446655440000",
         hour_of_day: 14,
         submission_date: "2026-06-22",

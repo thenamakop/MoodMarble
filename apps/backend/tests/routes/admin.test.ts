@@ -86,7 +86,6 @@ describe("admin routes", () => {
             team_name: "Product",
             mood_type: "focused",
             tags: ["#workload", "#deadlines"],
-            note_hash: "sha256:abc123",
             hour_of_day: 14,
             submission_date: "2026-06-22",
           },
@@ -391,7 +390,7 @@ describe("admin routes", () => {
     const [headerRow, dataRow] = exportResponse.body.trim().split("\n");
 
     expect(headerRow).toBe(
-      "team_id,team_name,mood_type,tags,note_hash,hour_of_day,submission_date",
+      "team_id,team_name,mood_type,tags,hour_of_day,submission_date",
     );
     expect(dataRow).toBeTruthy();
     expect(exportResponse.body).toContain('"tm_product","Product","focused"');
@@ -543,9 +542,10 @@ describe("admin routes", () => {
     const [headerRow] = exportResponse.body.trim().split("\n");
     const columns = headerRow.split(",");
 
-    // The export header must not include a "note" column (only "note_hash" is allowed)
+    // Neither raw note text nor note_hash appear in the export —
+    // note_hash was removed because SHA-256 of short free-text is reversible.
     expect(columns).not.toContain("note");
-    expect(columns).toContain("note_hash");
+    expect(columns).not.toContain("note_hash");
     // Raw note text must not appear in the body
     expect(exportResponse.body).not.toContain("raw note text");
   });

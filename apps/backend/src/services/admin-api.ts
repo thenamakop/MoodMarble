@@ -291,7 +291,6 @@ export class InMemoryAdminApiService implements AdminApiService {
         team_name: teamNameById.get(submission.teamId) ?? "Unknown Team",
         mood_type: submission.moodType,
         tags: submission.tags,
-        note_hash: submission.noteHash,
         hour_of_day: submission.hourOfDay,
         submission_date: submission.submissionDate,
       }));
@@ -544,7 +543,6 @@ export class PostgresAdminApiService implements AdminApiService {
       team_name: teamNameById.get(submissionRecord.teamId) ?? "Unknown Team",
       mood_type: submissionRecord.moodType,
       tags: submissionRecord.tags,
-      note_hash: submissionRecord.noteHash,
       hour_of_day: submissionRecord.hourOfDay,
       submission_date: submissionRecord.submissionDate,
     }));

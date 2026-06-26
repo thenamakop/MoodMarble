@@ -262,7 +262,6 @@ CSV columns:
 - `team_name`
 - `mood_type`
 - `tags`
-- `note_hash`
 - `hour_of_day`
 - `submission_date`
 
@@ -317,4 +316,4 @@ Admin API responses must remain privacy-safe:
 - never return personal history data
 - never overlap with manager dashboard response shapes
 
-The export route is allowed to return `note_hash` only because it is the existing non-raw note representation already used by the backend schema.
+Neither raw note text nor `note_hash` appears in the export. SHA-256 of short free-text (max 120 chars) is reversible via rainbow table for low-entropy inputs. The hash was removed from the export to close this privacy boundary; it remains stored in `mood_submissions` for internal backend deduplication only.

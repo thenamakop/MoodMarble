@@ -3,7 +3,6 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const appRoot = path.resolve(__dirname, "..");
-const repoRoot = path.resolve(appRoot, "..", "..");
 const defaultSdkRoot =
   process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME || "D:\\Android";
 const ndkVersion = process.env.ANDROID_NDK_VERSION || "27.1.12297006";
@@ -13,36 +12,6 @@ const gradleCommand =
 const shortPaths = resolveShortPaths();
 
 try {
-  // #region debug-point C:build-entry
-  (() => {
-    const envPath = path.join(repoRoot, ".dbg", "e2e-manual-edit-audit.env");
-    let debugUrl = "http://127.0.0.1:7777/event";
-    let debugSessionId = "e2e-manual-edit-audit";
-    try {
-      const envFile = require("fs").readFileSync(envPath, "utf8");
-      debugUrl = envFile.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || debugUrl;
-      debugSessionId =
-        envFile.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || debugSessionId;
-    } catch {}
-    fetch(debugUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        sessionId: debugSessionId,
-        runId: "pre-fix",
-        hypothesisId: "C",
-        location: "apps/mobile/scripts/detox-build-android.cjs:14",
-        msg: "[DEBUG] Android Detox build script started.",
-        data: {
-          defaultSdkRoot,
-          ndkVersion,
-          cmakeVersion,
-          nodeEnv: process.env.NODE_ENV ?? "production",
-        },
-        ts: Date.now(),
-      }),
-    }).catch(() => {});
-  })();
-  // #endregion
   ensureAndroidSdkLayout();
   run(
     "pnpm",
@@ -78,37 +47,6 @@ try {
 }
 
 function run(command, args, cwd, env = {}) {
-  // #region debug-point C:run-command
-  (() => {
-    const envPath = path.join(repoRoot, ".dbg", "e2e-manual-edit-audit.env");
-    let debugUrl = "http://127.0.0.1:7777/event";
-    let debugSessionId = "e2e-manual-edit-audit";
-    try {
-      const envFile = require("fs").readFileSync(envPath, "utf8");
-      debugUrl = envFile.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || debugUrl;
-      debugSessionId =
-        envFile.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || debugSessionId;
-    } catch {}
-    fetch(debugUrl, {
-      method: "POST",
-      body: JSON.stringify({
-        sessionId: debugSessionId,
-        runId: "pre-fix",
-        hypothesisId: "C",
-        location: "apps/mobile/scripts/detox-build-android.cjs:54",
-        msg: "[DEBUG] Android Detox build script is running a child command.",
-        data: {
-          command,
-          args,
-          cwd,
-          envOverrides: env,
-          shell: false,
-        },
-        ts: Date.now(),
-      }),
-    }).catch(() => {});
-  })();
-  // #endregion
   const result =
     process.platform === "win32"
       ? spawnSync(

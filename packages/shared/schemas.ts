@@ -176,7 +176,6 @@ export const AdminExportRecordSchema = z
     team_name: TeamNameSchema,
     mood_type: MoodSchema,
     tags: MoodSubmissionTagsSchema,
-    note_hash: z.string().min(1).nullable(),
     hour_of_day: HourOfDaySchema,
     submission_date: SubmissionDateSchema,
   })

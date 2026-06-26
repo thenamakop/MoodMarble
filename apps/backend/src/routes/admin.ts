@@ -525,7 +525,11 @@ export async function registerAdminRoutes(
 
         return reply.status(200).send({ success: true });
       } catch (error) {
-        return handleAdminError(error, reply, "Invalid manager code revocation request.");
+        return handleAdminError(
+          error,
+          reply,
+          "Invalid manager code revocation request.",
+        );
       }
     },
   );
@@ -593,7 +597,6 @@ function serializeAdminExportCsv(
     "team_name",
     "mood_type",
     "tags",
-    "note_hash",
     "hour_of_day",
     "submission_date",
   ];
@@ -606,7 +609,6 @@ function serializeAdminExportCsv(
         record.team_name,
         record.mood_type,
         JSON.stringify(record.tags),
-        record.note_hash ?? "",
         String(record.hour_of_day),
         record.submission_date,
       ]

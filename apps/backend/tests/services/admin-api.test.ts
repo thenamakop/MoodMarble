@@ -1,4 +1,3 @@
-
 import { verifyAdminJwt } from "../../src/auth/admin-jwt";
 import { InMemoryAdminApiService } from "../../src/services/admin-api";
 import { InMemoryMoodSubmissionStore } from "../../src/services/mood-submissions";
@@ -293,7 +292,6 @@ describe("InMemoryAdminApiService", () => {
         team_name: "Product",
         mood_type: "focused",
         tags: ["#workload"],
-        note_hash: "hash-1",
         hour_of_day: 9,
         submission_date: "2026-06-10",
       },
@@ -302,7 +300,6 @@ describe("InMemoryAdminApiService", () => {
         team_name: "Engineering",
         mood_type: "happy",
         tags: ["#team"],
-        note_hash: null,
         hour_of_day: 14,
         submission_date: "2026-06-12",
       },

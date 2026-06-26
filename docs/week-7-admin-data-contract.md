@@ -50,9 +50,9 @@ The core entities already exist:
   - `team_id`
   - `mood_type`
   - `tags`
-  - `note_hash`
   - `hour_of_day`
   - `submission_date`
+  - _(`note_hash` remains in the DB schema for internal deduplication but is not exported)_
 
 These fields already cover the Week 7 admin responsibilities:
 
@@ -107,7 +107,6 @@ The minimum shared admin contract is:
   - `team_name`
   - `mood_type`
   - `tags`
-  - `note_hash`
   - `hour_of_day`
   - `submission_date`
 
@@ -149,7 +148,7 @@ Admin route work must keep the existing anonymity model intact:
 - no personal history storage in admin models
 - no changes to the anonymous member join contract unless a defect forces the smallest safe fix
 
-`note_hash` is safe to reuse because it already exists as the non-raw note representation in `mood_submissions`.
+`note_hash` is stored in `mood_submissions` for internal deduplication only and is **not** included in the admin CSV export. SHA-256 of short free-text (max 120 chars) is reversible via rainbow table for low-entropy inputs; exporting it would break the privacy boundary.
 
 ## Schema change decision for Task 3
 

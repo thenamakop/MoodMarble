@@ -264,7 +264,7 @@ describe("admin workspace creation integration", () => {
     const [headerRow, firstDataRow] = exportResponse.body.trim().split("\n");
 
     expect(headerRow).toBe(
-      "team_id,team_name,mood_type,tags,note_hash,hour_of_day,submission_date",
+      "team_id,team_name,mood_type,tags,hour_of_day,submission_date",
     );
     expect(firstDataRow).toBeTruthy();
     expect(exportResponse.body).toContain(

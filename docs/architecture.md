@@ -270,8 +270,6 @@ Key fields:
 
 - `tags[]`
 
-- `note_hash`
-
 - `hour_of_day`
 
 - `submission_date`
