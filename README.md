@@ -91,10 +91,10 @@ MoodMarble helps teams understand collective sentiment without exposing individu
 
 ## Infrastructure
 
-- Docker
-- GitHub Actions
-- Expo EAS
-- Railway / Render
+- Docker (local dev — `docker-compose.yml` provides PostgreSQL 16 + Redis)
+- GitHub Actions (planned CI)
+- Expo EAS (planned — no `eas.json` or EAS project ID configured yet)
+- Railway / Render (planned backend hosting — no deploy config yet)
 
 ---
 
@@ -110,10 +110,14 @@ moodmarble/
 │   └── shared/
 │
 ├── docs/
+│   ├── SECURITY.md
 │   ├── architecture.md
+│   ├── android-e2e-stability-report.md
 │   ├── week-4-handoff.md
 │   ├── week-5-handoff.md
-│   └── week-6-handoff.md
+│   ├── week-6-handoff.md
+│   ├── week-7-*.md
+│   └── week-8-handoff.md
 │
 ├── .github/
 │   └── workflows/
@@ -177,23 +181,44 @@ docker ps
 
 ## Environment Variables
 
+### Backend
+
 The backend loads environment variables from either `apps/backend/.env` or the repository root `.env`.
 
-Create a `.env` file in the project root:
+| Variable                 | Required  | Description                                                                                                             |
+| ------------------------ | --------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`           | Yes       | PostgreSQL connection string                                                                                            |
+| `REDIS_URL`              | Yes       | Redis connection string                                                                                                 |
+| `JWT_SECRET`             | Yes       | Shared secret for signing all three JWT types (device, manager, admin). Min 32 chars, must not look like a JWT.         |
+| `HOST`                   | No        | Server bind address (default: `0.0.0.0`)                                                                                |
+| `PORT`                   | No        | Server port (default: `3000`)                                                                                           |
+| `ADMIN_EMAIL`            | Seed only | Admin account email — used by `seed:admin` script, not read at runtime                                                  |
+| `ADMIN_PASSWORD`         | Seed only | Admin account password — used once by `seed:admin` (min 12 chars). **Use a strong value in any non-local environment.** |
+| `ADMIN_BOOTSTRAP_SECRET` | No        | Optional bootstrap secret for future automated provisioning                                                             |
 
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/moodmarble
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=local-dev-jwt-secret-change-me
-HOST=0.0.0.0
-PORT=3000
-```
+Copy the example file and **change all placeholder values** before use:
 
-You can also copy the example file:
+```bash
+# macOS / Linux
+cp apps/backend/.env.example .env
 
-```powershell
+# Windows PowerShell
 Copy-Item apps/backend/.env.example .env
 ```
+
+The example uses `local-dev-jwt-secret-change-me` and a weak admin password — these values are **for local development only**. Replace them before deploying or sharing.
+
+### Mobile
+
+Create `apps/mobile/.env.local` (git-ignored) when connecting to a physical device or custom backend:
+
+```env
+# URL of the backend API — leave empty to use the platform default
+# (127.0.0.1:3000 on web/iOS sim, 10.0.2.2:3000 on Android emulator)
+EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:3000
+```
+
+Restart Expo after changing this file. Do not commit it.
 
 ---
 
@@ -229,18 +254,18 @@ The local seed creates:
 - workspace: `ws_localdemo`
 - join code: `ABC123`
 - teams: `tm_product`, `tm_engineering`
-- admin account: `admin@example.com` (password: `password1234`)
+- admin account: email and password taken from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` (defaults in `.env.example` are for local dev only — change before any non-local deployment)
 - manager dashboard fixtures: 6+ team members and submissions across the current ISO week and the E2E manager window (via `pnpm seed:dashboard`)
 
 ### Administrative Setup & Authentication
 
 The administrative surface is fully protected by a dedicated login flow. There is NO public sign-up or "forgot password" mechanism for administrators, as the system is designed to be closed to public registration.
 
-To create an administrator, you must use the backend seed script. It uses the following environment variables (defined in `.env`):
+To create an administrator, you must use the backend seed script. It reads the following environment variables from `.env`:
 
-- `ADMIN_EMAIL` (default: `admin@example.com`)
-- `ADMIN_PASSWORD` (default: `password1234`)
-- `ADMIN_BOOTSTRAP_SECRET` (default: `local-admin-bootstrap-secret-change-me`)
+- `ADMIN_EMAIL` — the admin account email address
+- `ADMIN_PASSWORD` — the admin account password (minimum 12 characters; **use a strong value outside local dev**)
+- `ADMIN_BOOTSTRAP_SECRET` — optional; see `.env.example`
 
 To provision the admin account:
 
@@ -307,15 +332,7 @@ Before sending requests in Postman, make sure:
 - Postman is installed.
 - Docker Desktop is running.
 - `docker compose up -d` has started PostgreSQL and Redis.
-- The project root `.env` file exists and includes:
-
-```env
-DATABASE_URL=postgresql://postgres:postgres@localhost:5433/moodmarble
-REDIS_URL=redis://localhost:6379
-JWT_SECRET=local-dev-jwt-secret-change-me
-HOST=0.0.0.0
-PORT=3000
-```
+- The project root `.env` file exists with valid values (see `apps/backend/.env.example` and the Environment Variables section above).
 
 - Backend setup has been completed:
 
@@ -671,7 +688,7 @@ pnpm e2e:android:test:headless
 #### Notes
 
 - The debug app automatically rewrites `localhost` network requests to `10.0.2.2`, so Android emulator traffic successfully targets `http://10.0.2.2:3000`.
-- The manager journey uses the manager join-code flow (`MGR001` seeded by `/__test/reset`). The admin journey uses email/password login (`admin@example.com` / `password1234`).
+- The manager journey uses the manager join-code flow (`MGR001` seeded by `/__test/reset`). The admin journey uses email/password login with the credentials from `ADMIN_EMAIL` / `ADMIN_PASSWORD` in `.env` (default example values are intentionally weak — change them for any non-local environment).
 - The manager dashboard E2E window (`start_date=2026-06-16`, `date=2026-06-22`) is now seeded with visible data, so the dashboard renders charts instead of hidden placeholders.
 - The member journey E2E has been hardened against onboarding skip issues, keyboard overlay, history navigation, settings scroll position, and the submission confirmation overlay.
 - These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic MVP.
@@ -692,11 +709,9 @@ pnpm e2e:android:test:headless
 - Run the backend on the host machine.
 - Keep the phone and computer on the same Wi-Fi network.
 - Use the host LAN IP, not `localhost`, for physical devices.
-- Set `apps/mobile/.env.local` to `EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:3000`.
-- Keep that env file local-only and do not commit it.
-- Start Expo from `apps/mobile`.
-- Restart Expo after changing `apps/mobile/.env.local`.
-- Web and emulator behavior remain unchanged.
+- Set `EXPO_PUBLIC_API_BASE_URL=http://YOUR_LAN_IP:3000` in `apps/mobile/.env.local` (git-ignored, do not commit).
+- Start Expo from `apps/mobile` and restart after changing the file.
+- Web and emulator behavior remain unchanged (they use their own platform defaults).
 
 ---
 
@@ -714,7 +729,7 @@ pnpm e2e:android:test:headless
 
 ## Current Phase
 
-**Week 6 local settings and reminder foundations are implemented on top of the verified Week 5 manager dashboard baseline**
+**Week 8 — Admin authentication, manager join-code flow, E2E hardening, and privacy audit complete**
 
 ### Completed
 
@@ -753,43 +768,45 @@ pnpm e2e:android:test:headless
 - Backend and mobile verification coverage for the Week 5 dashboard flow
 - Focused Week 6 settings and reminder regression coverage
 - Docker infrastructure
+- Admin JWT authorization and route protection
+- Administrative login and session restoration on mobile
+- Admin panel (workspace, team, join-code management, CSV export)
+- Manager join-code authentication flow
+- Detox E2E suite (member, manager, admin journeys)
+- Privacy and anonymity audit (note_hash removed from CSV export, URL-param JWT path documented)
 
-### Stable for Week 6
+### Stable (Week 8)
 
-- Anonymous onboarding and join flow
-- Workspace-scoped team selection
-- Device JWT issuance and validation
-- Secure mobile session restore and fallback to onboarding
-- Privacy-safe join and submission error handling
-- Local-only timeline, streak, and monthly calendar history
-- Exact local timestamp display stored only on-device
-- Manager dashboard aggregate analytics with privacy thresholds
-- Local reminder preferences stored only on-device
-- Onboarding replay request handling stored only on-device
-- Local data deletion for anonymous member state
-- Android emulator, web, and physical-device local development paths
+- All Week 3–6 features (anonymous onboarding, local history, dashboard, reminders, settings)
+- Admin email/password auth — no admin join code by design
+- Manager join-code flow (`POST /auth/redeem-manager-code`)
+- Anonymous CSV export — no PII, no raw notes, no `note_hash`
+- E2E journeys: member, manager join-code, admin login/logout
 
 ### Upcoming
 
-- Admin-managed workspace and team setup (Backend available)
-- Join code generation and management UI/API (Backend available)
-- Anonymous CSV export flows (Backend available)
-- Admin JWT authorization and route protection (Completed)
-- Administrative login and session restoration on mobile (Completed)
+- EAS build configuration and CI/CD pipeline
+- Rate limiting on `POST /auth/redeem-manager-code` (see `docs/SECURITY.md`)
+- Multiple administrator support
+- Admin "Forgot Password" / password reset flow
 
 ---
 
 # Documentation
 
-| Document                         | Purpose                                                |
-| -------------------------------- | ------------------------------------------------------ |
-| `docs/SECURITY.md`               | Authentication model and security properties           |
-| `docs/architecture.md`           | System architecture and implementation blueprint       |
-| `docs/week-3-workspace-audit.md` | Week 3 audit and scope alignment notes                 |
-| `docs/week-4-handoff.md`         | Week 4 local-history boundary and verification notes   |
-| `docs/week-5-handoff.md`         | Week 5 manager dashboard boundary and verification     |
-| `docs/week-6-handoff.md`         | Week 6 settings and reminder boundary and verification |
-| `docs/task-tracker.md`           | Milestone tracking through Week 7 and later work       |
+| Document                               | Purpose                                                           |
+| -------------------------------------- | ----------------------------------------------------------------- |
+| `docs/SECURITY.md`                     | Authentication model, privacy boundaries, and security properties |
+| `docs/architecture.md`                 | System architecture and implementation blueprint                  |
+| `docs/android-e2e-stability-report.md` | Detox E2E suite status and known limitations                      |
+| `docs/week-3-workspace-audit.md`       | Week 3 audit and scope alignment notes                            |
+| `docs/week-4-handoff.md`               | Week 4 local-history boundary and verification notes              |
+| `docs/week-5-handoff.md`               | Week 5 manager dashboard boundary and verification                |
+| `docs/week-6-handoff.md`               | Week 6 settings and reminder boundary and verification            |
+| `docs/week-7-admin-api-contract.md`    | Week 7 admin API contract                                         |
+| `docs/week-7-admin-data-contract.md`   | Week 7 admin data and export contract                             |
+| `docs/week-8-handoff.md`               | Week 8 admin auth and E2E hardening handoff                       |
+| `docs/task-tracker.md`                 | Milestone tracking through Week 7 and later work                  |
 
 ---
 
@@ -817,7 +834,6 @@ Every feature must satisfy:
 
 - Keep changes aligned with the specification and the verified repo state.
 - Keep personal history, reminder state, and local settings on-device unless the specification explicitly changes.
-- Keep Week 7 work scoped to admin and export responsibilities unless a bug forces a minimal fix.
 - Keep debug artifacts, screenshots, local logs, and one-off investigation files out of commits.
 
 ---
