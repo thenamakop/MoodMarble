@@ -672,9 +672,9 @@ moodmarble/
 
 - performance audit
 
-- Expo EAS build
+- Expo EAS build _(planned — not yet configured; no eas.json or EAS project ID)_
 
-- Render / Railway deploy
+- Render / Railway deploy _(planned — no deploy config yet)_
 
 ---
 
@@ -738,7 +738,7 @@ The MVP is complete only when all of the following are true:
 
 - backend unit coverage is at least 60%
 
-- Expo EAS builds succeed for both platforms
+- Expo EAS builds succeed for both platforms _(not yet configured — see Upcoming in README)_
 
 - README includes setup, environment variables, and deployment steps
 

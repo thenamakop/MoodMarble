@@ -381,6 +381,12 @@ export async function registerAdminRoutes(
         );
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
+        if (!options.databaseClient) {
+          return reply
+            .status(500)
+            .send({ message: "Database client not configured." });
+        }
+
         const body = GenerateManagerCodeBodySchema.parse(request.body);
 
         const team = await options.databaseClient.db.query.teams.findFirst({
@@ -456,6 +462,12 @@ export async function registerAdminRoutes(
         );
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
+        if (!options.databaseClient) {
+          return reply
+            .status(500)
+            .send({ message: "Database client not configured." });
+        }
+
         const rows =
           await options.databaseClient.db.query.managerCodes.findMany({
             where: and(
@@ -506,6 +518,12 @@ export async function registerAdminRoutes(
           request.params,
         );
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
+
+        if (!options.databaseClient) {
+          return reply
+            .status(500)
+            .send({ message: "Database client not configured." });
+        }
 
         const codeRecord =
           await options.databaseClient.db.query.managerCodes.findFirst({

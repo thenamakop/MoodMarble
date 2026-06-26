@@ -17,8 +17,8 @@ export async function inject(app: FastifyInstance, options: InjectOptions) {
     httpRequest = httpRequest.set(options.headers);
   }
 
-  if (typeof options.payload !== "undefined") {
-    httpRequest = httpRequest.send(options.payload);
+  if (typeof options.payload !== "undefined" && options.payload !== null) {
+    httpRequest = httpRequest.send(options.payload as string | object);
   }
 
   const response = await httpRequest;

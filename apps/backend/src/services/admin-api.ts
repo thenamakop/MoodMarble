@@ -290,10 +290,10 @@ export class InMemoryAdminApiService implements AdminApiService {
         team_id: submission.teamId,
         team_name: teamNameById.get(submission.teamId) ?? "Unknown Team",
         mood_type: submission.moodType,
-        tags: submission.tags,
+        tags: submission.tags ?? [],
         hour_of_day: submission.hourOfDay,
         submission_date: submission.submissionDate,
-      }));
+      })) as AdminExportRecord[];
   }
 
   private async createUniqueWorkspaceId(): Promise<string> {
@@ -542,10 +542,10 @@ export class PostgresAdminApiService implements AdminApiService {
       team_id: submissionRecord.teamId,
       team_name: teamNameById.get(submissionRecord.teamId) ?? "Unknown Team",
       mood_type: submissionRecord.moodType,
-      tags: submissionRecord.tags,
+      tags: submissionRecord.tags ?? [],
       hour_of_day: submissionRecord.hourOfDay,
       submission_date: submissionRecord.submissionDate,
-    }));
+    })) as AdminExportRecord[];
   }
 
   private async createUniqueWorkspaceId(): Promise<string> {

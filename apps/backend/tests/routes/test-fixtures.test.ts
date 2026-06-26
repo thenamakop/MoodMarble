@@ -40,6 +40,7 @@ describe("test-fixtures routes", () => {
     try {
       const mockInsertReturn = {
         values: jest.fn().mockReturnValue({
+          onConflictDoNothing: jest.fn().mockResolvedValue(true),
           onConflictDoUpdate: jest.fn().mockResolvedValue(true),
         }),
       };
