@@ -1,6 +1,4 @@
 const { execFileSync } = require("child_process");
-const { readFileSync } = require("fs");
-const path = require("path");
 const { by, device, element, waitFor } = require("detox");
 
 const DEFAULT_DEV_CLIENT_SCHEME =
@@ -25,6 +23,10 @@ const BOOTSTRAP_READY_TEST_IDS = [
   "manager-dashboard-screen",
   "admin-panel-screen",
 ];
+
+// The manager code seeded by /__test/reset. Defined here so test files and
+// the seed script share a single source of truth.
+const SEEDED_MANAGER_CODE = "MGR001";
 
 async function resetBackendTestState() {
   const backendUrl =
@@ -135,7 +137,6 @@ function createExpoDevClientLaunchUrl() {
     // Detox reverses the Metro port before launching instrumentation, so the
     // initial Expo dev-client bootstrap is most reliable through loopback.
     url: DEFAULT_DEV_SERVER_URL,
-    disableOnboarding: "1",
   });
 
   return `${DEFAULT_DEV_CLIENT_SCHEME}://expo-development-client/?${searchParams.toString()}`;
@@ -154,24 +155,16 @@ function createExpoDevClientLaunchUrl() {
  */
 async function launchExpoDevClient() {
   const devClientUrl = createExpoDevClientLaunchUrl();
-  // #region debug-point A:launch-start
-  reportDebugEvent("A", "[DEBUG] launchExpoDevClient started.", {
+  console.log("[e2e] launchExpoDevClient started.", {
     devServerUrl: DEFAULT_ANDROID_DEV_SERVER_URL,
     appId: DEFAULT_ANDROID_APP_ID,
     devClientUrl,
   });
-  // #endregion
 
   await waitForMetroServer();
   await waitForBackendServer();
-  reportDebugEvent(
-    "A",
-    "[DEBUG] Metro and backend servers are reachable before launching the dev client.",
-    {
-      metroStatusUrl: `${DEFAULT_DEV_SERVER_URL}/status`,
-      backendHealthUrl: `${DEFAULT_BACKEND_URL}/health`,
-    },
-  );
+  console.log("[e2e] Metro and backend servers are reachable.");
+
   // Belt-and-suspenders: ensure ADB port reversal alongside detox.config reversePorts
   try {
     execFileSync("adb", ["reverse", `tcp:${METRO_PORT}`, `tcp:${METRO_PORT}`], {
@@ -183,103 +176,38 @@ async function launchExpoDevClient() {
       { stdio: "pipe" },
     );
   } catch {
-    reportDebugEvent(
-      "B",
-      "[DEBUG] adb reverse failed during launchExpoDevClient; continuing with Detox reversePorts.",
-      {
-        metroPort: METRO_PORT,
-        backendPort: BACKEND_PORT,
-      },
+    console.warn(
+      "[e2e] adb reverse failed; continuing with Detox reversePorts.",
     );
   }
 
   // 1. Cold-start using Detox's built-in URL override so the initial
   // instrumented launch goes directly through the Expo dev-client intent.
   await device.launchApp({ newInstance: true, url: devClientUrl });
-  reportDebugEvent("A", "[DEBUG] device.launchApp resolved.", {
-    newInstance: true,
-    usedUrlOverride: true,
-  });
+  console.log("[e2e] device.launchApp resolved.");
   await device.disableSynchronization();
-  reportDebugEvent("A", "[DEBUG] device.disableSynchronization resolved.", {});
   await waitForConnectedEmulator();
-  reportDebugEvent("A", "[DEBUG] waitForConnectedEmulator resolved.", {});
+  console.log("[e2e] waitForConnectedEmulator resolved.");
 
   const existingReadyTestId = await maybeWaitForBootstrappedApp(5000);
   if (existingReadyTestId) {
-    reportDebugEvent(
-      "C",
-      "[DEBUG] Existing Expo runtime was already ready after launchApp.",
-      {
-        readyTestId: existingReadyTestId,
-      },
-    );
+    console.log("[e2e] Expo runtime already ready.", { existingReadyTestId });
     await device.enableSynchronization();
     return;
   }
 
   // 2. If the initial launch still did not surface the RN runtime, retry the
   // same dev-client URL through ADB as a fallback.
-  // #region debug-point D:open-url
-  reportDebugEvent(
-    "D",
-    "[DEBUG] Retrying Expo dev-client URL via ADB fallback.",
-    {
-      devClientUrl,
-    },
-  );
-  // #endregion
+  console.log("[e2e] Retrying Expo dev-client URL via ADB fallback.");
   await openDevClientUrlWithRetries(devClientUrl);
 
   // 3. Wait for JS runtime to be ready (bundle load + React mount).
   const readyTestId = await waitForBootstrappedApp(120000);
-  // #region debug-point C:ready-test-id
-  reportDebugEvent("C", "[DEBUG] Expo runtime became observable to Detox.", {
+  console.log("[e2e] Expo runtime became observable to Detox.", {
     readyTestId,
   });
-  // #endregion
 
   // 4. Re-enable Detox synchronization before test interactions begin.
-  await device.enableSynchronization();
-}
-
-/**
- * Relaunches without reinstalling (fast path for test suite resets).
- * Only use this after the first launchExpoDevClient() in the same session.
- */
-async function relaunchExpoDevClient() {
-  await device.launchApp({ newInstance: false });
-  reportDebugEvent("A", "[DEBUG] relaunch device.launchApp resolved.", {
-    newInstance: false,
-  });
-  await device.disableSynchronization();
-  reportDebugEvent(
-    "A",
-    "[DEBUG] relaunch device.disableSynchronization resolved.",
-    {},
-  );
-
-  const existingReadyTestId = await maybeWaitForBootstrappedApp(3000);
-  if (existingReadyTestId) {
-    reportDebugEvent(
-      "C",
-      "[DEBUG] Existing Expo runtime was already ready after relaunch.",
-      {
-        readyTestId: existingReadyTestId,
-      },
-    );
-    await device.enableSynchronization();
-    return;
-  }
-
-  const readyTestId = await waitForBootstrappedApp(90000);
-  reportDebugEvent(
-    "C",
-    "[DEBUG] Expo runtime became observable after relaunch.",
-    {
-      readyTestId,
-    },
-  );
   await device.enableSynchronization();
 }
 
@@ -354,38 +282,6 @@ async function maybeWaitForBootstrappedApp(timeout = 5000) {
   }
 }
 
-async function openUrlWithRetries(url, attempts = 3) {
-  let lastError;
-
-  for (let attempt = 1; attempt <= attempts; attempt += 1) {
-    try {
-      await device.launchApp({ newInstance: false, url });
-      return;
-    } catch (error) {
-      lastError = error;
-
-      try {
-        const emulatorSerial = await waitForConnectedEmulator();
-        const command = buildAdbDeepLinkCommand(url);
-
-        await sleep(750);
-        execFileSync("adb", ["-s", emulatorSerial, "shell", command], {
-          stdio: "pipe",
-        });
-        return;
-      } catch (fallbackError) {
-        lastError = fallbackError;
-      }
-
-      if (attempt === attempts) {
-        throw lastError;
-      }
-
-      await sleep(1000);
-    }
-  }
-}
-
 async function openDevClientUrlWithRetries(url, attempts = 3) {
   let lastError;
 
@@ -412,10 +308,6 @@ async function openDevClientUrlWithRetries(url, attempts = 3) {
       await sleep(1000);
     }
   }
-}
-
-function buildAdbDeepLinkCommand(url) {
-  return buildAdbIntentCommand(url, true);
 }
 
 function buildAdbBootstrapCommand(url) {
@@ -568,54 +460,8 @@ async function waitForBackendServer(timeout = 15000) {
   );
 }
 
-function isAppRuntimeFocused(serial) {
-  try {
-    const output = execFileSync(
-      "adb",
-      ["-s", serial, "shell", "dumpsys", "window"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
-
-    return (
-      output.includes(`${DEFAULT_ANDROID_APP_ID}/.MainActivity`) ||
-      output.includes(
-        `${DEFAULT_ANDROID_APP_ID}/${DEFAULT_ANDROID_APP_ID}.MainActivity`,
-      )
-    );
-  } catch {
-    return false;
-  }
-}
-
 function sleep(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
-}
-
-function reportDebugEvent(hypothesisId, msg, data) {
-  const envPath = path.join(process.cwd(), ".dbg", "e2e-manual-edit-audit.env");
-  let debugUrl = "http://127.0.0.1:7777/event";
-  let debugSessionId = "e2e-manual-edit-audit";
-  try {
-    const envFile = readFileSync(envPath, "utf8");
-    debugUrl = envFile.match(/DEBUG_SERVER_URL=(.+)/)?.[1] || debugUrl;
-    debugSessionId =
-      envFile.match(/DEBUG_SESSION_ID=(.+)/)?.[1] || debugSessionId;
-  } catch {}
-  fetch(debugUrl, {
-    method: "POST",
-    body: JSON.stringify({
-      sessionId: debugSessionId,
-      runId: "pre-fix",
-      hypothesisId,
-      location: "apps/mobile/e2e/helpers.cjs",
-      msg,
-      data,
-      ts: Date.now(),
-    }),
-  }).catch(() => {});
 }
 
 async function loginAsAdmin() {
@@ -650,21 +496,18 @@ async function loginAsAdmin() {
 
 module.exports = {
   advanceToJoinCode,
+  buildAdbBootstrapCommand,
   completeAnonymousMemberJourney,
   createExpoDevClientLaunchUrl,
-  buildAdbDeepLinkCommand,
-  buildAdbBootstrapCommand,
   isVisible,
   launchExpoDevClient,
   loginAsAdmin,
   maybeWaitForBootstrappedApp,
-  isAppRuntimeFocused,
   openDevClientUrlWithRetries,
-  openUrlWithRetries,
-  relaunchExpoDevClient,
   resetBackendTestState,
   resetToOnboardingIfNeeded,
   scrollTrayToTop,
   scrollTrayUntilVisible,
+  SEEDED_MANAGER_CODE,
   waitForBootstrappedApp,
 };

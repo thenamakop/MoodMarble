@@ -66,11 +66,21 @@ describe("admin panel journey", () => {
     );
   });
 
-  it("tapping Export chip scrolls to the export section", async () => {
+  it("tapping Export chip scrolls to the export section and renders date inputs", async () => {
     await tapNavChipAndVerifySection(
       "admin-panel-nav-export",
       "admin-panel-export-section",
     );
+
+    // Confirm all three export controls are visible — start date, end date,
+    // and the run button. These verify the section is fully rendered, not just
+    // that the card scrolled into view.
+    await waitFor(element(by.id("admin-panel-export-start-date")))
+      .toBeVisible()
+      .whileElement(by.id("admin-panel-screen"))
+      .scroll(200, "down", NaN, 0.5);
+    await expect(element(by.id("admin-panel-export-end-date"))).toBeVisible();
+    await expect(element(by.id("admin-panel-export-run"))).toBeVisible();
   });
 
   it("tapping Overview chip scrolls back to the top workspace section", async () => {

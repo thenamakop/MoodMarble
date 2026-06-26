@@ -5,10 +5,8 @@ const {
   isVisible,
   launchExpoDevClient,
   resetBackendTestState,
+  SEEDED_MANAGER_CODE,
 } = require("./helpers.cjs");
-
-// The seeded manager code inserted by /__test/reset
-const SEEDED_MANAGER_CODE = "MGR001";
 
 describe("manager join-code journey", () => {
   beforeAll(async () => {
@@ -78,6 +76,16 @@ describe("manager join-code journey", () => {
       .withTimeout(20000);
 
     await expect(element(by.id("manager-dashboard-date-picker"))).toBeVisible();
+
+    // The team selector control must display "Product" — the name of the team
+    // that MGR001 is scoped to in the seed. This confirms the code resolved to
+    // the right team and the route params were set correctly.
+    await expect(
+      element(by.id("manager-dashboard-team-selector")),
+    ).toBeVisible();
+    await waitFor(element(by.text("Product")))
+      .toBeVisible()
+      .withTimeout(5000);
   });
 
   it("signs out from the manager dashboard and lands back on the onboarding intro", async () => {
