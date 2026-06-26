@@ -14,6 +14,14 @@ export interface AnonymousSessionBootstrapParams {
   device_jwt?: string | string[];
 }
 
+/**
+ * Reads an anonymous session from URL search params (web only).
+ *
+ * No current mobile or join-code flow injects these params into the
+ * home route URL. On native, params will always be absent and this
+ * returns null, falling through to the stored session. The web path
+ * is kept for forward compatibility but is currently unused.
+ */
 export function getAnonymousSessionFromParams(
   params: AnonymousSessionBootstrapParams,
 ): AnonymousSession | null {

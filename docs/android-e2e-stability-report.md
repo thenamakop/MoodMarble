@@ -11,7 +11,7 @@ The E2E test runs successfully verified the following functionality without rely
 - **Emulator Launch & Device Detection**: Detox successfully spins up the `Pixel_8` headless emulator, hooks into ADB, installs the native test APKs, and launches the app runtime.
 - **Backend Test Seeding Integration**: The mobile tests successfully orchestrate `__test/reset` calls to truncate the database and re-hydrate `ws_localdemo`, its associated teams, test admin credentials, and dashboard fixtures automatically.
 - **Employee Access Path**: The standard onboarding flow successfully completes anonymous login, team selection, and stores the `device_jwt` locally.
-- **Manager & Admin Deep Links**: Bypassing UI taps for login screens via the `exp+moodmarble://` deep link pattern correctly initializes hydrated auth sessions for `manager_jwt` and `admin_jwt`.
+- **Manager & Admin Auth**: The manager join-code flow and the admin email/password login correctly initialize hydrated auth sessions. _(Previously tested via `exp+moodmarble://` deep links, superseded by join-code and credential flows.)_
 - **Mood Submission**: A standard mood submission correctly interacts with the backend over `10.0.2.2:3000` from the Android environment.
 - **Screen Navigation**: Accessing history, settings, and the admin panel screens renders the expected React Navigation boundaries.
 - **Manager Dashboard Rendering**: The dashboard now loads seeded data that clears the privacy thresholds, so charts render instead of remaining hidden.

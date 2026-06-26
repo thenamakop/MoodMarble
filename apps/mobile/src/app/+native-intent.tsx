@@ -5,19 +5,13 @@
  * native deep-link URL on Android and iOS. Return the internal Expo
  * Router path to navigate to, or null to let the default handler run.
  *
- * Handles: moodmarble://manager?workspace_id=...&manager_jwt=...&...
- * Produces: /manager?workspace_id=...&manager_jwt=...&...
+ * Intentionally does NOT handle moodmarble://manager — managers must
+ * authenticate via the in-app manager join-code flow (join-manager screen).
  */
 
 export function resolveSystemHref(url: string): string {
   try {
     const parsed = new URL(url);
-
-    // moodmarble://manager → /manager (with all query params preserved)
-    if (parsed.hostname === "manager") {
-      const qs = parsed.searchParams.toString();
-      return qs ? `/manager?${qs}` : "/manager";
-    }
 
     // moodmarble://admin-login → /admin-login
     if (parsed.hostname === "admin-login") {

@@ -20,7 +20,7 @@ import { clearLoginRateLimit } from "./auth";
 //   • minimum_hourly_submissions         ≥ 3  → each seeded hour bucket visible
 //
 // Coverage:
-//   1. The fixed E2E deep-link window (2026-06-16 → 2026-06-22).
+//   1. The fixed E2E manager window (2026-06-16 → 2026-06-22).
 //   2. The current ISO week up to today.
 //
 // Each covered day gets a full daily cluster of 8 submissions, so the daily

@@ -525,7 +525,7 @@ Replace `<JWT>` with the token printed above and visit:
 http://localhost:8081/manager?manager_jwt=<JWT>&manager_teams=tm_product:Product&team_id=tm_product&team_name=Product&date=2026-06-22&start_date=2026-06-16
 ```
 
-The query parameters mirror the deep-link shape used by the mobile app. The `start_date` and `date` values control the weekly window and the daily heatmap respectively.
+The query parameters mirror the route params used by the mobile app's manager dashboard screen. The `start_date` and `date` values control the weekly window and the daily heatmap respectively.
 
 ### Manual demo server
 
@@ -582,8 +582,8 @@ Use the installed development build on the emulator or device to open the projec
 Week 8 includes a complete Detox layer covering the most critical Android user journeys:
 
 - **Member Journey**: anonymous onboarding -> join code entry -> team selection -> mood submission -> history -> settings
-- **Manager Journey**: deep link -> scoped dashboard view
-- **Admin Journey**: deep link -> scoped admin panel shell
+- **Manager Journey**: manager join-code entry -> scoped dashboard view
+- **Admin Journey**: email/password login -> scoped admin panel
 
 The E2E test suite ensures these key experiences do not regress and relies on the Android emulator with the Expo development build flow.
 
@@ -635,7 +635,7 @@ The dashboard fixtures are designed to clear every privacy threshold used by the
 - `minimum_members_for_precise_values`: 5 team members
 - `minimum_hourly_submissions`: 3 submissions in an hour bucket
 
-If the backend is not running, the deep links for the manager and admin journeys will fail to load their workspace shells. Ensure the backend is running before launching tests:
+If the backend is not running, the manager and admin journeys will fail to authenticate. Ensure the backend is running before launching tests:
 
 ```bash
 cd apps/backend
@@ -671,7 +671,7 @@ pnpm e2e:android:test:headless
 #### Notes
 
 - The debug app automatically rewrites `localhost` network requests to `10.0.2.2`, so Android emulator traffic successfully targets `http://10.0.2.2:3000`.
-- The manager and admin journeys use the `exp+moodmarble://` scheme and JWTs generated at test runtime to bypass the UI flow and deep-link directly into the authenticated view.
+- The manager journey uses the manager join-code flow (`MGR001` seeded by `/__test/reset`). The admin journey uses email/password login (`admin@example.com` / `password1234`).
 - The manager dashboard E2E window (`start_date=2026-06-16`, `date=2026-06-22`) is now seeded with visible data, so the dashboard renders charts instead of hidden placeholders.
 - The member journey E2E has been hardened against onboarding skip issues, keyboard overlay, history navigation, settings scroll position, and the submission confirmation overlay.
 - These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic MVP.

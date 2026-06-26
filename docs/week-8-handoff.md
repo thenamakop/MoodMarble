@@ -88,7 +88,7 @@ After the Week 8 deliverables were finalised, the following fixes and operationa
 - **Dashboard privacy thresholds remain enforced:** the backend still hides/blurs output below 5 submissions in a window, 5 team members, or 3 submissions in an hour bucket.
 - **Daily heatmap label fix:** overlapping per-point labels in `apps/mobile/src/features/dashboard/dashboard-charts.tsx` (and its web variant) were removed, eliminating the unreadable black line above the heatmap squares.
 - **Member journey E2E hardening:** `apps/mobile/e2e/member-journey.e2e.cjs` and `apps/mobile/e2e/helpers.cjs` were stabilised around onboarding skip reliability, history navigation, settings scroll position, submission-confirmation overlay timing, and the on-screen keyboard.
-- **Manager join-code flow:** remains verified via `apps/mobile/e2e/manager-join-code-journey.e2e.cjs` and the direct manager deep-link in `apps/mobile/e2e/manager-journey.e2e.cjs`.
+- **Manager join-code flow:** verified via `apps/mobile/e2e/manager-join-code-journey.e2e.cjs`. The legacy direct deep-link test (`manager-journey.e2e.cjs`) has been removed; the join-code journey provides equivalent coverage through the correct auth path.
 
 ## Remaining Gaps / Intentionally Out of Scope
 

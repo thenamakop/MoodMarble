@@ -2,9 +2,7 @@ const { execFileSync } = require("child_process");
 const { readFileSync } = require("fs");
 const path = require("path");
 const { by, device, element, waitFor } = require("detox");
-const jwt = require("jsonwebtoken");
 
-const DEFAULT_MANAGER_JWT_SECRET = "local-dev-jwt-secret-change-me";
 const DEFAULT_DEV_CLIENT_SCHEME =
   process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
 const DEFAULT_DEV_SERVER_URL =
@@ -141,52 +139,6 @@ function createExpoDevClientLaunchUrl() {
   });
 
   return `${DEFAULT_DEV_CLIENT_SCHEME}://expo-development-client/?${searchParams.toString()}`;
-}
-
-function createManagerLaunchUrl() {
-  const managerJwt = jwt.sign(
-    {
-      workspace_id: "ws_localdemo",
-      team_id: "tm_product",
-      role: "manager",
-    },
-    process.env.JWT_SECRET || DEFAULT_MANAGER_JWT_SECRET,
-    {
-      expiresIn: "30d",
-    },
-  );
-
-  const searchParams = new URLSearchParams({
-    date: "2026-06-22",
-    manager_jwt: managerJwt,
-    manager_teams: "tm_product:Product",
-    start_date: "2026-06-16",
-    team_id: "tm_product",
-    team_name: "Product",
-  });
-
-  return `${DEFAULT_DEV_CLIENT_SCHEME}://manager?${searchParams.toString()}`;
-}
-
-function createAdminLaunchUrl() {
-  const adminJwt = jwt.sign(
-    {
-      workspace_id: "ws_localdemo",
-      role: "admin",
-    },
-    process.env.JWT_SECRET || DEFAULT_MANAGER_JWT_SECRET,
-    {
-      expiresIn: "30d",
-    },
-  );
-
-  const searchParams = new URLSearchParams({
-    admin_jwt: adminJwt,
-    workspace_id: "ws_localdemo",
-    workspace_name: "MoodMarble Local Workspace",
-  });
-
-  return `${DEFAULT_DEV_CLIENT_SCHEME}://admin?${searchParams.toString()}`;
 }
 
 /**
@@ -699,9 +651,7 @@ async function loginAsAdmin() {
 module.exports = {
   advanceToJoinCode,
   completeAnonymousMemberJourney,
-  createAdminLaunchUrl,
   createExpoDevClientLaunchUrl,
-  createManagerLaunchUrl,
   buildAdbDeepLinkCommand,
   buildAdbBootstrapCommand,
   isVisible,
