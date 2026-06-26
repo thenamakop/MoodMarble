@@ -14,7 +14,7 @@ import { createApiUrl, getApiRequestErrorMessage } from "@/lib/api";
 const ADMIN_PANEL_ERROR_MESSAGE =
   "Unable to load the admin control panel right now.";
 const ADMIN_ACCESS_MISSING_MESSAGE =
-  "Admin access missing. Open the admin panel from a valid admin link again.";
+  "Admin access missing. Please sign in again.";
 const ADMIN_WORKSPACE_CREATE_ERROR_MESSAGE =
   "Unable to create workspace right now.";
 const ADMIN_TEAM_CREATE_ERROR_MESSAGE = "Unable to add team right now.";
