@@ -9,6 +9,7 @@
     "e2e:android:metro": "pnpm --dir apps/mobile e2e:android:metro",
     "e2e:android:build": "pnpm --dir apps/mobile e2e:android:build",
     "e2e:android:test": "pnpm --dir apps/mobile e2e:android:test",
+    "eas": "pnpm --dir apps/mobile exec eas",
     "prepare": "husky"
   },
   "engines": {
