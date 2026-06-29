@@ -1,0 +1,10 @@
+node_modules
+dist
+coverage
+.env
+*.test.ts
+tests/
+drizzle/
+scripts/
+*.md
+tsconfig.json
