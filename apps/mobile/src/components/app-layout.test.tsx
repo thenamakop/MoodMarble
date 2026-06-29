@@ -25,6 +25,10 @@ jest.mock("@/components/animated-icon", () => ({
   AnimatedSplashOverlay: () => null,
 }));
 
+jest.mock("@/features/notifications/handler", () => ({
+  useNotificationHandler: jest.fn(),
+}));
+
 describe("RootLayout", () => {
   it("renders without crashing", async () => {
     await expect(render(<RootLayout />)).toBeTruthy();

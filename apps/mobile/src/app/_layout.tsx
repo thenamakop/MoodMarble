@@ -7,9 +7,11 @@ import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import { useNotificationHandler } from "@/features/notifications/handler";
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
+  useNotificationHandler();
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>

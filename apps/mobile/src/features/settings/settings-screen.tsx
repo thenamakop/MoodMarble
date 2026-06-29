@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
+  Linking,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -14,6 +15,11 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { BottomTabInset, Spacing } from "@/constants/theme";
 import { getReminderRuntimeSupport } from "@/features/notifications/platform";
+import {
+  getNotificationPermissionStatus,
+  requestNotificationPermission,
+  type NotificationPermissionStatus,
+} from "@/features/notifications/permissions";
 import {
   setReminderOptIn,
   setReminderTimes,
@@ -33,10 +39,13 @@ const SUGGESTED_REMINDER_TIMES = ["09:00", "13:00", "18:00"];
 interface SettingsScreenProps {
   loadSettings?: () => Promise<LocalSettings>;
   onClearLocalData?: () => Promise<void> | void;
-  onRequestOnboardingReplay?: () => Promise<void> | void;
+  onRequestOnboardingReplay?: () => Promise<unknown> | void;
   onReturnHome?: () => void;
   onSignOut?: () => Promise<void> | void;
   saveSettings?: (settings: LocalSettings) => Promise<LocalSettings>;
+  getNotificationPermission?: () => Promise<NotificationPermissionStatus>;
+  requestNotificationPermission?: () => Promise<NotificationPermissionStatus>;
+  openAppSettings?: () => Promise<void>;
 }
 
 export function SettingsScreen({
@@ -46,6 +55,12 @@ export function SettingsScreen({
   onReturnHome,
   onSignOut,
   saveSettings = persistLocalReminderSettings,
+  getNotificationPermission = getNotificationPermissionStatus,
+  requestNotificationPermission:
+    requestPermission = requestNotificationPermission,
+  openAppSettings = async () => {
+    await Linking.openSettings();
+  },
 }: SettingsScreenProps) {
   const theme = useTheme();
   const reminderRuntimeSupport = getReminderRuntimeSupport();
@@ -55,6 +70,9 @@ export function SettingsScreen({
   const [isBusy, setIsBusy] = useState(true);
   const [isClearPromptVisible, setIsClearPromptVisible] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatus] =
+    useState<NotificationPermissionStatus>("undetermined");
+  const [isPermissionBusy, setIsPermissionBusy] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -85,6 +103,24 @@ export function SettingsScreen({
     };
   }, [loadSettings]);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    async function checkPermission() {
+      const status = await getNotificationPermission();
+
+      if (!cancelled) {
+        setPermissionStatus(status);
+      }
+    }
+
+    void checkPermission();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [getNotificationPermission]);
+
   const hasTimeChanges = useMemo(() => {
     if (!settings) {
       return false;
@@ -96,29 +132,98 @@ export function SettingsScreen({
     );
   }, [draftReminderTimes, settings]);
 
+  async function refreshPermissionStatus() {
+    const status = await getNotificationPermission();
+    setPermissionStatus(status);
+  }
+
   async function handleToggleReminders(enabled: boolean) {
     if (!settings) {
       return;
     }
 
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    if (!enabled) {
+      try {
+        const savedSettings = await saveSettings(
+          setReminderOptIn(settings, false),
+        );
+        setSettings(savedSettings);
+        setDraftReminderTimes(savedSettings.reminderTimes);
+        setStatusMessage(
+          "Daily reminders are off. Your saved times stay on this device.",
+        );
+      } catch (error) {
+        setErrorMessage(
+          error instanceof Error
+            ? error.message
+            : "Unable to update reminder preferences right now.",
+        );
+      }
+      return;
+    }
+
+    if (
+      !reminderRuntimeSupport.supportsLocalNotifications ||
+      !reminderRuntimeSupport.canManageSchedules
+    ) {
+      setErrorMessage(
+        reminderRuntimeSupport.notice ??
+          "Reminders are not supported on this device.",
+      );
+      return;
+    }
+
+    setIsPermissionBusy(true);
+
     try {
+      let currentPermission = permissionStatus;
+
+      if (currentPermission !== "granted") {
+        currentPermission = await requestPermission();
+      }
+
+      if (currentPermission !== "granted") {
+        setErrorMessage(
+          currentPermission === "denied"
+            ? "Notification permission was denied. Enable it in your device settings to receive reminders."
+            : "Notification permission is required to send reminders.",
+        );
+        setPermissionStatus(currentPermission);
+        return;
+      }
+
       const savedSettings = await saveSettings(
-        setReminderOptIn(settings, enabled),
+        setReminderOptIn(settings, true),
       );
       setSettings(savedSettings);
       setDraftReminderTimes(savedSettings.reminderTimes);
-      setErrorMessage(null);
       setStatusMessage(
-        enabled
-          ? (reminderRuntimeSupport.notice ??
-              "Daily reminders are on for this device.")
-          : "Daily reminders are off. Your saved times stay on this device.",
+        reminderRuntimeSupport.notice ??
+          "Daily reminders are on for this device.",
       );
     } catch (error) {
       setErrorMessage(
         error instanceof Error
           ? error.message
           : "Unable to update reminder preferences right now.",
+      );
+    } finally {
+      setIsPermissionBusy(false);
+      await refreshPermissionStatus();
+    }
+  }
+
+  async function handleOpenNotificationSettings() {
+    try {
+      await openAppSettings();
+    } catch (error) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : "Unable to open device settings.",
       );
     }
   }
@@ -128,13 +233,34 @@ export function SettingsScreen({
       return;
     }
 
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    if (
+      settings.remindersEnabled &&
+      (!reminderRuntimeSupport.supportsLocalNotifications ||
+        !reminderRuntimeSupport.canManageSchedules)
+    ) {
+      setErrorMessage(
+        reminderRuntimeSupport.notice ??
+          "Reminders are not supported on this device.",
+      );
+      return;
+    }
+
+    if (settings.remindersEnabled && permissionStatus !== "granted") {
+      setErrorMessage(
+        "Notification permission is required. Enable reminders first or grant permission in device settings.",
+      );
+      return;
+    }
+
     try {
       const savedSettings = await saveSettings(
         setReminderTimes(settings, draftReminderTimes),
       );
       setSettings(savedSettings);
       setDraftReminderTimes(savedSettings.reminderTimes);
-      setErrorMessage(null);
       setStatusMessage(
         reminderRuntimeSupport.notice ?? "Reminder times saved on this device.",
       );
@@ -296,6 +422,11 @@ export function SettingsScreen({
                 </ThemedText>
               </View>
               <Switch
+                disabled={
+                  isPermissionBusy ||
+                  !reminderRuntimeSupport.supportsLocalNotifications ||
+                  !reminderRuntimeSupport.canManageSchedules
+                }
                 onValueChange={handleToggleReminders}
                 testID="settings-reminders-switch"
                 trackColor={{
@@ -309,6 +440,12 @@ export function SettingsScreen({
               Saved reminder times stay on this device even when reminders are
               turned off.
             </ThemedText>
+            <PermissionStatusRow
+              busy={isPermissionBusy}
+              onOpenSettings={handleOpenNotificationSettings}
+              status={permissionStatus}
+              theme={theme}
+            />
             {reminderRuntimeSupport.notice ? (
               <ThemedText
                 testID="settings-reminder-runtime-notice"
@@ -555,6 +692,56 @@ export function SettingsScreen({
   );
 }
 
+function PermissionStatusRow({
+  busy,
+  onOpenSettings,
+  status,
+  theme,
+}: {
+  busy: boolean;
+  onOpenSettings: () => void;
+  status: NotificationPermissionStatus;
+  theme: ReturnType<typeof useTheme>;
+}) {
+  const statusCopy = {
+    granted: "Notification permission granted.",
+    denied: "Notifications are blocked. Tap below to open device settings.",
+    undetermined:
+      "Permission not requested yet. Enable reminders to request it.",
+    unsupported: "Notifications are not available on this device.",
+  }[status];
+
+  return (
+    <View style={styles.permissionRow}>
+      <ThemedText
+        testID="settings-reminder-permission-status"
+        themeColor="textSecondary"
+        type="small"
+      >
+        {busy ? "Checking notification permission..." : statusCopy}
+      </ThemedText>
+      {status === "denied" ? (
+        <Pressable
+          accessibilityRole="button"
+          disabled={busy}
+          onPress={onOpenSettings}
+          style={({ pressed }) => [
+            styles.permissionButton,
+            {
+              backgroundColor: theme.background,
+              borderColor: theme.backgroundSelected,
+              opacity: busy ? 0.45 : pressed ? 0.85 : 1,
+            },
+          ]}
+          testID="settings-open-notification-settings"
+        >
+          <ThemedText type="smallBold">Open device settings</ThemedText>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
 function getNextSuggestedReminderTime(existingTimes: string[]): string {
   for (const suggestedTime of SUGGESTED_REMINDER_TIMES) {
     if (!existingTimes.includes(suggestedTime)) {
@@ -695,5 +882,15 @@ const styles = StyleSheet.create({
   statusPanel: {
     borderRadius: 20,
     padding: Spacing.three,
+  },
+  permissionRow: {
+    gap: Spacing.two,
+  },
+  permissionButton: {
+    alignSelf: "flex-start",
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
 });

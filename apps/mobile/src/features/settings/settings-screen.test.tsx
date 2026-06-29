@@ -17,11 +17,22 @@ jest.mock("@/features/notifications/platform", () => ({
   })),
 }));
 
+jest.mock("@/features/notifications/permissions", () => ({
+  getNotificationPermissionStatus: jest.fn(async () => "undetermined"),
+  requestNotificationPermission: jest.fn(async () => "granted"),
+}));
+
 const { getReminderRuntimeSupport } = jest.requireMock(
   "@/features/notifications/platform",
 ) as {
   getReminderRuntimeSupport: jest.Mock;
 };
+
+const { getNotificationPermissionStatus, requestNotificationPermission } =
+  jest.requireMock("@/features/notifications/permissions") as {
+    getNotificationPermissionStatus: jest.Mock;
+    requestNotificationPermission: jest.Mock;
+  };
 
 const defaultSettings = {
   version: 1 as const,
@@ -83,7 +94,7 @@ describe("SettingsScreen", () => {
     await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
   });
 
-  it("toggles reminders on and persists the local opt-in state", async () => {
+  it("toggles reminders on and persists the local opt-in state after permission is granted", async () => {
     const saveSettings = jest.fn(async (settings) => settings);
     const view = await renderScreen({ saveSettings });
 
@@ -94,6 +105,9 @@ describe("SettingsScreen", () => {
     );
 
     await waitFor(() =>
+      expect(requestNotificationPermission).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
       expect(saveSettings).toHaveBeenCalledWith({
         ...defaultSettings,
         remindersEnabled: true,
@@ -102,6 +116,30 @@ describe("SettingsScreen", () => {
     expect(
       view.getByText("Daily reminders are on for this device."),
     ).toBeTruthy();
+  });
+
+  it("does not enable reminders when notification permission is denied", async () => {
+    requestNotificationPermission.mockResolvedValueOnce("denied");
+    const saveSettings = jest.fn(async (settings) => settings);
+    const view = await renderScreen({ saveSettings });
+
+    fireEvent(
+      view.getByTestId("settings-reminders-switch"),
+      "valueChange",
+      true,
+    );
+
+    await waitFor(() =>
+      expect(requestNotificationPermission).toHaveBeenCalledTimes(1),
+    );
+    await waitFor(() =>
+      expect(
+        view.getByText(
+          "Notification permission was denied. Enable it in your device settings to receive reminders.",
+        ),
+      ).toBeTruthy(),
+    );
+    expect(saveSettings).not.toHaveBeenCalled();
   });
 
   it("turns reminders off without losing the saved local reminder times", async () => {
@@ -171,10 +209,15 @@ async function renderScreen(
       onReturnHome={jest.fn()}
       onSignOut={jest.fn()}
       saveSettings={jest.fn().mockResolvedValue(defaultSettings)}
+      getNotificationPermission={getNotificationPermissionStatus}
+      requestNotificationPermission={requestNotificationPermission}
+      openAppSettings={jest.fn()}
       {...overrides}
     />,
   );
 
-  await waitFor(() => expect(view.getByText("Settings")).toBeTruthy());
+  await waitFor(() => expect(view.getByText("Settings")).toBeTruthy(), {
+    timeout: 5000,
+  });
   return view;
 }

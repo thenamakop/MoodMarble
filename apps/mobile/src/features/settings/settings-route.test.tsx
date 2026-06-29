@@ -1,6 +1,6 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
-import SettingsRoute from "@/app/settings";
+import SettingsRoute from "@/app/(tabs)/settings";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 import { requestStoredOnboardingReplay } from "@/features/settings/storage";
 

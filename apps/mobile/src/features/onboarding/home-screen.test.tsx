@@ -5,7 +5,7 @@ import {
   waitFor,
 } from "@testing-library/react-native";
 
-import HomeScreen from "@/app/index";
+import HomeScreen from "@/app/(tabs)/index";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
 import { saveAnonymousSession } from "@/features/onboarding/session";
 import { restoreAnonymousSession } from "@/features/onboarding/session-boundary";

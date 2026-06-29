@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import type { LocalSettings, ReminderTime } from "@/features/settings/model";
 import { loadLocalSettings } from "@/features/settings/storage";
 
+import { loadNativeModule } from "./native-module";
 import {
   getReminderRuntimeSupport,
   prepareReminderNotificationPlatformAsync,
@@ -95,7 +96,9 @@ export async function syncReminderSchedule(
   const notificationsModule =
     options.notificationsModule ??
     (await (options.loadNotificationsModule ?? loadNotificationsModule)());
-  const platformModule = options.platformModule ?? notificationsModule;
+  const platformModule: ReminderNotificationPlatformModule =
+    options.platformModule ??
+    (notificationsModule as unknown as ReminderNotificationPlatformModule);
 
   if (!settings.remindersEnabled) {
     const cancelledIdentifiers = await cancelScheduledReminderNotifications({
@@ -258,7 +261,5 @@ function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
 
 async function loadNotificationsModule(): Promise<ReminderNotificationsModule> {
   // Avoid a static Metro dependency on expo-notifications during Expo Go startup.
-  return (
-    eval("require") as (moduleName: string) => ReminderNotificationsModule
-  )("expo-notifications");
+  return loadNativeModule<ReminderNotificationsModule>("expo-notifications");
 }

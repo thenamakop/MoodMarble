@@ -32,7 +32,7 @@ jest.mock("@/features/notifications/platform", () => ({
   })),
 }));
 
-import SettingsRoute from "@/app/settings";
+import SettingsRoute from "@/app/(tabs)/settings";
 
 describe("settings startup safety", () => {
   afterEach(() => {

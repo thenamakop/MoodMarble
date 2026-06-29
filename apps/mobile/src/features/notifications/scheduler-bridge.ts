@@ -23,13 +23,14 @@ function buildUnsupportedSyncResult(): ReminderScheduleSyncResult {
   };
 }
 
-async function loadSchedulerModule() {
-  // Keep the scheduler out of the startup dependency graph.
-  return Promise.resolve(
-    (eval("require") as (modulePath: string) => typeof import("./scheduler"))(
-      "./scheduler",
-    ),
-  );
+function loadSchedulerModule() {
+  // Use a lazy CommonJS require so Jest can still mock `./scheduler`, while
+  // Metro does not trace it as a static dependency. This keeps the scheduler
+  // (and transitively `expo-notifications`) out of the startup bundle.
+  // eslint-disable-next-line no-eval
+  return (eval("require") as typeof require)(
+    "./scheduler",
+  ) as typeof import("./scheduler");
 }
 
 export async function syncReminderScheduleForRuntime(
@@ -49,7 +50,7 @@ export async function syncReminderScheduleForRuntime(
     return buildUnsupportedSyncResult();
   }
 
-  const { syncReminderSchedule } = await loadSchedulerModule();
+  const { syncReminderSchedule } = loadSchedulerModule();
   return syncReminderSchedule(settings, options);
 }
 
@@ -69,7 +70,7 @@ export async function syncStoredReminderScheduleForRuntime(
     return buildUnsupportedSyncResult();
   }
 
-  const { syncStoredReminderSchedule } = await loadSchedulerModule();
+  const { syncStoredReminderSchedule } = loadSchedulerModule();
   return syncStoredReminderSchedule(options);
 }
 
@@ -89,6 +90,6 @@ export async function cancelReminderNotificationsForRuntime(
     return [];
   }
 
-  const { cancelScheduledReminderNotifications } = await loadSchedulerModule();
+  const { cancelScheduledReminderNotifications } = loadSchedulerModule();
   return cancelScheduledReminderNotifications(options);
 }
