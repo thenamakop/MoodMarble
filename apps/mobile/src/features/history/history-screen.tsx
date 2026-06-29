@@ -66,6 +66,7 @@ export function LocalHistoryScreen({
           </View>
 
           <Pressable
+            accessibilityLabel="Back to marbles"
             accessibilityRole="button"
             onPress={handleReturnHome}
             style={({ pressed }) => [
@@ -90,6 +91,7 @@ export function LocalHistoryScreen({
         testID="mood-filter-row"
       >
         <Pressable
+          accessibilityLabel="Show all moods"
           accessibilityRole="button"
           accessibilityState={{ selected: selectedMoodFilter === null }}
           onPress={() => setSelectedMoodFilter(null)}
@@ -113,6 +115,7 @@ export function LocalHistoryScreen({
           return (
             <Pressable
               key={mood}
+              accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
               accessibilityRole="button"
               accessibilityState={{ selected: isSelected }}
               onPress={() => setSelectedMoodFilter(isSelected ? null : mood)}
@@ -160,6 +163,7 @@ function HistorySwitchButton({
 }) {
   return (
     <Pressable
+      accessibilityLabel={`${label} view`}
       accessibilityRole="button"
       accessibilityState={{ selected: isActive }}
       onPress={onPress}

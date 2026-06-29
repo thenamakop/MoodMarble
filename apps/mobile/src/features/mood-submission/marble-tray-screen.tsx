@@ -25,12 +25,7 @@ import {
 } from "@/contracts/mood-submission";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import {
-  BottomTabInset,
-  Colors,
-  MaxContentWidth,
-  Spacing,
-} from "@/constants/theme";
+import { BottomTabInset, Colors, MaxContentWidth, Spacing } from "@/constants/theme";
 import {
   createLocalMoodHistoryRecord,
   extractLocalMoodHistoryRecordInput,
@@ -71,13 +66,10 @@ export function MarbleTrayScreen({
   const [note, setNote] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [confirmationMood, setConfirmationMood] = useState<MoodValue | null>(
-    null,
-  );
+  const [confirmationMood, setConfirmationMood] = useState<MoodValue | null>(null);
 
   const hasSubmissionContext = Boolean(workspaceId && teamId && deviceJwt);
-  const canSubmit =
-    Boolean(selectedMood) && hasSubmissionContext && !isSubmitting;
+  const canSubmit = Boolean(selectedMood) && hasSubmissionContext && !isSubmitting;
   const selectedMoodLabel = selectedMood ? MOOD_LABELS[selectedMood] : null;
 
   const safeBottomPadding = useMemo(() => {
@@ -155,9 +147,7 @@ export function MarbleTrayScreen({
       await onSubmitMood(payload, deviceJwt);
       try {
         await appendLocalMoodHistoryRecord(
-          createLocalMoodHistoryRecord(
-            extractLocalMoodHistoryRecordInput(payload),
-          ),
+          createLocalMoodHistoryRecord(extractLocalMoodHistoryRecordInput(payload)),
         );
       } catch {
         // Keep the confirmed submission flow intact even if local persistence fails.
@@ -169,10 +159,7 @@ export function MarbleTrayScreen({
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setConfirmationMood(submittedMood);
     } catch (error) {
-      if (
-        error instanceof Error &&
-        error.message === "Daily mood submission limit reached."
-      ) {
+      if (error instanceof Error && error.message === "Daily mood submission limit reached.") {
         setErrorMessage(error.message);
       } else {
         setErrorMessage("Unable to submit mood right now.");
@@ -184,17 +171,11 @@ export function MarbleTrayScreen({
 
   return (
     <ThemedView style={styles.screen}>
-      <SubmissionConfirmation
-        mood={confirmationMood}
-        onDismiss={handleDismissConfirmation}
-      />
+      <SubmissionConfirmation mood={confirmationMood} onDismiss={handleDismissConfirmation} />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[
-            styles.contentContainer,
-            { paddingBottom: safeBottomPadding },
-          ]}
+          contentContainerStyle={[styles.contentContainer, { paddingBottom: safeBottomPadding }]}
           testID="marble-tray-scroll-view"
         >
           <View style={styles.heroSection}>
@@ -202,11 +183,12 @@ export function MarbleTrayScreen({
               Drop one marble
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              Share a private snapshot of your day. No names. No public feed.
-              Just one anonymous signal.
+              Share a private snapshot of your day. No names. No public feed. Just one anonymous
+              signal.
             </ThemedText>
             <View style={styles.heroActions}>
               <Pressable
+                accessibilityLabel="View history"
                 accessibilityRole="button"
                 onPress={handleOpenHistory}
                 style={({ pressed }) => [
@@ -222,6 +204,7 @@ export function MarbleTrayScreen({
                 <ThemedText type="smallBold">View history</ThemedText>
               </Pressable>
               <Pressable
+                accessibilityLabel="Open settings"
                 accessibilityRole="button"
                 onPress={handleOpenSettings}
                 style={({ pressed }) => [
@@ -245,9 +228,7 @@ export function MarbleTrayScreen({
                 Pick a mood
               </ThemedText>
               <ThemedText themeColor="textSecondary">
-                {selectedMoodLabel
-                  ? `Selected: ${selectedMoodLabel}`
-                  : "Choose 1 of 9 marbles"}
+                {selectedMoodLabel ? `Selected: ${selectedMoodLabel}` : "Choose 1 of 9 marbles"}
               </ThemedText>
             </View>
 
@@ -258,12 +239,11 @@ export function MarbleTrayScreen({
                 return (
                   <Pressable
                     key={mood}
+                    accessibilityLabel={`Select ${MOOD_LABELS[mood]} mood`}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => {
-                      void Haptics.impactAsync(
-                        Haptics.ImpactFeedbackStyle.Medium,
-                      );
+                      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
                       setErrorMessage(null);
                       setConfirmationMood(null);
                       setSelectedMood(mood);
@@ -277,12 +257,7 @@ export function MarbleTrayScreen({
                     ]}
                     testID={`mood-${mood}`}
                   >
-                    <View
-                      style={[
-                        styles.marbleCircle,
-                        { backgroundColor: MOOD_COLORS[mood] },
-                      ]}
-                    />
+                    <View style={[styles.marbleCircle, { backgroundColor: MOOD_COLORS[mood] }]} />
                     <ThemedText type="smallBold" style={styles.marbleLabel}>
                       {MOOD_LABELS[mood]}
                     </ThemedText>
@@ -309,6 +284,7 @@ export function MarbleTrayScreen({
                 return (
                   <Pressable
                     key={tag}
+                    accessibilityLabel={`Toggle ${tag} tag`}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => {
@@ -319,12 +295,8 @@ export function MarbleTrayScreen({
                       styles.tagChip,
                       {
                         opacity: pressed ? 0.85 : 1,
-                        backgroundColor: isSelected
-                          ? theme.backgroundSelected
-                          : theme.background,
-                        borderColor: isSelected
-                          ? theme.text
-                          : theme.backgroundSelected,
+                        backgroundColor: isSelected ? theme.backgroundSelected : theme.background,
+                        borderColor: isSelected ? theme.text : theme.backgroundSelected,
                       },
                     ]}
                     testID={`tag-${tag}`}
@@ -373,16 +345,15 @@ export function MarbleTrayScreen({
             {errorMessage ? (
               <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
             ) : !hasSubmissionContext ? (
-              <ThemedText
-                testID="submission-context-hint"
-                themeColor="textSecondary"
-              >
+              <ThemedText testID="submission-context-hint" themeColor="textSecondary">
                 Submission needs workspace access before a marble can be shared.
               </ThemedText>
             ) : null}
           </View>
 
           <Pressable
+            accessibilityLabel="Share marble"
+            accessibilityHint="Submits your mood anonymously"
             accessibilityRole="button"
             accessibilityState={{ disabled: !canSubmit }}
             disabled={!canSubmit}
@@ -390,9 +361,7 @@ export function MarbleTrayScreen({
             style={({ pressed }) => [
               styles.submitButton,
               {
-                backgroundColor: canSubmit
-                  ? theme.text
-                  : theme.backgroundSelected,
+                backgroundColor: canSubmit ? theme.text : theme.backgroundSelected,
                 opacity: pressed && canSubmit ? 0.9 : 1,
               },
             ]}
@@ -401,16 +370,12 @@ export function MarbleTrayScreen({
             {isSubmitting ? (
               <View style={styles.submitLoading}>
                 <ActivityIndicator color={theme.background} />
-                <ThemedText
-                  style={[styles.submitLabel, { color: theme.background }]}
-                >
+                <ThemedText style={[styles.submitLabel, { color: theme.background }]}>
                   Sharing...
                 </ThemedText>
               </View>
             ) : (
-              <ThemedText
-                style={[styles.submitLabel, { color: theme.background }]}
-              >
+              <ThemedText style={[styles.submitLabel, { color: theme.background }]}>
                 Share marble
               </ThemedText>
             )}

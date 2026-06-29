@@ -20,16 +20,9 @@ import {
   requestNotificationPermission,
   type NotificationPermissionStatus,
 } from "@/features/notifications/permissions";
-import {
-  setReminderOptIn,
-  setReminderTimes,
-  type LocalSettings,
-} from "@/features/settings/model";
+import { setReminderOptIn, setReminderTimes, type LocalSettings } from "@/features/settings/model";
 import { persistLocalReminderSettings } from "@/features/settings/actions";
-import {
-  loadLocalSettings,
-  requestStoredOnboardingReplay,
-} from "@/features/settings/storage";
+import { loadLocalSettings, requestStoredOnboardingReplay } from "@/features/settings/storage";
 import { useTheme } from "@/hooks/use-theme";
 
 import { clearLocalDeviceData } from "./local-data";
@@ -56,8 +49,7 @@ export function SettingsScreen({
   onSignOut,
   saveSettings = persistLocalReminderSettings,
   getNotificationPermission = getNotificationPermissionStatus,
-  requestNotificationPermission:
-    requestPermission = requestNotificationPermission,
+  requestNotificationPermission: requestPermission = requestNotificationPermission,
   openAppSettings = async () => {
     await Linking.openSettings();
   },
@@ -126,10 +118,7 @@ export function SettingsScreen({
       return false;
     }
 
-    return (
-      JSON.stringify(draftReminderTimes) !==
-      JSON.stringify(settings.reminderTimes)
-    );
+    return JSON.stringify(draftReminderTimes) !== JSON.stringify(settings.reminderTimes);
   }, [draftReminderTimes, settings]);
 
   async function refreshPermissionStatus() {
@@ -147,14 +136,10 @@ export function SettingsScreen({
 
     if (!enabled) {
       try {
-        const savedSettings = await saveSettings(
-          setReminderOptIn(settings, false),
-        );
+        const savedSettings = await saveSettings(setReminderOptIn(settings, false));
         setSettings(savedSettings);
         setDraftReminderTimes(savedSettings.reminderTimes);
-        setStatusMessage(
-          "Daily reminders are off. Your saved times stay on this device.",
-        );
+        setStatusMessage("Daily reminders are off. Your saved times stay on this device.");
       } catch (error) {
         setErrorMessage(
           error instanceof Error
@@ -170,8 +155,7 @@ export function SettingsScreen({
       !reminderRuntimeSupport.canManageSchedules
     ) {
       setErrorMessage(
-        reminderRuntimeSupport.notice ??
-          "Reminders are not supported on this device.",
+        reminderRuntimeSupport.notice ?? "Reminders are not supported on this device.",
       );
       return;
     }
@@ -195,20 +179,13 @@ export function SettingsScreen({
         return;
       }
 
-      const savedSettings = await saveSettings(
-        setReminderOptIn(settings, true),
-      );
+      const savedSettings = await saveSettings(setReminderOptIn(settings, true));
       setSettings(savedSettings);
       setDraftReminderTimes(savedSettings.reminderTimes);
-      setStatusMessage(
-        reminderRuntimeSupport.notice ??
-          "Daily reminders are on for this device.",
-      );
+      setStatusMessage(reminderRuntimeSupport.notice ?? "Daily reminders are on for this device.");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to update reminder preferences right now.",
+        error instanceof Error ? error.message : "Unable to update reminder preferences right now.",
       );
     } finally {
       setIsPermissionBusy(false);
@@ -220,11 +197,7 @@ export function SettingsScreen({
     try {
       await openAppSettings();
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to open device settings.",
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Unable to open device settings.");
     }
   }
 
@@ -242,8 +215,7 @@ export function SettingsScreen({
         !reminderRuntimeSupport.canManageSchedules)
     ) {
       setErrorMessage(
-        reminderRuntimeSupport.notice ??
-          "Reminders are not supported on this device.",
+        reminderRuntimeSupport.notice ?? "Reminders are not supported on this device.",
       );
       return;
     }
@@ -256,19 +228,13 @@ export function SettingsScreen({
     }
 
     try {
-      const savedSettings = await saveSettings(
-        setReminderTimes(settings, draftReminderTimes),
-      );
+      const savedSettings = await saveSettings(setReminderTimes(settings, draftReminderTimes));
       setSettings(savedSettings);
       setDraftReminderTimes(savedSettings.reminderTimes);
-      setStatusMessage(
-        reminderRuntimeSupport.notice ?? "Reminder times saved on this device.",
-      );
+      setStatusMessage(reminderRuntimeSupport.notice ?? "Reminder times saved on this device.");
     } catch (error) {
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to save reminder times right now.",
+        error instanceof Error ? error.message : "Unable to save reminder times right now.",
       );
     }
   }
@@ -277,15 +243,11 @@ export function SettingsScreen({
     try {
       await onRequestOnboardingReplay();
       setErrorMessage(null);
-      setStatusMessage(
-        "Onboarding replay is ready the next time you return home.",
-      );
+      setStatusMessage("Onboarding replay is ready the next time you return home.");
     } catch (error) {
       setStatusMessage(null);
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to prepare onboarding replay right now.",
+        error instanceof Error ? error.message : "Unable to prepare onboarding replay right now.",
       );
     }
   }
@@ -302,9 +264,7 @@ export function SettingsScreen({
     } catch (error) {
       setStatusMessage(null);
       setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to clear local data right now.",
+        error instanceof Error ? error.message : "Unable to clear local data right now.",
       );
     }
   }
@@ -348,9 +308,7 @@ export function SettingsScreen({
     return (
       <ThemedView style={styles.loadingContainer}>
         <ActivityIndicator color={theme.text} />
-        <ThemedText themeColor="textSecondary">
-          Loading local settings...
-        </ThemedText>
+        <ThemedText themeColor="textSecondary">Loading local settings...</ThemedText>
       </ThemedView>
     );
   }
@@ -369,13 +327,13 @@ export function SettingsScreen({
                 Settings
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-                Keep reminders local to this device and manage your private
-                MoodMarble preferences.
+                Keep reminders local to this device and manage your private MoodMarble preferences.
               </ThemedText>
             </View>
 
             <View style={styles.heroActionRow}>
               <Pressable
+                accessibilityLabel="Back to marbles"
                 accessibilityRole="button"
                 onPress={onReturnHome}
                 style={({ pressed }) => [
@@ -392,6 +350,7 @@ export function SettingsScreen({
               </Pressable>
 
               <Pressable
+                accessibilityLabel="Sign out"
                 accessibilityRole="button"
                 onPress={async () => {
                   await onSignOut?.();
@@ -422,6 +381,7 @@ export function SettingsScreen({
                 </ThemedText>
               </View>
               <Switch
+                accessibilityLabel="Enable daily reminders"
                 disabled={
                   isPermissionBusy ||
                   !reminderRuntimeSupport.supportsLocalNotifications ||
@@ -437,8 +397,7 @@ export function SettingsScreen({
               />
             </View>
             <ThemedText themeColor="textSecondary" type="small">
-              Saved reminder times stay on this device even when reminders are
-              turned off.
+              Saved reminder times stay on this device even when reminders are turned off.
             </ThemedText>
             <PermissionStatusRow
               busy={isPermissionBusy}
@@ -478,9 +437,7 @@ export function SettingsScreen({
                       autoCorrect={false}
                       keyboardType="numbers-and-punctuation"
                       maxLength={5}
-                      onChangeText={(nextValue) =>
-                        handleReminderTimeChange(index, nextValue)
-                      }
+                      onChangeText={(nextValue) => handleReminderTimeChange(index, nextValue)}
                       placeholder="18:00"
                       placeholderTextColor={theme.textSecondary}
                       style={[
@@ -498,6 +455,7 @@ export function SettingsScreen({
 
                   {draftReminderTimes.length > 1 ? (
                     <Pressable
+                      accessibilityLabel={`Remove reminder ${index + 1}`}
                       accessibilityRole="button"
                       onPress={() => handleRemoveReminderTime(index)}
                       style={({ pressed }) => [
@@ -519,6 +477,7 @@ export function SettingsScreen({
 
             <View style={styles.actionRow}>
               <Pressable
+                accessibilityLabel="Add reminder time"
                 accessibilityRole="button"
                 disabled={draftReminderTimes.length >= 3}
                 onPress={handleAddReminderTime}
@@ -527,12 +486,7 @@ export function SettingsScreen({
                   {
                     backgroundColor: theme.background,
                     borderColor: theme.backgroundSelected,
-                    opacity:
-                      draftReminderTimes.length >= 3
-                        ? 0.45
-                        : pressed
-                          ? 0.85
-                          : 1,
+                    opacity: draftReminderTimes.length >= 3 ? 0.45 : pressed ? 0.85 : 1,
                   },
                 ]}
                 testID="settings-add-reminder-time"
@@ -541,6 +495,7 @@ export function SettingsScreen({
               </Pressable>
 
               <Pressable
+                accessibilityLabel="Apply reminder times"
                 accessibilityRole="button"
                 disabled={!hasTimeChanges}
                 onPress={handleApplyReminderTimes}
@@ -560,10 +515,7 @@ export function SettingsScreen({
             </View>
 
             {errorMessage ? (
-              <ThemedText
-                testID="settings-error-message"
-                themeColor="textSecondary"
-              >
+              <ThemedText testID="settings-error-message" themeColor="textSecondary">
                 {errorMessage}
               </ThemedText>
             ) : null}
@@ -575,12 +527,13 @@ export function SettingsScreen({
                 Onboarding
               </ThemedText>
               <ThemedText themeColor="textSecondary">
-                Replay the Week 3 privacy-first intro without creating a new
-                identity or sending anything new to the backend.
+                Replay the Week 3 privacy-first intro without creating a new identity or sending
+                anything new to the backend.
               </ThemedText>
             </View>
 
             <Pressable
+              accessibilityLabel="Replay onboarding"
               accessibilityRole="button"
               onPress={handleRequestOnboardingReplay}
               style={({ pressed }) => [
@@ -603,12 +556,13 @@ export function SettingsScreen({
                 Local-only data
               </ThemedText>
               <ThemedText themeColor="textSecondary">
-                Reminder settings, personal history, and the anonymous session
-                stay on this device unless you clear them.
+                Reminder settings, personal history, and the anonymous session stay on this device
+                unless you clear them.
               </ThemedText>
             </View>
 
             <Pressable
+              accessibilityLabel="Delete local data"
               accessibilityRole="button"
               onPress={() => setIsClearPromptVisible(true)}
               style={({ pressed }) => [
@@ -625,21 +579,17 @@ export function SettingsScreen({
             </Pressable>
 
             {isClearPromptVisible ? (
-              <View
-                style={styles.clearPrompt}
-                testID="settings-clear-local-data-prompt"
-              >
-                <ThemedText type="smallBold">
-                  Clear data from this device?
-                </ThemedText>
+              <View style={styles.clearPrompt} testID="settings-clear-local-data-prompt">
+                <ThemedText type="smallBold">Clear data from this device?</ThemedText>
                 <ThemedText themeColor="textSecondary">
-                  This removes the anonymous session, local history, saved
-                  reminder settings, and scheduled reminders from this device.
-                  Server submissions and manager analytics stay unchanged.
+                  This removes the anonymous session, local history, saved reminder settings, and
+                  scheduled reminders from this device. Server submissions and manager analytics
+                  stay unchanged.
                 </ThemedText>
 
                 <View style={styles.actionRow}>
                   <Pressable
+                    accessibilityLabel="Cancel deleting local data"
                     accessibilityRole="button"
                     onPress={() => setIsClearPromptVisible(false)}
                     style={({ pressed }) => [
@@ -656,6 +606,7 @@ export function SettingsScreen({
                   </Pressable>
 
                   <Pressable
+                    accessibilityLabel="Confirm clear this device"
                     accessibilityRole="button"
                     onPress={handleConfirmClearLocalData}
                     style={({ pressed }) => [
@@ -667,10 +618,7 @@ export function SettingsScreen({
                     ]}
                     testID="settings-confirm-clear-local-data"
                   >
-                    <ThemedText
-                      type="smallBold"
-                      style={styles.primaryButtonText}
-                    >
+                    <ThemedText type="smallBold" style={styles.primaryButtonText}>
                       Clear this device
                     </ThemedText>
                   </Pressable>
@@ -681,9 +629,7 @@ export function SettingsScreen({
 
           {statusMessage ? (
             <ThemedView type="backgroundElement" style={styles.statusPanel}>
-              <ThemedText testID="settings-status-message">
-                {statusMessage}
-              </ThemedText>
+              <ThemedText testID="settings-status-message">{statusMessage}</ThemedText>
             </ThemedView>
           ) : null}
         </ScrollView>
@@ -706,8 +652,7 @@ function PermissionStatusRow({
   const statusCopy = {
     granted: "Notification permission granted.",
     denied: "Notifications are blocked. Tap below to open device settings.",
-    undetermined:
-      "Permission not requested yet. Enable reminders to request it.",
+    undetermined: "Permission not requested yet. Enable reminders to request it.",
     unsupported: "Notifications are not available on this device.",
   }[status];
 
@@ -722,6 +667,7 @@ function PermissionStatusRow({
       </ThemedText>
       {status === "denied" ? (
         <Pressable
+          accessibilityLabel="Open device notification settings"
           accessibilityRole="button"
           disabled={busy}
           onPress={onOpenSettings}
@@ -749,9 +695,7 @@ function getNextSuggestedReminderTime(existingTimes: string[]): string {
     }
   }
 
-  const [lastHour] = (existingTimes[existingTimes.length - 1] ?? "18:00")
-    .split(":")
-    .map(Number);
+  const [lastHour] = (existingTimes[existingTimes.length - 1] ?? "18:00").split(":").map(Number);
   const nextHour = (lastHour + 1) % 24;
   return `${String(nextHour).padStart(2, "0")}:00`;
 }
