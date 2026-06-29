@@ -1,5 +1,6 @@
-import { useCallback, useState } from "react";
+import React, { useCallback, useState } from "react";
 import { useRouter } from "expo-router";
+import { Calendar, Clock } from "lucide-react-native";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
@@ -50,6 +51,7 @@ export function LocalHistoryScreen({
         <View style={styles.actions}>
           <View style={styles.switchRow}>
             <HistorySwitchButton
+              icon={Clock}
               isActive={activeView === "timeline"}
               label="Timeline"
               onPress={() => setActiveView("timeline")}
@@ -57,6 +59,7 @@ export function LocalHistoryScreen({
               theme={theme}
             />
             <HistorySwitchButton
+              icon={Calendar}
               isActive={activeView === "calendar"}
               label="Calendar"
               onPress={() => setActiveView("calendar")}
@@ -149,18 +152,22 @@ export function LocalHistoryScreen({
 }
 
 function HistorySwitchButton({
+  icon: Icon,
   isActive,
   label,
   onPress,
   testID,
   theme,
 }: {
+  icon: React.ComponentType<{ size: number; color: string }>;
   isActive: boolean;
   label: string;
   onPress: () => void;
   testID: string;
   theme: ReturnType<typeof useTheme>;
 }) {
+  const iconColor = isActive ? theme.text : theme.textSecondary;
+
   return (
     <Pressable
       accessibilityLabel={`${label} view`}
@@ -177,7 +184,10 @@ function HistorySwitchButton({
       ]}
       testID={testID}
     >
-      <ThemedText type="smallBold">{label}</ThemedText>
+      <View style={styles.switchButtonContent}>
+        <Icon size={16} color={iconColor} />
+        <ThemedText type="smallBold">{label}</ThemedText>
+      </View>
     </Pressable>
   );
 }
@@ -215,6 +225,11 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  switchButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one,
   },
   backButton: {
     alignSelf: "flex-start",

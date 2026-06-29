@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Bell, RefreshCw, Trash2 } from "lucide-react-native";
 import {
   ActivityIndicator,
   Linking,
@@ -373,9 +374,12 @@ export function SettingsScreen({
           <ThemedView type="backgroundElement" style={styles.panel}>
             <View style={styles.sectionHeader}>
               <View style={styles.sectionCopy}>
-                <ThemedText type="subtitle" style={styles.sectionTitle}>
-                  Daily reminders
-                </ThemedText>
+                <View style={styles.sectionTitleRow}>
+                  <Bell size={16} color={theme.text} />
+                  <ThemedText type="subtitle" style={styles.sectionTitle}>
+                    Daily reminders
+                  </ThemedText>
+                </View>
                 <ThemedText themeColor="textSecondary">
                   Turn quiet check-in prompts on or off for this device.
                 </ThemedText>
@@ -546,7 +550,10 @@ export function SettingsScreen({
               ]}
               testID="settings-replay-onboarding"
             >
-              <ThemedText type="smallBold">Replay onboarding</ThemedText>
+              <View style={styles.buttonContent}>
+                <RefreshCw size={16} color={theme.text} />
+                <ThemedText type="smallBold">Replay onboarding</ThemedText>
+              </View>
             </Pressable>
           </ThemedView>
 
@@ -575,7 +582,10 @@ export function SettingsScreen({
               ]}
               testID="settings-open-clear-local-data"
             >
-              <ThemedText type="smallBold">Delete local data</ThemedText>
+              <View style={styles.buttonContent}>
+                <Trash2 size={16} color={theme.text} />
+                <ThemedText type="smallBold">Delete local data</ThemedText>
+              </View>
             </Pressable>
 
             {isClearPromptVisible ? (
@@ -836,5 +846,15 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
+  },
+  sectionTitleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
+  },
+  buttonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two,
   },
 });

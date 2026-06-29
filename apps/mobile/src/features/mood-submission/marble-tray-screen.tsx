@@ -1,6 +1,7 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
 import * as Haptics from "expo-haptics";
+import { Send } from "lucide-react-native";
 import {
   ActivityIndicator,
   Platform,
@@ -375,9 +376,12 @@ export function MarbleTrayScreen({
                 </ThemedText>
               </View>
             ) : (
-              <ThemedText style={[styles.submitLabel, { color: theme.background }]}>
-                Share marble
-              </ThemedText>
+              <View style={styles.submitLoading}>
+                <Send size={18} color={theme.background} />
+                <ThemedText style={[styles.submitLabel, { color: theme.background }]}>
+                  Share marble
+                </ThemedText>
+              </View>
             )}
           </Pressable>
         </ScrollView>
