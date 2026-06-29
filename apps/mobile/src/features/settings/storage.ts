@@ -1,4 +1,4 @@
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 
 import {
@@ -36,9 +36,7 @@ export async function loadLocalSettings(): Promise<LocalSettings> {
   }
 }
 
-export async function saveLocalSettings(
-  settings: LocalSettings,
-): Promise<LocalSettings> {
+export async function saveLocalSettings(settings: LocalSettings): Promise<LocalSettings> {
   const normalizedSettings = parseLocalSettings(settings);
   const serializedSettings = JSON.stringify(normalizedSettings);
   const webStorage = getWebLocalSettingsStorage();
@@ -59,10 +57,7 @@ export async function saveLocalSettings(
     return normalizedSettings;
   }
 
-  await SecureStore.setItemAsync(
-    LOCAL_SETTINGS_STORAGE_KEY,
-    serializedSettings,
-  );
+  await AsyncStorage.setItem(LOCAL_SETTINGS_STORAGE_KEY, serializedSettings);
   return normalizedSettings;
 }
 
@@ -71,9 +66,7 @@ export async function requestStoredOnboardingReplay(): Promise<LocalSettings> {
 }
 
 export async function clearStoredOnboardingReplayRequest(): Promise<LocalSettings> {
-  return saveLocalSettings(
-    clearOnboardingReplayRequest(await loadLocalSettings()),
-  );
+  return saveLocalSettings(clearOnboardingReplayRequest(await loadLocalSettings()));
 }
 
 export async function clearLocalSettings(): Promise<void> {
@@ -93,7 +86,7 @@ export async function clearLocalSettings(): Promise<void> {
     return;
   }
 
-  await SecureStore.deleteItemAsync(LOCAL_SETTINGS_STORAGE_KEY);
+  await AsyncStorage.removeItem(LOCAL_SETTINGS_STORAGE_KEY);
 }
 
 async function readStoredLocalSettings(): Promise<string | null> {
@@ -101,10 +94,7 @@ async function readStoredLocalSettings(): Promise<string | null> {
 
   if (webStorage) {
     try {
-      return (
-        webStorage.getItem(LOCAL_SETTINGS_STORAGE_KEY) ??
-        webLocalSettingsMemoryFallback
-      );
+      return webStorage.getItem(LOCAL_SETTINGS_STORAGE_KEY) ?? webLocalSettingsMemoryFallback;
     } catch {
       return webLocalSettingsMemoryFallback;
     }
@@ -114,7 +104,7 @@ async function readStoredLocalSettings(): Promise<string | null> {
     return webLocalSettingsMemoryFallback;
   }
 
-  return SecureStore.getItemAsync(LOCAL_SETTINGS_STORAGE_KEY);
+  return AsyncStorage.getItem(LOCAL_SETTINGS_STORAGE_KEY);
 }
 
 function getWebLocalSettingsStorage(): Storage | null {

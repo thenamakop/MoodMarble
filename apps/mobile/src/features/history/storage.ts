@@ -1,11 +1,8 @@
-import * as SecureStore from "expo-secure-store";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { Platform } from "react-native";
 import { z } from "zod";
 
-import type {
-  LocalMoodHistoryDayGroup,
-  LocalMoodHistoryRecord,
-} from "@/features/history/model";
+import type { LocalMoodHistoryDayGroup, LocalMoodHistoryRecord } from "@/features/history/model";
 import {
   groupLocalMoodHistoryByDay,
   LocalMoodHistoryRecordSchema,
@@ -17,9 +14,7 @@ const LocalMoodHistoryRecordsSchema = z.array(LocalMoodHistoryRecordSchema);
 
 let webHistoryMemoryFallback: string | null = null;
 
-export async function loadLocalMoodHistory(): Promise<
-  LocalMoodHistoryRecord[]
-> {
+export async function loadLocalMoodHistory(): Promise<LocalMoodHistoryRecord[]> {
   const storedValue = await readStoredHistory();
 
   if (!storedValue) {
@@ -49,9 +44,7 @@ export async function saveLocalMoodHistory(
   records: LocalMoodHistoryRecord[],
 ): Promise<LocalMoodHistoryRecord[]> {
   const normalizedRecords = normalizeLocalMoodHistoryRecords(records);
-  const serializedHistory = JSON.stringify(
-    LocalMoodHistoryRecordsSchema.parse(normalizedRecords),
-  );
+  const serializedHistory = JSON.stringify(LocalMoodHistoryRecordsSchema.parse(normalizedRecords));
   const webStorage = getWebHistoryStorage();
 
   if (webStorage) {
@@ -70,7 +63,11 @@ export async function saveLocalMoodHistory(
     return normalizedRecords;
   }
 
-  await SecureStore.setItemAsync(HISTORY_STORAGE_KEY, serializedHistory);
+  try {
+    await AsyncStorage.setItem(HISTORY_STORAGE_KEY, serializedHistory);
+  } catch (error) {
+    console.error("[MoodMarble] Failed to write mood history:", error);
+  }
   return normalizedRecords;
 }
 
@@ -78,17 +75,12 @@ export async function appendLocalMoodHistoryRecord(
   record: LocalMoodHistoryRecord,
 ): Promise<LocalMoodHistoryRecord[]> {
   const currentHistory = await loadLocalMoodHistory();
-  const nextHistory = [
-    ...currentHistory,
-    LocalMoodHistoryRecordSchema.parse(record),
-  ];
+  const nextHistory = [...currentHistory, LocalMoodHistoryRecordSchema.parse(record)];
 
   return saveLocalMoodHistory(nextHistory);
 }
 
-export async function loadGroupedLocalMoodHistory(): Promise<
-  LocalMoodHistoryDayGroup[]
-> {
+export async function loadGroupedLocalMoodHistory(): Promise<LocalMoodHistoryDayGroup[]> {
   return groupLocalMoodHistoryByDay(await loadLocalMoodHistory());
 }
 
@@ -109,7 +101,7 @@ export async function clearLocalMoodHistory(): Promise<void> {
     return;
   }
 
-  await SecureStore.deleteItemAsync(HISTORY_STORAGE_KEY);
+  await AsyncStorage.removeItem(HISTORY_STORAGE_KEY);
 }
 
 async function readStoredHistory(): Promise<string | null> {
@@ -117,9 +109,7 @@ async function readStoredHistory(): Promise<string | null> {
 
   if (webStorage) {
     try {
-      return (
-        webStorage.getItem(HISTORY_STORAGE_KEY) ?? webHistoryMemoryFallback
-      );
+      return webStorage.getItem(HISTORY_STORAGE_KEY) ?? webHistoryMemoryFallback;
     } catch {
       return webHistoryMemoryFallback;
     }
@@ -129,7 +119,7 @@ async function readStoredHistory(): Promise<string | null> {
     return webHistoryMemoryFallback;
   }
 
-  return SecureStore.getItemAsync(HISTORY_STORAGE_KEY);
+  return AsyncStorage.getItem(HISTORY_STORAGE_KEY);
 }
 
 function getWebHistoryStorage(): Storage | null {

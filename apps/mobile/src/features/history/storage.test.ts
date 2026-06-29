@@ -1,3 +1,12 @@
+import { loadAnonymousSession, saveAnonymousSession } from "@/features/onboarding/session";
+import {
+  appendLocalMoodHistoryRecord,
+  clearLocalMoodHistory,
+  loadGroupedLocalMoodHistory,
+  loadLocalMoodHistory,
+  saveLocalMoodHistory,
+} from "@/features/history/storage";
+
 jest.mock("react-native", () => ({
   Platform: {
     OS: "web",
@@ -10,17 +19,9 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(async () => undefined),
 }));
 
-import {
-  loadAnonymousSession,
-  saveAnonymousSession,
-} from "@/features/onboarding/session";
-import {
-  appendLocalMoodHistoryRecord,
-  clearLocalMoodHistory,
-  loadGroupedLocalMoodHistory,
-  loadLocalMoodHistory,
-  saveLocalMoodHistory,
-} from "@/features/history/storage";
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest"),
+);
 
 describe("local mood history storage", () => {
   const originalWindow = globalThis.window;

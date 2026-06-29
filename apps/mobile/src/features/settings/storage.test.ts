@@ -1,28 +1,3 @@
-jest.mock("react-native", () => ({
-  Platform: {
-    OS: "web",
-  },
-}));
-
-jest.mock("expo-secure-store", () => ({
-  deleteItemAsync: jest.fn(async () => undefined),
-  getItemAsync: jest.fn(async () => null),
-  setItemAsync: jest.fn(async () => undefined),
-}));
-
-jest.mock("expo-notifications", () => ({
-  AndroidImportance: {
-    DEFAULT: "default",
-  },
-  AndroidNotificationVisibility: {
-    PUBLIC: "public",
-  },
-  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
-  getAllScheduledNotificationsAsync: jest.fn(async () => []),
-  scheduleNotificationAsync: jest.fn(async () => "scheduled-id"),
-  setNotificationChannelAsync: jest.fn(async () => undefined),
-}));
-
 import {
   clearAnonymousSession,
   loadAnonymousSession,
@@ -41,6 +16,35 @@ import {
   saveLocalSettings,
 } from "@/features/settings/storage";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
+
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "web",
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  deleteItemAsync: jest.fn(async () => undefined),
+  getItemAsync: jest.fn(async () => null),
+  setItemAsync: jest.fn(async () => undefined),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest"),
+);
+
+jest.mock("expo-notifications", () => ({
+  AndroidImportance: {
+    DEFAULT: "default",
+  },
+  AndroidNotificationVisibility: {
+    PUBLIC: "public",
+  },
+  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
+  getAllScheduledNotificationsAsync: jest.fn(async () => []),
+  scheduleNotificationAsync: jest.fn(async () => "scheduled-id"),
+  setNotificationChannelAsync: jest.fn(async () => undefined),
+}));
 
 describe("local settings storage", () => {
   const originalWindow = globalThis.window;
