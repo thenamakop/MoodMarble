@@ -1,12 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ThemedText } from "@/components/themed-text";
@@ -15,11 +8,8 @@ import { BottomTabInset, MaxContentWidth, Spacing } from "@/constants/theme";
 import type { LocalMoodHistoryDayGroup } from "@/features/history/model";
 import { normalizeLocalMoodHistoryRecords } from "@/features/history/model";
 import { calculateLocalMoodHistoryStreakFromDayKeys } from "@/features/history/streak";
-import {
-  clearLocalMoodHistory,
-  loadGroupedLocalMoodHistory,
-} from "@/features/history/storage";
-import { MOOD_COLORS, MOOD_LABELS } from "@/contracts/mood-submission";
+import { clearLocalMoodHistory, loadGroupedLocalMoodHistory } from "@/features/history/storage";
+import { MOOD_COLORS, MOOD_LABELS, type MoodValue } from "@/contracts/mood-submission";
 import { useTheme } from "@/hooks/use-theme";
 
 interface LocalMoodTimelineScreenProps {
@@ -27,6 +17,7 @@ interface LocalMoodTimelineScreenProps {
   loadTimeline?: () => Promise<LocalMoodHistoryDayGroup[]>;
   clearHistory?: () => Promise<void>;
   formatRecordedAt?: (recordedAt: string) => string;
+  moodFilter?: MoodValue | null;
 }
 
 export function LocalMoodTimelineScreen({
@@ -34,6 +25,7 @@ export function LocalMoodTimelineScreen({
   loadTimeline = loadGroupedLocalMoodHistory,
   clearHistory = clearLocalMoodHistory,
   formatRecordedAt = formatLocalRecordedTime,
+  moodFilter = null,
 }: LocalMoodTimelineScreenProps) {
   const theme = useTheme();
   const [dayGroups, setDayGroups] = useState<LocalMoodHistoryDayGroup[]>(
@@ -51,11 +43,22 @@ export function LocalMoodTimelineScreen({
   }, []);
   const streak = useMemo(
     () =>
-      calculateLocalMoodHistoryStreakFromDayKeys(
-        dayGroups.map((group) => group.submission_date),
-      ),
+      calculateLocalMoodHistoryStreakFromDayKeys(dayGroups.map((group) => group.submission_date)),
     [dayGroups],
   );
+
+  const filteredDayGroups = useMemo(() => {
+    if (!moodFilter) {
+      return dayGroups;
+    }
+
+    return dayGroups
+      .map((group) => ({
+        ...group,
+        records: group.records.filter((record) => record.mood_type === moodFilter),
+      }))
+      .filter((group) => group.records.length > 0);
+  }, [dayGroups, moodFilter]);
 
   const hydrateTimeline = useCallback(async () => {
     const nextGroups = normalizeTimelineGroups(await loadTimeline());
@@ -106,18 +109,15 @@ export function LocalMoodTimelineScreen({
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}
-          contentContainerStyle={[
-            styles.contentContainer,
-            { paddingBottom: safeBottomPadding },
-          ]}
+          contentContainerStyle={[styles.contentContainer, { paddingBottom: safeBottomPadding }]}
         >
           <View style={styles.heroSection}>
             <ThemedText type="title" style={styles.title}>
               Your mood timeline
             </ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              Your marbles stay on this device. Scan each day to spot patterns,
-              streaks, and steady stretches.
+              Your marbles stay on this device. Scan each day to spot patterns, streaks, and steady
+              stretches.
             </ThemedText>
           </View>
 
@@ -163,9 +163,7 @@ export function LocalMoodTimelineScreen({
           {isLoading ? (
             <ThemedView type="backgroundElement" style={styles.loadingPanel}>
               <ActivityIndicator color={theme.text} />
-              <ThemedText themeColor="textSecondary">
-                Loading your saved marbles...
-              </ThemedText>
+              <ThemedText themeColor="textSecondary">Loading your saved marbles...</ThemedText>
             </ThemedView>
           ) : dayGroups.length === 0 ? (
             <ThemedView
@@ -177,12 +175,24 @@ export function LocalMoodTimelineScreen({
                 No mood history yet
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                Share your first marble to start a private timeline on this
-                device.
+                Share your first marble to start a private timeline on this device.
+              </ThemedText>
+            </ThemedView>
+          ) : filteredDayGroups.length === 0 ? (
+            <ThemedView
+              type="backgroundElement"
+              style={styles.emptyPanel}
+              testID="timeline-filter-empty-state"
+            >
+              <ThemedText type="subtitle" style={styles.emptyTitle}>
+                No entries for this mood
+              </ThemedText>
+              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+                Try a different filter or drop a marble with this mood.
               </ThemedText>
             </ThemedView>
           ) : (
-            dayGroups.map((group) => (
+            filteredDayGroups.map((group) => (
               <ThemedView
                 key={group.submission_date}
                 type="backgroundElement"
@@ -203,10 +213,7 @@ export function LocalMoodTimelineScreen({
                   {group.records.map((record) => (
                     <View
                       key={record.id}
-                      style={[
-                        styles.entryCard,
-                        { borderColor: theme.backgroundSelected },
-                      ]}
+                      style={[styles.entryCard, { borderColor: theme.backgroundSelected }]}
                       testID={`timeline-entry-${record.id}`}
                     >
                       <View style={styles.entryHeader}>
@@ -219,9 +226,7 @@ export function LocalMoodTimelineScreen({
                               },
                             ]}
                           />
-                          <ThemedText type="smallBold">
-                            {MOOD_LABELS[record.mood_type]}
-                          </ThemedText>
+                          <ThemedText type="smallBold">{MOOD_LABELS[record.mood_type]}</ThemedText>
                         </View>
                         <ThemedText themeColor="textSecondary" type="small">
                           {formatRecordedAt(record.recorded_at)}
@@ -233,9 +238,7 @@ export function LocalMoodTimelineScreen({
                         type="small"
                         testID={`timeline-tags-${record.id}`}
                       >
-                        {record.tags.length > 0
-                          ? record.tags.join("  ")
-                          : "No tags saved"}
+                        {record.tags.length > 0 ? record.tags.join("  ") : "No tags saved"}
                       </ThemedText>
                     </View>
                   ))}
@@ -249,13 +252,9 @@ export function LocalMoodTimelineScreen({
   );
 }
 
-function normalizeTimelineGroups(
-  groups: LocalMoodHistoryDayGroup[],
-): LocalMoodHistoryDayGroup[] {
+function normalizeTimelineGroups(groups: LocalMoodHistoryDayGroup[]): LocalMoodHistoryDayGroup[] {
   return [...groups]
-    .sort((left, right) =>
-      right.submission_date.localeCompare(left.submission_date),
-    )
+    .sort((left, right) => right.submission_date.localeCompare(left.submission_date))
     .map((group) => ({
       ...group,
       records: normalizeLocalMoodHistoryRecords(group.records),
