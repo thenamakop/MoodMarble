@@ -216,8 +216,8 @@ describe("settings local actions", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: true,
     });
     expect(clearAnonymousSession).not.toHaveBeenCalled();

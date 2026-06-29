@@ -72,8 +72,8 @@ describe("local settings storage", () => {
   it("loads default local settings on first launch", async () => {
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
   });
@@ -99,8 +99,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: true,
     });
 
@@ -108,8 +108,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
   });
@@ -148,8 +148,8 @@ describe("local settings storage", () => {
     ]);
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: true,
     });
   });
@@ -159,8 +159,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
 
@@ -194,8 +194,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
     await expect(loadAnonymousSession()).resolves.toEqual({
@@ -244,8 +244,8 @@ describe("local settings storage", () => {
     await expect(loadLocalMoodHistory()).resolves.toEqual([]);
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
   });
