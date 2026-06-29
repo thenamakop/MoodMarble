@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { ActivityIndicator, Platform, StyleSheet, View } from "react-native";
+import { ActivityIndicator, AppState, Platform, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { LocalHistoryScreen } from "@/features/history/history-screen";
@@ -20,6 +20,7 @@ import {
   loadLocalSettings,
   requestStoredOnboardingReplay,
 } from "@/features/settings/storage";
+import { drainQueue } from "@/features/mood-submission/queue";
 import { syncStoredReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 import { useTheme } from "@/hooks/use-theme";
 import { loadAdminSession } from "@/features/admin/session";
@@ -37,13 +38,11 @@ export default function HomeScreen() {
   const teamIdParamKey = getParamDependencyKey(params.team_id);
   const deviceJwtParamKey = getParamDependencyKey(params.device_jwt);
   const [session, setSession] = useState<AnonymousSession | null>(null);
-  const [replaySession, setReplaySession] = useState<AnonymousSession | null>(
-    null,
-  );
+  const [replaySession, setReplaySession] = useState<AnonymousSession | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
-  const [activeNativeScreen, setActiveNativeScreen] = useState<
-    "marbles" | "history" | "settings"
-  >("marbles");
+  const [activeNativeScreen, setActiveNativeScreen] = useState<"marbles" | "history" | "settings">(
+    "marbles",
+  );
   const sessionSyncVersionRef = useRef(0);
 
   useEffect(() => {
@@ -53,11 +52,7 @@ export default function HomeScreen() {
     async function syncSession() {
       // Check admin session first
       const adminSession = await loadAdminSession();
-      if (
-        adminSession &&
-        !cancelled &&
-        sessionSyncVersionRef.current === syncVersion
-      ) {
+      if (adminSession && !cancelled && sessionSyncVersionRef.current === syncVersion) {
         router.replace({
           pathname: "/admin",
           params: buildAdminRouteParams(adminSession),
@@ -68,8 +63,7 @@ export default function HomeScreen() {
       const nextContext = getAnonymousSessionFromParams(params);
       const nextSession = await restoreAnonymousSession(params);
       const localSettings = await loadLocalSettings();
-      const shouldReplayOnboarding =
-        !nextContext && nextSession && localSettings.replayOnboarding;
+      const shouldReplayOnboarding = !nextContext && nextSession && localSettings.replayOnboarding;
 
       if (shouldReplayOnboarding) {
         await clearStoredOnboardingReplayRequest();
@@ -115,12 +109,21 @@ export default function HomeScreen() {
     void syncStoredReminderScheduleForRuntime().catch(() => undefined);
   }, []);
 
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (nextState === "active") {
+        void drainQueue();
+      }
+    });
+
+    return () => sub.remove();
+  }, []);
+
   async function refreshNativeHomeState() {
     const nextContext = getAnonymousSessionFromParams(params);
     const nextSession = await restoreAnonymousSession(params);
     const localSettings = await loadLocalSettings();
-    const shouldReplayOnboarding =
-      !nextContext && nextSession && localSettings.replayOnboarding;
+    const shouldReplayOnboarding = !nextContext && nextSession && localSettings.replayOnboarding;
 
     if (shouldReplayOnboarding) {
       await clearStoredOnboardingReplayRequest();
@@ -157,9 +160,7 @@ export default function HomeScreen() {
         ]}
       >
         <ActivityIndicator color={theme.text} />
-        <ThemedText themeColor="textSecondary">
-          Restoring anonymous session...
-        </ThemedText>
+        <ThemedText themeColor="textSecondary">Restoring anonymous session...</ThemedText>
       </View>
     );
   }
@@ -174,11 +175,7 @@ export default function HomeScreen() {
   }
 
   if (Platform.OS !== "web" && activeNativeScreen === "history") {
-    return (
-      <LocalHistoryScreen
-        onReturnHome={() => setActiveNativeScreen("marbles")}
-      />
-    );
+    return <LocalHistoryScreen onReturnHome={() => setActiveNativeScreen("marbles")} />;
   }
 
   if (Platform.OS !== "web" && activeNativeScreen === "settings") {
@@ -241,9 +238,7 @@ function scrubUrl(router: ReturnType<typeof useRouter>) {
   router.replace("/");
 }
 
-function getParamDependencyKey(
-  value: string | string[] | undefined,
-): string | null {
+function getParamDependencyKey(value: string | string[] | undefined): string | null {
   if (typeof value === "string") {
     return `string:${value}`;
   }

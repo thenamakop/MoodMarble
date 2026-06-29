@@ -32,7 +32,7 @@ import {
   extractLocalMoodHistoryRecordInput,
 } from "@/features/history/model";
 import { appendLocalMoodHistoryRecord } from "@/features/history/storage";
-import { submitMoodSubmission } from "@/features/mood-submission/api";
+import { submitMoodSubmissionWithQueue } from "@/features/mood-submission/queue";
 import { SubmissionConfirmation } from "@/features/mood-submission/submission-confirmation";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -56,7 +56,7 @@ export function MarbleTrayScreen({
   deviceJwt,
   onOpenHistory,
   onOpenSettings,
-  onSubmitMood = submitMoodSubmission,
+  onSubmitMood = submitMoodSubmissionWithQueue,
   getCurrentHour = () => new Date().getHours(),
   getCurrentSubmissionDate = () => getLocalSubmissionDate(),
 }: MarbleTrayScreenProps) {
