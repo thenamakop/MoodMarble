@@ -1,3 +1,4 @@
+import type { TagValue } from "@/contracts/mood-submission";
 import {
   buildLocalMoodCalendarMonth,
   getDominantMoodForDayGroup,
@@ -44,9 +45,7 @@ describe("local mood calendar helpers", () => {
       new Date(2026, 5, 16),
     );
 
-    const markedCells = month.weeks
-      .flat()
-      .filter((cell) => cell.dominantMood !== null);
+    const markedCells = month.weeks.flat().filter((cell) => cell.dominantMood !== null);
 
     expect(month.markedDayCount).toBe(2);
     expect(markedCells).toEqual(
@@ -100,18 +99,12 @@ describe("local mood calendar helpers", () => {
   });
 
   it("normalizes a date to the start of its month", () => {
-    expect(getCalendarMonthStart(new Date(2026, 5, 16))).toEqual(
-      new Date(2026, 5, 1),
-    );
+    expect(getCalendarMonthStart(new Date(2026, 5, 16))).toEqual(new Date(2026, 5, 1));
   });
 
   it("shifts month boundaries deterministically", () => {
-    expect(shiftCalendarMonth(new Date(2026, 5, 1), -1)).toEqual(
-      new Date(2026, 4, 1),
-    );
-    expect(shiftCalendarMonth(new Date(2026, 5, 1), 1)).toEqual(
-      new Date(2026, 6, 1),
-    );
+    expect(shiftCalendarMonth(new Date(2026, 5, 1), -1)).toEqual(new Date(2026, 4, 1));
+    expect(shiftCalendarMonth(new Date(2026, 5, 1), 1)).toEqual(new Date(2026, 6, 1));
   });
 });
 
@@ -128,7 +121,7 @@ function createRecord(
       | "stressed"
       | "sad"
       | "unheard";
-    tags: string[];
+    tags: TagValue[];
     hour_of_day: number;
     submission_date: string;
     recorded_at: string;
@@ -136,8 +129,8 @@ function createRecord(
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? [],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? ([] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-16",
     recorded_at: overrides.recorded_at ?? "2026-06-16T08:00:00.000Z",

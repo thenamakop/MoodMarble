@@ -1,10 +1,6 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 
+import type { TagValue } from "@/contracts/mood-submission";
 import { submitMoodSubmission } from "@/features/mood-submission/api";
 import { LocalMoodCalendarScreen } from "@/features/history/calendar-screen";
 import { loadGroupedLocalMoodHistory } from "@/features/history/storage";
@@ -141,9 +137,7 @@ describe("LocalMoodCalendarScreen", () => {
       <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
     );
 
-    await waitFor(() =>
-      expect(view.getByTestId("calendar-marker-2026-06-16")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("calendar-marker-2026-06-16")).toBeTruthy());
     expect(view.getByTestId("calendar-marker-2026-06-03")).toBeTruthy();
     expect(view.getByText("2 marked days")).toBeTruthy();
     expect(submitMoodSubmission).not.toHaveBeenCalled();
@@ -196,9 +190,7 @@ describe("LocalMoodCalendarScreen", () => {
       <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
     );
 
-    await waitFor(() =>
-      expect(view.getByTestId("calendar-empty-state")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("calendar-empty-state")).toBeTruthy());
     expect(
       view.getByText(
         "No marbles saved this month yet. The calendar will light up as you log a few private check-ins.",
@@ -225,9 +217,7 @@ describe("LocalMoodCalendarScreen", () => {
       <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
     );
 
-    await waitFor(() =>
-      expect(view.getByTestId("calendar-marker-2026-06-16")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("calendar-marker-2026-06-16")).toBeTruthy());
 
     fireEvent.press(view.getByTestId("calendar-next-month"));
 
@@ -254,9 +244,7 @@ describe("LocalMoodCalendarScreen", () => {
       <LocalMoodCalendarScreen getCurrentDate={() => new Date(2026, 5, 16)} />,
     );
 
-    await waitFor(() =>
-      expect(view.getByTestId("calendar-sparse-state")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("calendar-sparse-state")).toBeTruthy());
     expect(
       view.getByText(
         "A few days are starting to appear. Keep going to build a clearer monthly pattern.",
@@ -278,7 +266,7 @@ function createRecord(
       | "stressed"
       | "sad"
       | "unheard";
-    tags: string[];
+    tags: TagValue[];
     hour_of_day: number;
     submission_date: string;
     recorded_at: string;
@@ -286,8 +274,8 @@ function createRecord(
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? [],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? ([] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-16",
     recorded_at: overrides.recorded_at ?? "2026-06-16T08:00:00.000Z",

@@ -1,4 +1,5 @@
 import * as SecureStore from "expo-secure-store";
+import type { TagValue } from "@/contracts/mood-submission";
 import { submitMoodSubmission } from "@/features/mood-submission/api";
 import {
   drainQueue,
@@ -40,7 +41,7 @@ const PAYLOAD = {
   workspace_id: "ws_test",
   team_id: "tm_test",
   mood_type: "calm" as const,
-  tags: [] as const,
+  tags: [] as TagValue[],
   hour_of_day: 10,
   submission_date: "2026-07-01",
 };

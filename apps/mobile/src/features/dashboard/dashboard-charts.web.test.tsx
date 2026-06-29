@@ -6,13 +6,7 @@ jest.mock("victory", () => {
   const React = require("react");
   const { Text, View } = require("react-native");
 
-  function ChartContainer({
-    children,
-    testID,
-  }: {
-    children?: React.ReactNode;
-    testID?: string;
-  }) {
+  function ChartContainer({ children, testID }: { children?: React.ReactNode; testID?: string }) {
     return <View testID={testID}>{children}</View>;
   }
 
@@ -24,41 +18,29 @@ jest.mock("victory", () => {
         ))}
       </ChartContainer>
     ),
-    VictoryBar: ({
-      data,
-    }: {
-      data?: Array<{ label?: string; x?: string; y?: number }>;
-    }) => (
+    VictoryBar: ({ data }: { data?: { label?: string; x?: string; y?: number }[] }) => (
       <ChartContainer>
         {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "bar"}-${index}`}>
-            {datum.label ?? datum.x}
-          </Text>
+          <Text key={`${datum.x ?? datum.label ?? "bar"}-${index}`}>{datum.label ?? datum.x}</Text>
         ))}
       </ChartContainer>
     ),
     VictoryChart: ChartContainer,
-    VictoryLine: ({
-      data,
-    }: {
-      data?: Array<{ label?: string; x?: string }>;
-    }) => (
+    VictoryLine: ({ data }: { data?: { label?: string; x?: string }[] }) => (
       <ChartContainer>
         {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "line"}-${index}`}>
-            {datum.label ?? datum.x}
-          </Text>
+          <Text key={`${datum.x ?? datum.label ?? "line"}-${index}`}>{datum.label ?? datum.x}</Text>
         ))}
       </ChartContainer>
     ),
-    VictoryPie: ({ data }: { data?: Array<{ x?: string }> }) => (
+    VictoryPie: ({ data }: { data?: { x?: string }[] }) => (
       <ChartContainer>
         {data?.map((datum, index) => (
           <Text key={`${datum.x ?? "slice"}-${index}`}>{datum.x}</Text>
         ))}
       </ChartContainer>
     ),
-    VictoryScatter: ({ data }: { data?: Array<{ label?: string }> }) => (
+    VictoryScatter: ({ data }: { data?: { label?: string }[] }) => (
       <ChartContainer>
         {data?.map((datum, index) => (
           <Text key={`${datum.label ?? "point"}-${index}`}>{datum.label}</Text>
@@ -83,15 +65,11 @@ jest.mock("@/hooks/use-theme", () => ({
 
 describe("ManagerDashboardCharts (web)", () => {
   it("renders the aggregate manager chart cards without crashing on web", async () => {
-    const view = await render(
-      <ManagerDashboardCharts viewModel={createViewModel()} />,
-    );
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
 
     expect(view.getByTestId("manager-dashboard-daily-card")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-weekly-card")).toBeTruthy();
-    expect(
-      view.getByTestId("manager-dashboard-distribution-card"),
-    ).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-distribution-card")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-volume-card")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-tags-card")).toBeTruthy();
     expect(view.getByText("Daily heatmap")).toBeTruthy();
@@ -102,23 +80,22 @@ describe("ManagerDashboardCharts (web)", () => {
   });
 
   it("renders the hidden privacy fallback when a chart is below threshold", async () => {
-    const hiddenViewModel = createViewModel();
-    hiddenViewModel.dailyHeatmap.visibility = "hidden";
-    hiddenViewModel.dailyHeatmap.hiddenMessage =
-      "The daily heatmap is hidden until privacy thresholds are met.";
+    const base = createViewModel();
+    const hiddenViewModel = {
+      ...base,
+      dailyHeatmap: {
+        ...base.dailyHeatmap,
+        visibility: "hidden" as const,
+        hiddenMessage: "The daily heatmap is hidden until privacy thresholds are met.",
+      },
+    };
 
-    const view = await render(
-      <ManagerDashboardCharts viewModel={hiddenViewModel} />,
-    );
+    const view = await render(<ManagerDashboardCharts viewModel={hiddenViewModel} />);
 
-    expect(
-      view.getByTestId("manager-dashboard-daily-card-hidden"),
-    ).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-daily-card-hidden")).toBeTruthy();
     expect(view.getByText("Hidden by privacy threshold")).toBeTruthy();
     expect(
-      view.getByText(
-        "The daily heatmap is hidden until privacy thresholds are met.",
-      ),
+      view.getByText("The daily heatmap is hidden until privacy thresholds are met."),
     ).toBeTruthy();
   });
 });
@@ -131,7 +108,7 @@ function createViewModel() {
     },
     banner: null,
     dailyHeatmap: {
-      visibility: "visible",
+      visibility: "visible" as const,
       hiddenMessage: null,
       thresholdMessage: null,
       data: Array.from({ length: 24 }, (_, hour) => ({
@@ -140,100 +117,100 @@ function createViewModel() {
         scoreValue: hour === 14 ? 6 : 0,
         scoreLabel: hour === 14 ? "6" : "0",
         submissionsLabel: hour === 14 ? "3" : "0",
-        visibility: hour === 14 ? "visible" : "hidden",
+        visibility: (hour === 14 ? "visible" : "hidden") as "visible" | "blurred" | "hidden",
       })),
     },
     weeklyTrend: {
-      visibility: "visible",
+      visibility: "visible" as const,
       hiddenMessage: null,
       thresholdMessage: null,
-      data: ["06-15", "06-16", "06-17", "06-18", "06-19", "06-20", "06-21"].map(
-        (label, index) => ({
-          label,
-          date: `2026-${label}`,
-          scoreValue: [5, 7, 8, 6.8, 5, 5, 5][index],
-          scoreLabel: String([5, 7, 8, 6.8, 5, 5, 5][index]),
-          visibility: "visible",
-        }),
-      ),
+      data: ["06-15", "06-16", "06-17", "06-18", "06-19", "06-20", "06-21"].map((label, index) => ({
+        label,
+        date: `2026-${label}`,
+        scoreValue: [5, 7, 8, 6.8, 5, 5, 5][index],
+        scoreLabel: String([5, 7, 8, 6.8, 5, 5, 5][index]),
+        visibility: "visible" as const,
+      })),
     },
     submissionVolume: {
-      visibility: "visible",
+      visibility: "visible" as const,
       hiddenMessage: null,
       thresholdMessage: null,
-      data: [
-        ["06-15", 0],
-        ["06-16", 2],
-        ["06-17", 2],
-        ["06-18", 5],
-        ["06-19", 0],
-        ["06-20", 0],
-        ["06-21", 0],
-      ].map(([label, totalValue]) => ({
+      data: (
+        [
+          ["06-15", 0],
+          ["06-16", 2],
+          ["06-17", 2],
+          ["06-18", 5],
+          ["06-19", 0],
+          ["06-20", 0],
+          ["06-21", 0],
+        ] as [string, number][]
+      ).map(([label, totalValue]) => ({
         label,
         date: `2026-${label}`,
         totalValue,
         totalLabel: String(totalValue),
-        visibility: "visible",
+        visibility: "visible" as const,
       })),
     },
     moodDistribution: {
-      visibility: "visible",
+      visibility: "visible" as const,
       hiddenMessage: null,
       thresholdMessage: null,
       data: [
         {
-          moodType: "happy",
+          moodType: "happy" as const,
           label: "Happy",
           value: 3,
           valueLabel: "3",
           color: "#22c55e",
-          visibility: "visible",
+          visibility: "visible" as const,
         },
         {
-          moodType: "focused",
+          moodType: "focused" as const,
           label: "Focused",
           value: 3,
           valueLabel: "3",
           color: "#4f46e5",
-          visibility: "visible",
+          visibility: "visible" as const,
         },
         {
-          moodType: "neutral",
+          moodType: "neutral" as const,
           label: "Neutral",
           value: 3,
           valueLabel: "3",
           color: "#9ca3af",
-          visibility: "visible",
+          visibility: "visible" as const,
         },
       ],
     },
     tagFrequency: {
-      visibility: "visible",
+      visibility: "visible" as const,
       hiddenMessage: null,
       thresholdMessage: null,
       data: [
         {
-          tag: "#workload",
+          tag: "#workload" as const,
           value: 4,
           valueLabel: "4",
-          visibility: "visible",
+          visibility: "visible" as const,
         },
         {
-          tag: "#team",
+          tag: "#team" as const,
           value: 4,
           valueLabel: "4",
-          visibility: "visible",
+          visibility: "visible" as const,
         },
         {
-          tag: "#management",
+          tag: "#management" as const,
           value: 1,
           valueLabel: "1",
-          visibility: "visible",
+          visibility: "visible" as const,
         },
       ],
     },
-  } as const;
+  };
 }
 
 function formatHour(hour: number) {

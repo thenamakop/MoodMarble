@@ -1,3 +1,4 @@
+import type { TagValue } from "@/contracts/mood-submission";
 import {
   clearAnonymousSession,
   loadAnonymousSession,
@@ -262,13 +263,13 @@ function createHistoryRecord(
     submission_date: string;
     recorded_at: string;
     hour_of_day: number;
-    tags: string[];
+    tags: TagValue[];
   }> = {},
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? ["#team"],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? (["#team"] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-15",
     recorded_at: overrides.recorded_at ?? "2026-06-15T08:00:00.000Z",

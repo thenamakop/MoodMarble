@@ -1,14 +1,7 @@
 import type { ComponentProps } from "react";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 
-jest.mock("expo-router", () => ({
-  useRouter: jest.fn(),
-}));
+import type { TagValue } from "@/contracts/mood-submission";
 
 import {
   createLocalMoodHistoryRecord,
@@ -17,6 +10,10 @@ import {
 import { appendLocalMoodHistoryRecord } from "@/features/history/storage";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { CONFIRMATION_AUTO_DISMISS_MS } from "@/features/mood-submission/submission-confirmation";
+
+jest.mock("expo-router", () => ({
+  useRouter: jest.fn(),
+}));
 
 jest.mock("@/features/history/model", () => ({
   createLocalMoodHistoryRecord: jest.fn(),
@@ -71,9 +68,7 @@ describe("MarbleTrayScreen", () => {
 
     fireEvent.changeText(noteInput, "x".repeat(140));
 
-    expect(
-      (await findByDisplayValue("x".repeat(120))).props.value,
-    ).toHaveLength(120);
+    expect((await findByDisplayValue("x".repeat(120))).props.value).toHaveLength(120);
   });
 
   it("submits the shared payload shape", async () => {
@@ -82,10 +77,7 @@ describe("MarbleTrayScreen", () => {
 
     fireEvent.press(await findByTestId("mood-calm"));
     fireEvent.press(await findByTestId("tag-#team"));
-    fireEvent.changeText(
-      await findByTestId("note-input"),
-      " Keeping steady today. ",
-    );
+    fireEvent.changeText(await findByTestId("note-input"), " Keeping steady today. ");
     fireEvent.press(await findByTestId("submit-button"));
 
     await waitFor(() => expect(onSubmitMood).toHaveBeenCalledTimes(1));
@@ -117,25 +109,19 @@ describe("MarbleTrayScreen", () => {
 
     expect(onSubmitMood).not.toHaveBeenCalled();
     expect(
-      await findByText(
-        "Submission needs workspace access before a marble can be shared.",
-      ),
+      await findByText("Submission needs workspace access before a marble can be shared."),
     ).toBeTruthy();
   });
 
   it("enables submit once a mood is selected and session context exists", async () => {
     const { findByTestId, getByTestId } = await renderScreen();
 
-    expect(getByTestId("submit-button").props.accessibilityState.disabled).toBe(
-      true,
-    );
+    expect(getByTestId("submit-button").props.accessibilityState.disabled).toBe(true);
 
     fireEvent.press(await findByTestId("mood-calm"));
 
     await waitFor(() =>
-      expect(
-        getByTestId("submit-button").props.accessibilityState.disabled,
-      ).toBe(false),
+      expect(getByTestId("submit-button").props.accessibilityState.disabled).toBe(false),
     );
   });
 
@@ -153,26 +139,22 @@ describe("MarbleTrayScreen", () => {
   it("creates a local history record after a successful submit", async () => {
     const onSubmitMood = jest.fn().mockResolvedValue(undefined);
     const extractedHistoryInput = {
-      mood_type: "happy",
-      tags: ["#team"],
+      mood_type: "happy" as const,
+      tags: ["#team"] as TagValue[],
       hour_of_day: 14,
       submission_date: "2026-06-16",
     };
     const createdHistoryRecord = {
       id: "history-1",
-      mood_type: "happy",
-      tags: ["#team"],
+      mood_type: "happy" as const,
+      tags: ["#team"] as TagValue[],
       hour_of_day: 14,
       submission_date: "2026-06-16",
       recorded_at: "2026-06-16T14:00:00.000Z",
     };
 
-    jest
-      .mocked(extractLocalMoodHistoryRecordInput)
-      .mockReturnValue(extractedHistoryInput);
-    jest
-      .mocked(createLocalMoodHistoryRecord)
-      .mockReturnValue(createdHistoryRecord);
+    jest.mocked(extractLocalMoodHistoryRecordInput).mockReturnValue(extractedHistoryInput);
+    jest.mocked(createLocalMoodHistoryRecord).mockReturnValue(createdHistoryRecord);
     jest.mocked(appendLocalMoodHistoryRecord).mockResolvedValue([]);
 
     const { findByTestId } = await renderScreen({ onSubmitMood });
@@ -193,12 +175,8 @@ describe("MarbleTrayScreen", () => {
         submission_date: "2026-06-16",
       }),
     );
-    expect(createLocalMoodHistoryRecord).toHaveBeenCalledWith(
-      extractedHistoryInput,
-    );
-    expect(appendLocalMoodHistoryRecord).toHaveBeenCalledWith(
-      createdHistoryRecord,
-    );
+    expect(createLocalMoodHistoryRecord).toHaveBeenCalledWith(extractedHistoryInput);
+    expect(appendLocalMoodHistoryRecord).toHaveBeenCalledWith(createdHistoryRecord);
   });
 
   it("auto-dismisses the confirmation after a short delay", async () => {
@@ -212,10 +190,9 @@ describe("MarbleTrayScreen", () => {
 
     await findByTestId("submission-confirmation");
 
-    await waitFor(
-      () => expect(queryByTestId("submission-confirmation")).toBeNull(),
-      { timeout: CONFIRMATION_AUTO_DISMISS_MS + 1000 },
-    );
+    await waitFor(() => expect(queryByTestId("submission-confirmation")).toBeNull(), {
+      timeout: CONFIRMATION_AUTO_DISMISS_MS + 1000,
+    });
   });
 
   it("dismisses the confirmation when tapped", async () => {
@@ -229,9 +206,7 @@ describe("MarbleTrayScreen", () => {
 
     fireEvent.press(await findByTestId("submission-confirmation"));
 
-    await waitFor(() =>
-      expect(queryByTestId("submission-confirmation")).toBeNull(),
-    );
+    await waitFor(() => expect(queryByTestId("submission-confirmation")).toBeNull());
   });
 
   it("shows loading and error states while submitting", async () => {
@@ -254,9 +229,7 @@ describe("MarbleTrayScreen", () => {
 
     rejectSubmission?.();
 
-    await waitFor(() =>
-      expect(getByText("Unable to submit mood right now.")).toBeTruthy(),
-    );
+    await waitFor(() => expect(getByText("Unable to submit mood right now.")).toBeTruthy());
     expect(queryByTestId("submission-confirmation")).toBeNull();
   });
 
@@ -267,9 +240,7 @@ describe("MarbleTrayScreen", () => {
     fireEvent.press(await findByTestId("mood-focused"));
     fireEvent.press(await findByTestId("submit-button"));
 
-    await waitFor(() =>
-      expect(getByText("Unable to submit mood right now.")).toBeTruthy(),
-    );
+    await waitFor(() => expect(getByText("Unable to submit mood right now.")).toBeTruthy());
 
     expect(extractLocalMoodHistoryRecordInput).not.toHaveBeenCalled();
     expect(createLocalMoodHistoryRecord).not.toHaveBeenCalled();
@@ -279,29 +250,23 @@ describe("MarbleTrayScreen", () => {
   it("keeps the confirmation flow even if the local history write fails", async () => {
     const onSubmitMood = jest.fn().mockResolvedValue(undefined);
     const extractedHistoryInput = {
-      mood_type: "calm",
-      tags: [],
+      mood_type: "calm" as const,
+      tags: [] as TagValue[],
       hour_of_day: 14,
       submission_date: "2026-06-16",
     };
     const createdHistoryRecord = {
       id: "history-2",
-      mood_type: "calm",
-      tags: [],
+      mood_type: "calm" as const,
+      tags: [] as TagValue[],
       hour_of_day: 14,
       submission_date: "2026-06-16",
       recorded_at: "2026-06-16T14:30:00.000Z",
     };
 
-    jest
-      .mocked(extractLocalMoodHistoryRecordInput)
-      .mockReturnValue(extractedHistoryInput);
-    jest
-      .mocked(createLocalMoodHistoryRecord)
-      .mockReturnValue(createdHistoryRecord);
-    jest
-      .mocked(appendLocalMoodHistoryRecord)
-      .mockRejectedValue(new Error("storage failed"));
+    jest.mocked(extractLocalMoodHistoryRecordInput).mockReturnValue(extractedHistoryInput);
+    jest.mocked(createLocalMoodHistoryRecord).mockReturnValue(createdHistoryRecord);
+    jest.mocked(appendLocalMoodHistoryRecord).mockRejectedValue(new Error("storage failed"));
 
     const { findByTestId, getByText } = await renderScreen({ onSubmitMood });
 
@@ -311,9 +276,7 @@ describe("MarbleTrayScreen", () => {
     await waitFor(() => expect(onSubmitMood).toHaveBeenCalledTimes(1));
     await findByTestId("submission-confirmation");
     expect(getByText("Marble shared anonymously.")).toBeTruthy();
-    expect(appendLocalMoodHistoryRecord).toHaveBeenCalledWith(
-      createdHistoryRecord,
-    );
+    expect(appendLocalMoodHistoryRecord).toHaveBeenCalledWith(createdHistoryRecord);
   });
 
   it("shows the rate-limit message returned by the backend", async () => {
@@ -325,9 +288,7 @@ describe("MarbleTrayScreen", () => {
     fireEvent.press(await findByTestId("mood-focused"));
     fireEvent.press(await findByTestId("submit-button"));
 
-    await waitFor(() =>
-      expect(getByText("Daily mood submission limit reached.")).toBeTruthy(),
-    );
+    await waitFor(() => expect(getByText("Daily mood submission limit reached.")).toBeTruthy());
   });
 
   it("opens the local history flow from the member home screen", async () => {
@@ -365,9 +326,7 @@ describe("MarbleTrayScreen", () => {
   });
 });
 
-async function renderScreen(
-  overrides?: Partial<ComponentProps<typeof MarbleTrayScreen>>,
-) {
+async function renderScreen(overrides?: Partial<ComponentProps<typeof MarbleTrayScreen>>) {
   return render(
     <MarbleTrayScreen
       deviceJwt="device-jwt-token"

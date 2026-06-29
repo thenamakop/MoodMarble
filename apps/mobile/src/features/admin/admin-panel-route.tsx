@@ -29,9 +29,7 @@ interface AdminPanelRouteProps {
   sectionFocus?: AdminSectionFocus;
 }
 
-export function AdminPanelRoute({
-  sectionFocus = "overview",
-}: AdminPanelRouteProps) {
+export function AdminPanelRoute({ sectionFocus = "overview" }: AdminPanelRouteProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{
     admin_jwt?: string;
@@ -52,32 +50,18 @@ export function AdminPanelRoute({
   } | null>(null);
   const [isActionPending, setIsActionPending] = useState(false);
   const [isShellLoading, setIsShellLoading] = useState(false);
-  const [shellErrorMessage, setShellErrorMessage] = useState<string | null>(
-    null,
-  );
+  const [shellErrorMessage, setShellErrorMessage] = useState<string | null>(null);
   const [reloadKey, setReloadKey] = useState(0);
   const isAdminAccessReady = hasAdminAccess(adminJwt, workspaceId);
 
   useEffect(() => {
-    if (!adminJwt && routeAdminJwt) {
-      setAdminJwt(routeAdminJwt);
-    }
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- syncing route params into local state on first mount is intentional
+    if (!adminJwt && routeAdminJwt) setAdminJwt(routeAdminJwt);
 
-    if (!workspaceId && routeWorkspaceId) {
-      setWorkspaceId(routeWorkspaceId);
-    }
+    if (!workspaceId && routeWorkspaceId) setWorkspaceId(routeWorkspaceId);
 
-    if (!workspaceName && routeWorkspaceName) {
-      setWorkspaceName(routeWorkspaceName);
-    }
-  }, [
-    adminJwt,
-    routeAdminJwt,
-    routeWorkspaceId,
-    routeWorkspaceName,
-    workspaceId,
-    workspaceName,
-  ]);
+    if (!workspaceName && routeWorkspaceName) setWorkspaceName(routeWorkspaceName);
+  }, [adminJwt, routeAdminJwt, routeWorkspaceId, routeWorkspaceName, workspaceId, workspaceName]);
 
   useEffect(() => {
     let cancelled = false;
@@ -127,14 +111,9 @@ export function AdminPanelRoute({
       } catch (error) {
         if (!cancelled) {
           setBundle(null);
-          setShellErrorMessage(
-            error instanceof Error ? error.message : ADMIN_PANEL_ERROR_MESSAGE,
-          );
+          setShellErrorMessage(error instanceof Error ? error.message : ADMIN_PANEL_ERROR_MESSAGE);
           // On auth errors, clear session
-          if (
-            error instanceof Error &&
-            error.message.includes("Unauthorized")
-          ) {
+          if (error instanceof Error && error.message.includes("Unauthorized")) {
             await clearAdminSession();
             router.replace("/");
           }
@@ -163,10 +142,7 @@ export function AdminPanelRoute({
           ? ({ kind: "ready" } as const)
           : ({ kind: "empty" } as const);
 
-  async function handleCreateWorkspace(input: {
-    bootstrapSecret: string;
-    name: string;
-  }) {
+  async function handleCreateWorkspace(input: { bootstrapSecret: string; name: string }) {
     setIsActionPending(true);
     setFeedbackState(null);
 
@@ -189,10 +165,7 @@ export function AdminPanelRoute({
     } catch (error) {
       setFeedbackState({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to create workspace right now.",
+        message: error instanceof Error ? error.message : "Unable to create workspace right now.",
       });
     } finally {
       setIsActionPending(false);
@@ -228,10 +201,7 @@ export function AdminPanelRoute({
     } catch (error) {
       setFeedbackState({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to add team right now.",
+        message: error instanceof Error ? error.message : "Unable to add team right now.",
       });
     } finally {
       setIsActionPending(false);
@@ -270,10 +240,7 @@ export function AdminPanelRoute({
     } catch (error) {
       setFeedbackState({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to update team right now.",
+        message: error instanceof Error ? error.message : "Unable to update team right now.",
       });
     } finally {
       setIsActionPending(false);
@@ -328,10 +295,7 @@ export function AdminPanelRoute({
     } catch (error) {
       setFeedbackState({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to refresh join code right now.",
+        message: error instanceof Error ? error.message : "Unable to refresh join code right now.",
       });
     } finally {
       setIsActionPending(false);
@@ -370,8 +334,7 @@ export function AdminPanelRoute({
     } catch (error) {
       setFeedbackState({
         kind: "error",
-        message:
-          error instanceof Error ? error.message : "Failed to generate code.",
+        message: error instanceof Error ? error.message : "Failed to generate code.",
       });
     } finally {
       setIsActionPending(false);
@@ -380,34 +343,27 @@ export function AdminPanelRoute({
 
   async function handleRevokeManagerCode(codeId: string) {
     if (!adminJwt || !workspaceId) return;
-    Alert.alert(
-      "Revoke Code",
-      "This code will no longer work. This cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Revoke",
-          style: "destructive",
-          onPress: async () => {
-            setIsActionPending(true);
-            try {
-              await revokeManagerCode({ adminJwt, workspaceId, codeId });
-              await refreshPanel();
-            } catch (error) {
-              setFeedbackState({
-                kind: "error",
-                message:
-                  error instanceof Error
-                    ? error.message
-                    : "Failed to revoke code.",
-              });
-            } finally {
-              setIsActionPending(false);
-            }
-          },
+    Alert.alert("Revoke Code", "This code will no longer work. This cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Revoke",
+        style: "destructive",
+        onPress: async () => {
+          setIsActionPending(true);
+          try {
+            await revokeManagerCode({ adminJwt, workspaceId, codeId });
+            await refreshPanel();
+          } catch (error) {
+            setFeedbackState({
+              kind: "error",
+              message: error instanceof Error ? error.message : "Failed to revoke code.",
+            });
+          } finally {
+            setIsActionPending(false);
+          }
         },
-      ],
-    );
+      },
+    ]);
   }
 
   async function handleExport(input: { startDate: string; endDate: string }) {
@@ -433,10 +389,7 @@ export function AdminPanelRoute({
     } catch (error) {
       setFeedbackState({
         kind: "error",
-        message:
-          error instanceof Error
-            ? error.message
-            : "Unable to export CSV right now.",
+        message: error instanceof Error ? error.message : "Unable to export CSV right now.",
       });
     } finally {
       setIsActionPending(false);

@@ -1,6 +1,8 @@
 import type { ComponentProps } from "react";
 import { cleanup, render, waitFor } from "@testing-library/react-native";
 
+import type { TagValue } from "@/contracts/mood-submission";
+
 import { submitMoodSubmission } from "@/features/mood-submission/api";
 import { LocalMoodTimelineScreen } from "@/features/history/timeline-screen";
 import { loadGroupedLocalMoodHistory } from "@/features/history/storage";
@@ -27,14 +29,10 @@ describe("LocalMoodTimelineScreen", () => {
 
     const view = await renderTimelineScreen();
 
-    await waitFor(() =>
-      expect(view.getByTestId("timeline-empty-state")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("timeline-empty-state")).toBeTruthy());
     expect(view.getByText("No mood history yet")).toBeTruthy();
     expect(
-      view.getByText(
-        "Share your first marble to start a private timeline on this device.",
-      ),
+      view.getByText("Share your first marble to start a private timeline on this device."),
     ).toBeTruthy();
     expect(view.getByText("0 days")).toBeTruthy();
     expect(view.getByText("Streak ending on your next marble")).toBeTruthy();
@@ -72,9 +70,7 @@ describe("LocalMoodTimelineScreen", () => {
 
     const view = await renderTimelineScreen();
 
-    await waitFor(() =>
-      expect(view.getByTestId("timeline-day-2026-06-16")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("timeline-day-2026-06-16")).toBeTruthy());
     expect(view.getByTestId("timeline-day-2026-06-15")).toBeTruthy();
     expect(view.getByText("Happy")).toBeTruthy();
     expect(view.getByText("Calm")).toBeTruthy();
@@ -126,9 +122,7 @@ describe("LocalMoodTimelineScreen", () => {
 
     const view = await renderTimelineScreen();
 
-    await waitFor(() =>
-      expect(view.getByTestId("timeline-entry-history-late")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("timeline-entry-history-late")).toBeTruthy());
 
     expect(collectTestIdsInOrder(view.toJSON())).toEqual(
       expect.arrayContaining([
@@ -261,10 +255,7 @@ async function renderTimelineScreen(
   overrides?: Partial<ComponentProps<typeof LocalMoodTimelineScreen>>,
 ) {
   return render(
-    <LocalMoodTimelineScreen
-      formatRecordedAt={(recordedAt) => recordedAt}
-      {...overrides}
-    />,
+    <LocalMoodTimelineScreen formatRecordedAt={(recordedAt) => recordedAt} {...overrides} />,
   );
 }
 
@@ -281,7 +272,7 @@ function createRecord(
       | "stressed"
       | "sad"
       | "unheard";
-    tags: string[];
+    tags: TagValue[];
     hour_of_day: number;
     submission_date: string;
     recorded_at: string;
@@ -289,8 +280,8 @@ function createRecord(
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? [],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? ([] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-16",
     recorded_at: overrides.recorded_at ?? "2026-06-16T08:00:00.000Z",
@@ -314,12 +305,7 @@ function collectTestIdsInOrder(node: unknown): string[] {
     props?: { testID?: string };
     children?: unknown[];
   };
-  const currentTestId = currentNode.props?.testID
-    ? [currentNode.props.testID]
-    : [];
+  const currentTestId = currentNode.props?.testID ? [currentNode.props.testID] : [];
 
-  return [
-    ...currentTestId,
-    ...collectTestIdsInOrder(currentNode.children ?? []),
-  ];
+  return [...currentTestId, ...collectTestIdsInOrder(currentNode.children ?? [])];
 }
