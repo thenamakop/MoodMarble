@@ -1,5 +1,23 @@
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
+// react-i18next mock — t(key, vars?) returns the key so tests assert on
+// translation keys rather than raw English copy that may change.
+jest.mock("react-i18next", () => ({
+  useTranslation: () => ({
+    t: (key: string, vars?: Record<string, unknown>) => {
+      if (vars && Object.keys(vars).length > 0) {
+        return Object.entries(vars).reduce<string>(
+          (acc, [k, v]) => acc.replace(new RegExp(`{{${k}}}`, "g"), String(v)),
+          key,
+        );
+      }
+      return key;
+    },
+    i18n: { language: "en", changeLanguage: jest.fn() },
+  }),
+  initReactI18next: { type: "3rdParty", init: jest.fn() },
+}));
+
 const originalConsoleError = console.error;
 
 jest.mock("expo-constants", () => ({

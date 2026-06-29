@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 import {
   ActivityIndicator,
   Pressable,
@@ -19,11 +20,9 @@ interface AdminLoginScreenProps {
   onReturnHome?: () => void;
 }
 
-export function AdminLoginScreen({
-  onLogin,
-  onReturnHome,
-}: AdminLoginScreenProps) {
+export function AdminLoginScreen({ onLogin, onReturnHome }: AdminLoginScreenProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -32,7 +31,7 @@ export function AdminLoginScreen({
 
   async function handleSubmit() {
     if (!email.trim() || !password) {
-      setErrorMessage("Email and password are required.");
+      setErrorMessage(t("admin.login.errorMessages.requiredFields"));
       return;
     }
 
@@ -43,7 +42,7 @@ export function AdminLoginScreen({
       await onLogin(email.trim(), password);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : "Unable to login right now.",
+        error instanceof Error ? error.message : t("admin.login.errorMessages.loginFailed"),
       );
       setIsSubmitting(false);
     }
@@ -51,18 +50,12 @@ export function AdminLoginScreen({
 
   return (
     <SafeAreaView style={styles.safeArea} testID="admin-login-root">
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <ThemedView style={styles.container}>
           <View style={styles.topBar}>
             {onReturnHome ? (
-              <Pressable
-                onPress={onReturnHome}
-                testID="admin-login-back-button"
-              >
-                <ThemedText type="linkPrimary">Back</ThemedText>
+              <Pressable onPress={onReturnHome} testID="admin-login-back-button">
+                <ThemedText type="linkPrimary">{t("admin.login.backButton")}</ThemedText>
               </Pressable>
             ) : (
               <View />
@@ -70,15 +63,13 @@ export function AdminLoginScreen({
           </View>
 
           <View style={styles.copyBlock}>
-            <ThemedText type="title">Admin Login</ThemedText>
-            <ThemedText themeColor="textSecondary">
-              Sign in to manage your workspace and teams.
-            </ThemedText>
+            <ThemedText type="title">{t("admin.login.title")}</ThemedText>
+            <ThemedText themeColor="textSecondary">{t("admin.login.subtitle")}</ThemedText>
           </View>
 
           <ThemedView style={styles.card} type="backgroundElement">
             <View style={styles.inputGroup}>
-              <ThemedText type="smallBold">Email</ThemedText>
+              <ThemedText type="smallBold">{t("admin.login.emailLabel")}</ThemedText>
               <TextInput
                 autoCapitalize="none"
                 autoComplete="email"
@@ -89,7 +80,7 @@ export function AdminLoginScreen({
                   setEmail(value);
                   setErrorMessage(null);
                 }}
-                placeholder="admin@example.com"
+                placeholder={t("admin.login.emailPlaceholder")}
                 placeholderTextColor={theme.textSecondary}
                 style={[
                   styles.input,
@@ -106,14 +97,14 @@ export function AdminLoginScreen({
 
             <View style={styles.inputGroup}>
               <View style={styles.passwordLabelRow}>
-                <ThemedText type="smallBold">Password</ThemedText>
+                <ThemedText type="smallBold">{t("admin.login.passwordLabel")}</ThemedText>
                 <Pressable
                   hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
                   onPress={() => setShowPassword((prev) => !prev)}
                   testID="admin-password-toggle"
                 >
                   <ThemedText type="linkPrimary">
-                    {showPassword ? "Hide" : "Show"}
+                    {showPassword ? t("admin.login.hidePassword") : t("admin.login.showPassword")}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -148,9 +139,7 @@ export function AdminLoginScreen({
               style={({ pressed }) => [
                 styles.primaryButton,
                 {
-                  backgroundColor: pressed
-                    ? theme.backgroundSelected
-                    : theme.background,
+                  backgroundColor: pressed ? theme.backgroundSelected : theme.background,
                   opacity: isSubmitting ? 0.6 : 1,
                 },
               ]}
@@ -159,19 +148,16 @@ export function AdminLoginScreen({
               {isSubmitting ? (
                 <View style={styles.loadingContent}>
                   <ActivityIndicator color={theme.text} />
-                  <ThemedText type="smallBold">Signing in...</ThemedText>
+                  <ThemedText type="smallBold">{t("admin.login.signingIn")}</ThemedText>
                 </View>
               ) : (
-                <ThemedText type="smallBold">Sign in</ThemedText>
+                <ThemedText type="smallBold">{t("admin.login.signInButton")}</ThemedText>
               )}
             </Pressable>
           </ThemedView>
 
           {errorMessage ? (
-            <ThemedText
-              style={styles.errorText}
-              testID="admin-login-error-text"
-            >
+            <ThemedText style={styles.errorText} testID="admin-login-error-text">
               {errorMessage}
             </ThemedText>
           ) : null}

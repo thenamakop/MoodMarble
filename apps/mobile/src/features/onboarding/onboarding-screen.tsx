@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 import {
   ActivityIndicator,
   Pressable,
@@ -8,19 +9,13 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 
-import {
-  JoinCodeSchema,
-  type WorkspaceJoinResponse,
-} from "@/contracts/workspace-join";
+import { JoinCodeSchema, type WorkspaceJoinResponse } from "@/contracts/workspace-join";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, MaxContentWidth, Spacing } from "@/constants/theme";
-import {
-  finalizeAnonymousTeamSelection,
-  joinWorkspace,
-} from "@/features/onboarding/api";
+import { finalizeAnonymousTeamSelection, joinWorkspace } from "@/features/onboarding/api";
 import type { AnonymousSession } from "@/features/onboarding/types";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -33,8 +28,7 @@ const ONBOARDING_SLIDES = [
   },
   {
     title: "Join with a 6-character code",
-    description:
-      "Enter your workspace code, choose your team, and get into the app in a few taps.",
+    description: "Enter your workspace code, choose your team, and get into the app in a few taps.",
     accent: "Simple start",
   },
   {
@@ -64,29 +58,43 @@ export function OnboardingScreen({
 }: OnboardingScreenProps) {
   const router = useRouter();
   const theme = useTheme();
+  const { t } = useTranslation();
+  const translatedSlides = [
+    {
+      accent: t("onboarding.slides.slide0.accent"),
+      title: t("onboarding.slides.slide0.title"),
+      description: t("onboarding.slides.slide0.description"),
+    },
+    {
+      accent: t("onboarding.slides.slide1.accent"),
+      title: t("onboarding.slides.slide1.title"),
+      description: t("onboarding.slides.slide1.description"),
+    },
+    {
+      accent: t("onboarding.slides.slide2.accent"),
+      title: t("onboarding.slides.slide2.title"),
+      description: t("onboarding.slides.slide2.description"),
+    },
+  ] as const;
   const [currentSlideIndex, setCurrentSlideIndex] = useState(0);
   const [joinCode, setJoinCode] = useState("");
-  const [workspaceResult, setWorkspaceResult] =
-    useState<WorkspaceJoinResponse | null>(null);
+  const [workspaceResult, setWorkspaceResult] = useState<WorkspaceJoinResponse | null>(null);
   const [selectedTeamId, setSelectedTeamId] = useState<string | null>(null);
   const [isJoining, setIsJoining] = useState(false);
   const [isSavingSession, setIsSavingSession] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const isShowingIntro = currentSlideIndex < ONBOARDING_SLIDES.length;
-  const currentSlide = ONBOARDING_SLIDES[currentSlideIndex];
+  const currentSlide = translatedSlides[currentSlideIndex];
   const isReplayOnly = Boolean(replaySession);
-  const normalizedJoinCode = useMemo(
-    () => joinCode.trim().toUpperCase(),
-    [joinCode],
-  );
+  const normalizedJoinCode = useMemo(() => joinCode.trim().toUpperCase(), [joinCode]);
 
   async function handleJoinWorkspace() {
     const parsedJoinCode = JoinCodeSchema.safeParse(normalizedJoinCode);
 
     if (!parsedJoinCode.success) {
       setErrorMessage(
-        parsedJoinCode.error.issues[0]?.message ?? "Join code is required.",
+        parsedJoinCode.error.issues[0]?.message ?? t("onboarding.errorMessages.joinCodeRequired"),
       );
       return;
     }
@@ -99,9 +107,7 @@ export function OnboardingScreen({
       setWorkspaceResult(joinResult);
       setSelectedTeamId(null);
     } catch (error) {
-      setErrorMessage(
-        getErrorMessage(error, "Unable to join workspace right now."),
-      );
+      setErrorMessage(getErrorMessage(error, t("onboarding.errorMessages.joinWorkspace")));
     } finally {
       setIsJoining(false);
     }
@@ -126,9 +132,7 @@ export function OnboardingScreen({
         deviceJwt: workspaceResult.device_jwt,
       });
     } catch (error) {
-      setErrorMessage(
-        getErrorMessage(error, "Unable to save session right now."),
-      );
+      setErrorMessage(getErrorMessage(error, t("onboarding.errorMessages.saveSession")));
     } finally {
       setIsSavingSession(false);
     }
@@ -141,9 +145,7 @@ export function OnboardingScreen({
   }
 
   function handleNextSlide() {
-    setCurrentSlideIndex((currentValue) =>
-      Math.min(currentValue + 1, ONBOARDING_SLIDES.length),
-    );
+    setCurrentSlideIndex((currentValue) => Math.min(currentValue + 1, ONBOARDING_SLIDES.length));
     setErrorMessage(null);
   }
 
@@ -160,9 +162,7 @@ export function OnboardingScreen({
       try {
         await onSessionReady(replaySession);
       } catch (error) {
-        setErrorMessage(
-          getErrorMessage(error, "Unable to return to marbles right now."),
-        );
+        setErrorMessage(getErrorMessage(error, t("onboarding.errorMessages.returnToMarbles")));
       } finally {
         setIsSavingSession(false);
       }
@@ -185,13 +185,13 @@ export function OnboardingScreen({
           {isShowingIntro ? (
             <ThemedView style={styles.card} type="backgroundElement">
               <View style={styles.slideTopBar}>
-                <ThemedText type="smallBold">{currentSlide.accent}</ThemedText>
+                <ThemedText type="smallBold">{currentSlide?.accent}</ThemedText>
                 {currentSlideIndex < ONBOARDING_SLIDES.length - 1 ? (
                   <Pressable
                     onPress={() => void handleCompleteIntro()}
                     testID="skip-onboarding-button"
                   >
-                    <ThemedText type="linkPrimary">Skip</ThemedText>
+                    <ThemedText type="linkPrimary">{t("onboarding.skipButton")}</ThemedText>
                   </Pressable>
                 ) : (
                   <View />
@@ -199,27 +199,15 @@ export function OnboardingScreen({
               </View>
 
               <View style={styles.slideArt} testID="onboarding-marble-art">
-                <View
-                  style={[
-                    styles.marbleLarge,
-                    { backgroundColor: theme.backgroundSelected },
-                  ]}
-                />
-                <View
-                  style={[
-                    styles.marbleSmall,
-                    { backgroundColor: theme.background },
-                  ]}
-                />
+                <View style={[styles.marbleLarge, { backgroundColor: theme.backgroundSelected }]} />
+                <View style={[styles.marbleSmall, { backgroundColor: theme.background }]} />
                 <ThemedText style={styles.marbleEmoji}>🪨</ThemedText>
               </View>
 
               <View style={styles.copyBlock}>
-                <ThemedText type="title">MoodMarble</ThemedText>
-                <ThemedText type="subtitle">{currentSlide.title}</ThemedText>
-                <ThemedText themeColor="textSecondary">
-                  {currentSlide.description}
-                </ThemedText>
+                <ThemedText type="title">{t("onboarding.appName")}</ThemedText>
+                <ThemedText type="subtitle">{currentSlide?.title}</ThemedText>
+                <ThemedText themeColor="textSecondary">{currentSlide?.description}</ThemedText>
               </View>
 
               <View style={styles.slideDots} testID="onboarding-slide-dots">
@@ -230,9 +218,7 @@ export function OnboardingScreen({
                       styles.slideDot,
                       {
                         backgroundColor:
-                          index === currentSlideIndex
-                            ? theme.text
-                            : theme.backgroundSelected,
+                          index === currentSlideIndex ? theme.text : theme.backgroundSelected,
                       },
                     ]}
                   />
@@ -244,13 +230,10 @@ export function OnboardingScreen({
                   <Pressable
                     accessibilityRole="button"
                     onPress={handleBackSlide}
-                    style={[
-                      styles.secondaryButton,
-                      { borderColor: theme.backgroundSelected },
-                    ]}
+                    style={[styles.secondaryButton, { borderColor: theme.backgroundSelected }]}
                     testID="back-onboarding-button"
                   >
-                    <ThemedText type="smallBold">Back</ThemedText>
+                    <ThemedText type="smallBold">{t("onboarding.backButton")}</ThemedText>
                   </Pressable>
                 ) : (
                   <View style={styles.slideActionSpacer} />
@@ -267,9 +250,7 @@ export function OnboardingScreen({
                     styles.primaryButton,
                     styles.slidePrimaryButton,
                     {
-                      backgroundColor: pressed
-                        ? theme.backgroundSelected
-                        : theme.background,
+                      backgroundColor: pressed ? theme.backgroundSelected : theme.background,
                     },
                   ]}
                   testID="next-onboarding-button"
@@ -277,9 +258,9 @@ export function OnboardingScreen({
                   <ThemedText type="smallBold">
                     {currentSlideIndex === ONBOARDING_SLIDES.length - 1
                       ? isReplayOnly
-                        ? "Back to marbles"
-                        : "Enter join code"
-                      : "Next"}
+                        ? t("onboarding.backToMarbles")
+                        : t("onboarding.enterJoinCode")
+                      : t("onboarding.nextButton")}
                   </ThemedText>
                 </Pressable>
               </View>
@@ -287,19 +268,14 @@ export function OnboardingScreen({
           ) : !workspaceResult ? (
             <>
               <View style={styles.copyBlock}>
-                <ThemedText type="title">MoodMarble</ThemedText>
-                <ThemedText type="subtitle">
-                  Join your workspace anonymously.
-                </ThemedText>
-                <ThemedText themeColor="textSecondary">
-                  Enter the 6-character join code, choose your team, and keep
-                  your anonymous device session on this phone only.
-                </ThemedText>
+                <ThemedText type="title">{t("onboarding.appName")}</ThemedText>
+                <ThemedText type="subtitle">{t("onboarding.joinAnonymously")}</ThemedText>
               </View>
 
               <ThemedView style={styles.card} type="backgroundElement">
-                <ThemedText type="smallBold">Join code</ThemedText>
+                <ThemedText type="smallBold">{t("onboarding.enterJoinCode")}</ThemedText>
                 <TextInput
+                  accessibilityLabel={t("onboarding.joinCodeLabel")}
                   autoCapitalize="characters"
                   autoCorrect={false}
                   maxLength={6}
@@ -307,7 +283,7 @@ export function OnboardingScreen({
                     setJoinCode(value.replace(/\s+/gu, "").toUpperCase());
                     setErrorMessage(null);
                   }}
-                  placeholder="ABC123"
+                  placeholder={t("onboarding.joinCodePlaceholder")}
                   placeholderTextColor={theme.textSecondary}
                   style={[
                     styles.input,
@@ -328,9 +304,7 @@ export function OnboardingScreen({
                   style={({ pressed }) => [
                     styles.primaryButton,
                     {
-                      backgroundColor: pressed
-                        ? theme.backgroundSelected
-                        : theme.background,
+                      backgroundColor: pressed ? theme.backgroundSelected : theme.background,
                       opacity: isJoining ? 0.6 : 1,
                     },
                   ]}
@@ -339,10 +313,10 @@ export function OnboardingScreen({
                   {isJoining ? (
                     <View style={styles.loadingContent}>
                       <ActivityIndicator color={theme.text} />
-                      <ThemedText type="smallBold">Checking code...</ThemedText>
+                      <ThemedText type="smallBold">{t("onboarding.joiningButton")}</ThemedText>
                     </View>
                   ) : (
-                    <ThemedText type="smallBold">Continue</ThemedText>
+                    <ThemedText type="smallBold">{t("onboarding.joinButton")}</ThemedText>
                   )}
                 </Pressable>
               </ThemedView>
@@ -351,17 +325,14 @@ export function OnboardingScreen({
             <ThemedView style={styles.card} type="backgroundElement">
               <View style={styles.teamHeader}>
                 <View style={styles.teamHeaderCopy}>
-                  <ThemedText type="smallBold">
-                    {workspaceResult.workspace.name}
-                  </ThemedText>
+                  <ThemedText type="smallBold">{workspaceResult.workspace.name}</ThemedText>
                   <ThemedText themeColor="textSecondary">
-                    Choose one team to continue anonymously.
+                    {t("onboarding.teamSelection.chooseTeamSubtitle", {
+                      workspaceName: workspaceResult.workspace.name,
+                    })}
                   </ThemedText>
                 </View>
-                <Pressable
-                  onPress={resetJoinFlow}
-                  testID="change-join-code-button"
-                >
+                <Pressable onPress={resetJoinFlow} testID="change-join-code-button">
                   <ThemedText type="linkPrimary">Use another code</ThemedText>
                 </Pressable>
               </View>
@@ -379,12 +350,8 @@ export function OnboardingScreen({
                       style={[
                         styles.teamOption,
                         {
-                          backgroundColor: isSelected
-                            ? theme.backgroundSelected
-                            : theme.background,
-                          borderColor: isSelected
-                            ? theme.text
-                            : theme.backgroundSelected,
+                          backgroundColor: isSelected ? theme.backgroundSelected : theme.background,
+                          borderColor: isSelected ? theme.text : theme.backgroundSelected,
                         },
                       ]}
                       testID={`team-option-${team.id}`}
@@ -393,7 +360,7 @@ export function OnboardingScreen({
                         <ThemedText type="smallBold">{team.name}</ThemedText>
                         {isSelected ? (
                           <ThemedText type="small" themeColor="textSecondary">
-                            Selected
+                            {t("common.selected")}
                           </ThemedText>
                         ) : null}
                       </View>
@@ -409,9 +376,7 @@ export function OnboardingScreen({
                 style={({ pressed }) => [
                   styles.primaryButton,
                   {
-                    backgroundColor: pressed
-                      ? theme.backgroundSelected
-                      : theme.background,
+                    backgroundColor: pressed ? theme.backgroundSelected : theme.background,
                     opacity: !selectedTeamId || isSavingSession ? 0.6 : 1,
                   },
                 ]}
@@ -420,35 +385,27 @@ export function OnboardingScreen({
                 {isSavingSession ? (
                   <View style={styles.loadingContent}>
                     <ActivityIndicator color={theme.text} />
-                    <ThemedText type="smallBold">Saving team...</ThemedText>
+                    <ThemedText type="smallBold">{t("onboarding.savingSessionButton")}</ThemedText>
                   </View>
                 ) : (
-                  <ThemedText type="smallBold">Continue anonymously</ThemedText>
+                  <ThemedText type="smallBold">{t("onboarding.continueButton")}</ThemedText>
                 )}
               </Pressable>
             </ThemedView>
           )}
 
-          {errorMessage ? (
-            <ThemedText style={styles.errorText}>{errorMessage}</ThemedText>
-          ) : null}
+          {errorMessage ? <ThemedText style={styles.errorText}>{errorMessage}</ThemedText> : null}
 
           {!workspaceResult && !isShowingIntro && (
             <View style={styles.adminEntryContainer}>
-              <Pressable
-                testID="admin-entry-link"
-                onPress={() => router.push("/admin-login")}
-              >
+              <Pressable testID="admin-entry-link" onPress={() => router.push("/admin-login")}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Admin access
+                  {t("onboarding.adminLinkSubtitle")} {t("onboarding.adminLink")}
                 </ThemedText>
               </Pressable>
-              <Pressable
-                testID="manager-code-link"
-                onPress={() => router.push("/join-manager")}
-              >
+              <Pressable testID="manager-code-link" onPress={() => router.push("/join-manager")}>
                 <ThemedText type="small" themeColor="textSecondary">
-                  Have a manager code?
+                  {t("onboarding.managerLinkSubtitle")} {t("onboarding.managerLink")}
                 </ThemedText>
               </Pressable>
             </View>
