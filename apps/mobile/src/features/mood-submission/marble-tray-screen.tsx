@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from "react";
 import { useRouter } from "expo-router";
+import * as Haptics from "expo-haptics";
 import {
   ActivityIndicator,
   Platform,
@@ -165,6 +166,7 @@ export function MarbleTrayScreen({
       setSelectedMood(null);
       setSelectedTags([]);
       setNote("");
+      void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setConfirmationMood(submittedMood);
     } catch (error) {
       if (
@@ -259,6 +261,9 @@ export function MarbleTrayScreen({
                     accessibilityRole="button"
                     accessibilityState={{ selected: isSelected }}
                     onPress={() => {
+                      void Haptics.impactAsync(
+                        Haptics.ImpactFeedbackStyle.Medium,
+                      );
                       setErrorMessage(null);
                       setConfirmationMood(null);
                       setSelectedMood(mood);
