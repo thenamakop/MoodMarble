@@ -7,7 +7,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { Colors, Spacing } from "@/constants/theme";
 
-export const CONFIRMATION_AUTO_DISMISS_MS = 1600;
+export const CONFIRMATION_AUTO_DISMISS_MS = 2000;
 const ANIMATIONS_ENABLED = process.env.NODE_ENV !== "test";
 
 interface SubmissionConfirmationProps {
