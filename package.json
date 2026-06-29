@@ -17,6 +17,10 @@
     "prettier": "^3.9.1"
   },
   "lint-staged": {
+    "apps/mobile/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
     "apps/backend/**/*.ts": [
       "prettier --write"
     ],
