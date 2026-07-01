@@ -41,6 +41,13 @@ interface AlertBucket {
   visible: boolean;
 }
 
+/**
+ * Computes the dashboard alert state for hourly mood data.
+ *
+ * @param hourlyBuckets - Hourly mood buckets used to evaluate the alert condition
+ * @param topLevelPrivacy - The overall dashboard privacy state
+ * @returns The resulting alert state for the day
+ */
 function computeAlertState(
   hourlyBuckets: AlertBucket[],
   topLevelPrivacy: DashboardPrivacyState,
@@ -262,6 +269,13 @@ export class DailyDashboardService {
   }
 }
 
+/**
+ * Builds ordered mood counts for a dashboard response.
+ *
+ * @param submissions - The submissions to count by mood
+ * @param privacy - The privacy state used to shape the returned counts
+ * @returns An array of mood entries with each mood type and its dashboard count
+ */
 export function buildMoodDistribution(
   submissions: DashboardAnalyticsSubmission[],
   privacy: ReturnType<typeof createDashboardPrivacyState>,
@@ -280,10 +294,21 @@ export function buildMoodDistribution(
   }));
 }
 
+/**
+ * Creates an empty mood count map.
+ *
+ * @returns A record with every mood initialized to `0`.
+ */
 function createEmptyMoodCountMap(): Record<Mood, number> {
   return Object.fromEntries(MOODS.map((moodType) => [moodType, 0])) as Record<Mood, number>;
 }
 
+/**
+ * Calculates the average mood score for a set of submissions.
+ *
+ * @param submissions - The mood submissions to average
+ * @returns The average score rounded to two decimal places, or `5` when there are no submissions
+ */
 export function calculateAverageMoodScore(submissions: DashboardAnalyticsSubmission[]): number {
   if (submissions.length === 0) {
     return 5;

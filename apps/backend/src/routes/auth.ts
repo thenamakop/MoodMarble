@@ -29,6 +29,12 @@ export function clearLoginRateLimit(): void {
   loginRateLimitMap.clear();
 }
 
+/**
+ * Registers the authentication routes on a Fastify instance.
+ *
+ * @param app - The Fastify application instance.
+ * @param options - Authentication route settings, including the database client and optional JWT secret.
+ */
 export async function registerAuthRoutes(
   app: FastifyInstance,
   options: AuthRouteOptions,

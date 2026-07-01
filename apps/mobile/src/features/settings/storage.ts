@@ -12,6 +12,13 @@ import {
 const LOCAL_SETTINGS_STORAGE_KEY = "moodmarble.local-settings";
 let webLocalSettingsMemoryFallback: string | null = null;
 
+/**
+ * Loads the stored local settings.
+ *
+ * Returns the default settings when nothing is stored or when the stored value cannot be parsed into a valid settings object. Invalid stored data is cleared before returning defaults.
+ *
+ * @returns The loaded local settings, or the default local settings when no valid stored value exists.
+ */
 export async function loadLocalSettings(): Promise<LocalSettings> {
   const storedValue = await readStoredLocalSettings();
 
@@ -36,6 +43,12 @@ export async function loadLocalSettings(): Promise<LocalSettings> {
   }
 }
 
+/**
+ * Saves local settings and returns the normalized result.
+ *
+ * @param settings - The settings to persist.
+ * @returns The normalized settings that were saved.
+ */
 export async function saveLocalSettings(settings: LocalSettings): Promise<LocalSettings> {
   const normalizedSettings = parseLocalSettings(settings);
   const serializedSettings = JSON.stringify(normalizedSettings);
@@ -61,14 +74,27 @@ export async function saveLocalSettings(settings: LocalSettings): Promise<LocalS
   return normalizedSettings;
 }
 
+/**
+ * Requests that onboarding replay be shown in the stored local settings.
+ *
+ * @returns The updated local settings with the onboarding replay request applied.
+ */
 export async function requestStoredOnboardingReplay(): Promise<LocalSettings> {
   return saveLocalSettings(requestOnboardingReplay(await loadLocalSettings()));
 }
 
+/**
+ * Clears the stored onboarding replay request.
+ *
+ * @returns The updated local settings.
+ */
 export async function clearStoredOnboardingReplayRequest(): Promise<LocalSettings> {
   return saveLocalSettings(clearOnboardingReplayRequest(await loadLocalSettings()));
 }
 
+/**
+ * Clears the stored local settings.
+ */
 export async function clearLocalSettings(): Promise<void> {
   const webStorage = getWebLocalSettingsStorage();
 
@@ -89,6 +115,11 @@ export async function clearLocalSettings(): Promise<void> {
   await AsyncStorage.removeItem(LOCAL_SETTINGS_STORAGE_KEY);
 }
 
+/**
+ * Reads the stored local settings payload.
+ *
+ * @returns The serialized settings string, or `null` if no stored value is available.
+ */
 async function readStoredLocalSettings(): Promise<string | null> {
   const webStorage = getWebLocalSettingsStorage();
 
@@ -107,6 +138,11 @@ async function readStoredLocalSettings(): Promise<string | null> {
   return AsyncStorage.getItem(LOCAL_SETTINGS_STORAGE_KEY);
 }
 
+/**
+ * Gets the available web storage for local settings.
+ *
+ * @returns The `localStorage` or `sessionStorage` object when running in a web environment, or `null` when neither is available.
+ */
 function getWebLocalSettingsStorage(): Storage | null {
   if (Platform.OS !== "web" || typeof window === "undefined") {
     return null;

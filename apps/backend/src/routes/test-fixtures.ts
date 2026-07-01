@@ -40,6 +40,13 @@ const DASHBOARD_DAILY_CLUSTER: Array<{
   { moodType: "happy", tags: ["#team"], hour: 17 },
 ];
 
+/**
+ * Builds ISO date keys for each UTC day in a date range.
+ *
+ * @param startKey - The first date key in `YYYY-MM-DD` format.
+ * @param endKey - The last date key in `YYYY-MM-DD` format.
+ * @returns The date keys from `startKey` through `endKey`, inclusive.
+ */
 function getDashboardDateKeysInRange(startKey: string, endKey: string): string[] {
   const start = new Date(`${startKey}T00:00:00.000Z`);
   const end = new Date(`${endKey}T00:00:00.000Z`);
@@ -54,6 +61,16 @@ function getDashboardDateKeysInRange(startKey: string, endKey: string): string[]
   return keys;
 }
 
+/**
+ * Seeds deterministic dashboard fixture data for a team.
+ *
+ * Creates six team members and a daily cluster of mood submissions for each date from the fixed
+ * dashboard window start through today, or for today only if the current date is earlier than the
+ * window start. Existing matching rows are left unchanged.
+ *
+ * @param databaseClient - Database client used to insert fixture rows
+ * @param teamId - Team to seed
+ */
 export async function seedDashboardFixtures(
   databaseClient: DatabaseClient,
   teamId = "tm_product",
@@ -102,6 +119,13 @@ export interface TestFixturesOptions {
   databaseClient: DatabaseClient;
 }
 
+/**
+ * Registers the test reset route.
+ *
+ * Adds a hidden `POST /__test/reset` endpoint that clears and reseeds test fixtures, and rejects requests in production.
+ *
+ * @param options - Test fixture services used by the reset handler.
+ */
 export async function registerTestRoutes(
   app: FastifyInstance,
   options: TestFixturesOptions,

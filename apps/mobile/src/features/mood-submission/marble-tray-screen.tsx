@@ -50,6 +50,13 @@ interface MarbleTrayScreenProps {
   getCurrentSubmissionDate?: () => string;
 }
 
+/**
+ * Renders the marble submission screen.
+ *
+ * @param workspaceId - Workspace identifier required to submit a marble.
+ * @param teamId - Team identifier required to submit a marble.
+ * @param deviceJwt - Device token used to authenticate a submission.
+ */
 export function MarbleTrayScreen({
   workspaceId,
   teamId,

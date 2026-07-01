@@ -20,6 +20,12 @@ interface LocalMoodTimelineScreenProps {
   moodFilter?: MoodValue | null;
 }
 
+/**
+ * Displays the local mood timeline and lets the user clear saved history.
+ *
+ * @param initialTimeline - Preloaded day groups to render before fetching saved history.
+ * @param moodFilter - A mood value used to show only matching records.
+ */
 export function LocalMoodTimelineScreen({
   initialTimeline = null,
   loadTimeline = loadGroupedLocalMoodHistory,
@@ -252,6 +258,12 @@ export function LocalMoodTimelineScreen({
   );
 }
 
+/**
+ * Normalizes and sorts local mood history day groups.
+ *
+ * @param groups - The day groups to normalize.
+ * @returns A new array of day groups sorted by `submission_date` in descending order with normalized records.
+ */
 function normalizeTimelineGroups(groups: LocalMoodHistoryDayGroup[]): LocalMoodHistoryDayGroup[] {
   return [...groups]
     .sort((left, right) => right.submission_date.localeCompare(left.submission_date))
