@@ -19,18 +19,12 @@ import {
   InMemoryDashboardAnalyticsSource,
   type DashboardAnalyticsSource,
 } from "./services/dashboard-daily";
-import {
-  InMemoryMoodSubmissionStore,
-  type MoodSubmissionStore,
-} from "./services/mood-submissions";
+import { InMemoryMoodSubmissionStore, type MoodSubmissionStore } from "./services/mood-submissions";
 import {
   InMemorySubmissionRateLimiter,
   type SubmissionRateLimiter,
 } from "./services/submission-rate-limit";
-import {
-  InMemoryTeamMembershipStore,
-  type TeamMembershipStore,
-} from "./services/team-members";
+import { InMemoryTeamMembershipStore, type TeamMembershipStore } from "./services/team-members";
 import {
   InMemoryWorkspaceDirectory,
   type WorkspaceDirectory,
@@ -39,6 +33,7 @@ import {
 interface BuildAppOptions {
   jwtSecret?: string;
   adminBootstrapSecret?: string;
+  corsOrigin?: string;
   adminApiService?: AdminApiService;
   dashboardAnalyticsSource?: DashboardAnalyticsSource;
   moodSubmissionStore?: MoodSubmissionStore;
@@ -49,23 +44,19 @@ interface BuildAppOptions {
   databaseClient?: import("./db/client").DatabaseClient;
 }
 
-export async function buildApp(
-  options: BuildAppOptions,
-): Promise<FastifyInstance> {
+export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify();
-  const workspaceDirectory =
-    options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
-  const moodSubmissionStore =
-    options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore();
+  const workspaceDirectory = options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
+  const moodSubmissionStore = options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore();
+
+  const productionOrigin = options.corsOrigin
+    ? [new RegExp(`^${options.corsOrigin.replace(/\./g, "\\.")}$`, "u")]
+    : [];
 
   await app.register(cors, {
-    origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u],
+    origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u, ...productionOrigin],
     methods: ["GET", "POST", "PATCH", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "x-admin-bootstrap-secret",
-    ],
+    allowedHeaders: ["Content-Type", "Authorization", "x-admin-bootstrap-secret"],
   });
 
   await registerHealthRoutes(app);
@@ -74,7 +65,7 @@ export async function buildApp(
       jwtSecret: options.jwtSecret,
       databaseClient: options.databaseClient,
     });
-    
+
     if (process.env.NODE_ENV !== "production") {
       await registerTestRoutes(app, {
         databaseClient: options.databaseClient,
@@ -95,31 +86,24 @@ export async function buildApp(
   });
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
-    teamMembershipStore:
-      options.teamMembershipStore ?? new InMemoryTeamMembershipStore(),
+    teamMembershipStore: options.teamMembershipStore ?? new InMemoryTeamMembershipStore(),
     workspaceDirectory,
   });
   await registerDashboardDailyRoute(app, {
     jwtSecret: options.jwtSecret,
-    analyticsSource:
-      options.dashboardAnalyticsSource ??
-      new InMemoryDashboardAnalyticsSource(),
+    analyticsSource: options.dashboardAnalyticsSource ?? new InMemoryDashboardAnalyticsSource(),
     workspaceDirectory,
     now: options.now,
   });
   await registerDashboardWeeklyRoute(app, {
     jwtSecret: options.jwtSecret,
-    analyticsSource:
-      options.dashboardAnalyticsSource ??
-      new InMemoryDashboardAnalyticsSource(),
+    analyticsSource: options.dashboardAnalyticsSource ?? new InMemoryDashboardAnalyticsSource(),
     workspaceDirectory,
     now: options.now,
   });
   await registerDashboardTagsRoute(app, {
     jwtSecret: options.jwtSecret,
-    analyticsSource:
-      options.dashboardAnalyticsSource ??
-      new InMemoryDashboardAnalyticsSource(),
+    analyticsSource: options.dashboardAnalyticsSource ?? new InMemoryDashboardAnalyticsSource(),
     workspaceDirectory,
     now: options.now,
   });
@@ -127,8 +111,7 @@ export async function buildApp(
     jwtSecret: options.jwtSecret,
     moodSubmissionStore,
     workspaceDirectory,
-    submissionRateLimiter:
-      options.submissionRateLimiter ?? new InMemorySubmissionRateLimiter(),
+    submissionRateLimiter: options.submissionRateLimiter ?? new InMemorySubmissionRateLimiter(),
     now: options.now,
   });
 
