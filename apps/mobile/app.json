@@ -36,6 +36,13 @@
       }
     },
     "plugins": [
+      [
+        "@sentry/react-native/expo",
+        {
+          "organization": "namaks-company",
+          "project": "moodmarble-mobile"
+        }
+      ],
       "expo-router",
       [
         "expo-splash-screen",

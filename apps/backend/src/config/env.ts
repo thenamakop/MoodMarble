@@ -20,7 +20,18 @@ const AppEnvSchema = z.object({
   ADMIN_BOOTSTRAP_SECRET: z.string().trim().min(1).optional(),
   HOST: z.string().min(1).default("0.0.0.0"),
   PORT: z.coerce.number().int().positive().default(3000),
-  CORS_ORIGIN: z.string().trim().optional(),
+  CORS_ORIGIN: z
+    .string()
+    .trim()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v === "" ? undefined : v)),
+  SENTRY_DSN: z
+    .string()
+    .url()
+    .optional()
+    .or(z.literal(""))
+    .transform((v) => (v === "" ? undefined : v)),
 });
 
 export type AppEnv = z.infer<typeof AppEnvSchema>;

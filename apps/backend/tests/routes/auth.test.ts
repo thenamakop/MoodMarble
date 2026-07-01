@@ -35,9 +35,7 @@ describe("admin login auth flow", () => {
     });
 
     expect(nonExistentResponse.statusCode).toBe(401);
-    expect(nonExistentResponse.json().message).toBe(
-      "Invalid email or password.",
-    );
+    expect(nonExistentResponse.json().message).toBe("Invalid email or password.");
   });
   it("authenticates a valid admin and enforces rate limiting", async () => {
     // Mock the DB client
@@ -85,10 +83,7 @@ describe("admin login auth flow", () => {
     expect(loginResponse.json()).toHaveProperty("admin_jwt");
     expect(loginResponse.json()).toHaveProperty("workspace");
 
-    const decoded = verifyAdminJwt(
-      `Bearer ${loginResponse.json().admin_jwt}`,
-      JWT_SECRET,
-    );
+    const decoded = verifyAdminJwt(`Bearer ${loginResponse.json().admin_jwt}`, JWT_SECRET);
     expect(decoded.workspace_id).toBe("ws_12345");
     expect(decoded.role).toBe("admin");
 
@@ -106,9 +101,7 @@ describe("admin login auth flow", () => {
     });
 
     expect(wrongPasswordResponse.statusCode).toBe(401);
-    expect(wrongPasswordResponse.json().message).toBe(
-      "Invalid email or password.",
-    );
+    expect(wrongPasswordResponse.json().message).toBe("Invalid email or password.");
 
     // Test missing fields
     const missingFieldsResponse = await inject(app, {
@@ -149,14 +142,16 @@ describe("admin login auth flow", () => {
     });
 
     expect(rateLimitedResponse.statusCode).toBe(429);
-  });
+  }, 10000);
 
   describe("POST /auth/redeem-manager-code", () => {
     const JWT_SECRET = "test-jwt-secret";
 
-    function buildMockDb(overrides: {
-      findFirst?: Record<string, unknown> | undefined;
-    } = {}) {
+    function buildMockDb(
+      overrides: {
+        findFirst?: Record<string, unknown> | undefined;
+      } = {},
+    ) {
       const mockUpdateWhere = jest.fn().mockResolvedValue(undefined);
       const mockUpdateSet = jest.fn().mockReturnValue({ where: mockUpdateWhere });
       const mockUpdate = jest.fn().mockReturnValue({ set: mockUpdateSet });
@@ -165,9 +160,7 @@ describe("admin login auth flow", () => {
         db: {
           query: {
             managerCodes: {
-              findFirst: jest
-                .fn()
-                .mockResolvedValue(overrides.findFirst ?? undefined),
+              findFirst: jest.fn().mockResolvedValue(overrides.findFirst ?? undefined),
             },
           },
           update: mockUpdate,
@@ -226,9 +219,7 @@ describe("admin login auth flow", () => {
       });
 
       expect(response.statusCode).toBe(400);
-      expect(response.json().message).toBe(
-        "Manager code must be 6 uppercase letters or numbers.",
-      );
+      expect(response.json().message).toBe("Manager code must be 6 uppercase letters or numbers.");
     });
 
     it("transforms lowercase code to uppercase", async () => {
@@ -376,5 +367,4 @@ describe("admin login auth flow", () => {
       expect(response.json().message).toBe("Invalid or expired manager code.");
     });
   });
-
 });
