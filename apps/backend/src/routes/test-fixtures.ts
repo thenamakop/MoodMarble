@@ -1,7 +1,6 @@
 import type { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
 import type { DatabaseClient } from "../db/client";
-import { seedAdmin } from "../../scripts/seed-admin";
 import { workspaces, teams, managerCodes, teamMembers, moodSubmissions } from "../db/schema";
 import { clearLoginRateLimit } from "./auth";
 
@@ -156,6 +155,7 @@ export async function registerTestRoutes(
       });
 
       // 4. Reseed admin account
+      const { seedAdmin } = await import("../../scripts/seed-admin");
       const seedExitCode = await seedAdmin("admin@example.com", "password1234", databaseClient);
 
       if (seedExitCode !== 0) {

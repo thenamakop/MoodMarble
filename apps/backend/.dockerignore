@@ -1,10 +1,27 @@
+# Dependencies — never copy; installed fresh in the deps stage
 node_modules
-dist
+
+# Test output — not needed at runtime
 coverage
+dist
+
+# Environment files — secrets must never be baked into an image;
+# Railway injects them as environment variables at container start
 .env
+.env.*
+!.env.example
+
+# Dev-only source
 *.test.ts
 tests/
-drizzle/
+
+# Drizzle schema generator output is already in drizzle/ SQL files
+# drizzle/meta is the migration state journal — include it
+# so db:migrate can track which migrations have already run
+# (do NOT add drizzle/ here)
+
+# Local tooling
 scripts/
 *.md
-tsconfig.json
+AGENTS.md
+PROJECT_CONTEXT_REPORT.md
