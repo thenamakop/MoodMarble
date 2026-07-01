@@ -24,15 +24,27 @@ export async function seedAdmin(
   }
 
   if (!adminEmail || !adminPassword) {
-    console.error(
-      "ADMIN_EMAIL and ADMIN_PASSWORD must be provided in the environment.",
-    );
+    console.error("ADMIN_EMAIL and ADMIN_PASSWORD must be provided in the environment.");
     return 1;
   }
 
   if (adminPassword.length < 12) {
     console.error("ADMIN_PASSWORD must be at least 12 characters long.");
     return 1;
+  }
+
+  if (databaseClient.sql) {
+    const tableExists = await databaseClient.sql`
+      SELECT 1 FROM pg_tables
+      WHERE schemaname = 'public' AND tablename = 'admin_credentials'
+    `;
+
+    if (tableExists.length === 0) {
+      console.error(
+        'The "admin_credentials" table does not exist. Run migrations first: node_modules/.bin/tsx apps/backend/src/db/migrate.ts',
+      );
+      return 1;
+    }
   }
 
   try {
@@ -43,9 +55,7 @@ export async function seedAdmin(
       .limit(1);
 
     if (existingAdmin.length > 0) {
-      console.log(
-        `Admin account with email ${adminEmail} already exists. Skipping seed.`,
-      );
+      console.log(`Admin account with email ${adminEmail} already exists. Skipping seed.`);
       return 0; // Return exit code instead of process.exit for testability
     }
 

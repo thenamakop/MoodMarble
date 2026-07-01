@@ -16,13 +16,15 @@ async function run(): Promise<void> {
       .sort();
 
     for (const migrationFile of migrationFiles) {
-      const sql = await readFile(
-        resolve(MIGRATIONS_DIRECTORY, migrationFile),
-        "utf8",
-      );
+      const sql = await readFile(resolve(MIGRATIONS_DIRECTORY, migrationFile), "utf8");
 
-      await databaseClient.sql.unsafe(sql);
-      console.log(`Applied ${migrationFile}`);
+      try {
+        await databaseClient.sql.unsafe(sql);
+        console.log(`Applied ${migrationFile}`);
+      } catch (error) {
+        console.error(`Failed to apply migration ${migrationFile}:`, error);
+        throw error;
+      }
     }
   } finally {
     await databaseClient.close();
