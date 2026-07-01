@@ -2,7 +2,9 @@ import { and, eq, gte, lte } from "drizzle-orm";
 
 import {
   DashboardDailySchema,
+  type DashboardAlertState,
   type DashboardDaily,
+  type DashboardPrivacyState,
   type Mood,
   MOODS,
   type Tag,
@@ -29,6 +31,49 @@ const MOOD_SCORES: Record<Mood, number> = {
   sad: 2,
   unheard: 1,
 };
+
+export const MOOD_ALERT_THRESHOLD_SCORE = 4; // "tired" and below
+export const MOOD_ALERT_CONSECUTIVE_HOURS = 3;
+
+interface AlertBucket {
+  hourOfDay: number;
+  avgScore: number | null;
+  visible: boolean;
+}
+
+function computeAlertState(
+  hourlyBuckets: AlertBucket[],
+  topLevelPrivacy: DashboardPrivacyState,
+): DashboardAlertState {
+  if (topLevelPrivacy.visibility === "hidden") {
+    return { status: "hidden", message: null };
+  }
+
+  let maxRun = 0;
+  let currentRun = 0;
+
+  for (const bucket of hourlyBuckets) {
+    if (
+      bucket.visible &&
+      bucket.avgScore !== null &&
+      bucket.avgScore < MOOD_ALERT_THRESHOLD_SCORE
+    ) {
+      currentRun++;
+      maxRun = Math.max(maxRun, currentRun);
+    } else {
+      currentRun = 0;
+    }
+  }
+
+  if (maxRun >= MOOD_ALERT_CONSECUTIVE_HOURS) {
+    return {
+      status: "active",
+      message: `Team mood has been low for ${maxRun} consecutive hours today.`,
+    };
+  }
+
+  return { status: "inactive", message: null };
+}
 
 export interface DashboardAnalyticsSubmission {
   teamId: string;
@@ -62,9 +107,7 @@ export class InMemoryDashboardAnalyticsSource implements DashboardAnalyticsSourc
     submissionDate: string,
   ): Promise<DashboardAnalyticsSubmission[]> {
     return this.submissions.filter(
-      (submission) =>
-        submission.teamId === teamId &&
-        submission.submissionDate === submissionDate,
+      (submission) => submission.teamId === teamId && submission.submissionDate === submissionDate,
     );
   }
 
@@ -93,17 +136,16 @@ export class PostgresDashboardAnalyticsSource implements DashboardAnalyticsSourc
     teamId: string,
     submissionDate: string,
   ): Promise<DashboardAnalyticsSubmission[]> {
-    const submissionRecords =
-      await this.databaseClient.db.query.moodSubmissions.findMany({
-        where: and(
-          eq(moodSubmissions.teamId, teamId),
-          eq(moodSubmissions.submissionDate, submissionDate),
-        ),
-        orderBy: (submissionTable, { asc }) => [
-          asc(submissionTable.hourOfDay),
-          asc(submissionTable.id),
-        ],
-      });
+    const submissionRecords = await this.databaseClient.db.query.moodSubmissions.findMany({
+      where: and(
+        eq(moodSubmissions.teamId, teamId),
+        eq(moodSubmissions.submissionDate, submissionDate),
+      ),
+      orderBy: (submissionTable, { asc }) => [
+        asc(submissionTable.hourOfDay),
+        asc(submissionTable.id),
+      ],
+    });
 
     return submissionRecords.map((submissionRecord) => ({
       teamId: submissionRecord.teamId,
@@ -119,19 +161,18 @@ export class PostgresDashboardAnalyticsSource implements DashboardAnalyticsSourc
     startDate: string,
     endDate: string,
   ): Promise<DashboardAnalyticsSubmission[]> {
-    const submissionRecords =
-      await this.databaseClient.db.query.moodSubmissions.findMany({
-        where: and(
-          eq(moodSubmissions.teamId, teamId),
-          gte(moodSubmissions.submissionDate, startDate),
-          lte(moodSubmissions.submissionDate, endDate),
-        ),
-        orderBy: (submissionTable, { asc }) => [
-          asc(submissionTable.submissionDate),
-          asc(submissionTable.hourOfDay),
-          asc(submissionTable.id),
-        ],
-      });
+    const submissionRecords = await this.databaseClient.db.query.moodSubmissions.findMany({
+      where: and(
+        eq(moodSubmissions.teamId, teamId),
+        gte(moodSubmissions.submissionDate, startDate),
+        lte(moodSubmissions.submissionDate, endDate),
+      ),
+      orderBy: (submissionTable, { asc }) => [
+        asc(submissionTable.submissionDate),
+        asc(submissionTable.hourOfDay),
+        asc(submissionTable.id),
+      ],
+    });
 
     return submissionRecords.map((submissionRecord) => ({
       teamId: submissionRecord.teamId,
@@ -143,13 +184,12 @@ export class PostgresDashboardAnalyticsSource implements DashboardAnalyticsSourc
   }
 
   async getTeamMemberCount(teamId: string): Promise<number> {
-    const teamMemberRecords =
-      await this.databaseClient.db.query.teamMembers.findMany({
-        columns: {
-          id: true,
-        },
-        where: eq(teamMembers.teamId, teamId),
-      });
+    const teamMemberRecords = await this.databaseClient.db.query.teamMembers.findMany({
+      columns: {
+        id: true,
+      },
+      where: eq(teamMembers.teamId, teamId),
+    });
 
     return teamMemberRecords.length;
   }
@@ -168,67 +208,54 @@ interface GetDailyDashboardInput {
 export class DailyDashboardService {
   constructor(private readonly options: DailyDashboardServiceOptions) {}
 
-  async getDailyDashboard(
-    input: GetDailyDashboardInput,
-  ): Promise<DashboardDaily> {
-    const date =
-      input.date ?? getUtcDateKey(this.options.now?.() ?? new Date());
-    const submissions = await this.options.analyticsSource.listDailySubmissions(
-      input.teamId,
-      date,
-    );
-    const teamMemberCount =
-      await this.options.analyticsSource.getTeamMemberCount(input.teamId);
+  async getDailyDashboard(input: GetDailyDashboardInput): Promise<DashboardDaily> {
+    const date = input.date ?? getUtcDateKey(this.options.now?.() ?? new Date());
+    const submissions = await this.options.analyticsSource.listDailySubmissions(input.teamId, date);
+    const teamMemberCount = await this.options.analyticsSource.getTeamMemberCount(input.teamId);
     const topLevelPrivacy = getDashboardWindowPrivacy({
       totalSubmissions: submissions.length,
       teamMemberCount,
     });
+
+    // First pass: compute per-hour data needed for both the alert and the API response.
+    const hourlyData = Array.from({ length: 24 }, (_, hourOfDay) => {
+      const hourlySubmissions = submissions.filter(
+        (submission) => submission.hourOfDay === hourOfDay,
+      );
+      const hourPrivacy = getDashboardHourPrivacy({
+        totalSubmissions: submissions.length,
+        teamMemberCount,
+        hourSubmissions: hourlySubmissions.length,
+      });
+      const avgScore = calculateAverageMoodScore(hourlySubmissions);
+
+      return { hourOfDay, hourlySubmissions, hourPrivacy, avgScore };
+    });
+
+    const alertBuckets: AlertBucket[] = hourlyData.map(
+      ({ hourOfDay, hourPrivacy, avgScore, hourlySubmissions }) => ({
+        hourOfDay,
+        avgScore: hourlySubmissions.length > 0 ? avgScore : null,
+        visible: hourPrivacy.visibility !== "hidden",
+      }),
+    );
 
     const response = DashboardDailySchema.parse({
       team_id: input.teamId,
       date,
       privacy: topLevelPrivacy,
       summary: {
-        total_submissions: toDashboardCountValue(
-          submissions.length,
-          topLevelPrivacy,
-        ),
+        total_submissions: toDashboardCountValue(submissions.length, topLevelPrivacy),
         mood_distribution: buildMoodDistribution(submissions, topLevelPrivacy),
-        alert_state:
-          topLevelPrivacy.visibility === "hidden"
-            ? {
-                status: "hidden",
-                message: null,
-              }
-            : {
-                status: "inactive",
-                message: null,
-              },
+        alert_state: computeAlertState(alertBuckets, topLevelPrivacy),
       },
-      hourly_buckets: Array.from({ length: 24 }, (_, hourOfDay) => {
-        const hourlySubmissions = submissions.filter(
-          (submission) => submission.hourOfDay === hourOfDay,
-        );
-        const hourPrivacy = getDashboardHourPrivacy({
-          totalSubmissions: submissions.length,
-          teamMemberCount,
-          hourSubmissions: hourlySubmissions.length,
-        });
-
-        return {
-          hour_of_day: hourOfDay,
-          privacy: hourPrivacy,
-          total_submissions: toDashboardCountValue(
-            hourlySubmissions.length,
-            hourPrivacy,
-          ),
-          average_mood_score: toDashboardScoreValue(
-            calculateAverageMoodScore(hourlySubmissions),
-            hourPrivacy,
-          ),
-          mood_counts: buildMoodDistribution(hourlySubmissions, hourPrivacy),
-        };
-      }),
+      hourly_buckets: hourlyData.map(({ hourOfDay, hourlySubmissions, hourPrivacy, avgScore }) => ({
+        hour_of_day: hourOfDay,
+        privacy: hourPrivacy,
+        total_submissions: toDashboardCountValue(hourlySubmissions.length, hourPrivacy),
+        average_mood_score: toDashboardScoreValue(avgScore, hourPrivacy),
+        mood_counts: buildMoodDistribution(hourlySubmissions, hourPrivacy),
+      })),
     });
 
     return response;
@@ -254,15 +281,10 @@ export function buildMoodDistribution(
 }
 
 function createEmptyMoodCountMap(): Record<Mood, number> {
-  return Object.fromEntries(MOODS.map((moodType) => [moodType, 0])) as Record<
-    Mood,
-    number
-  >;
+  return Object.fromEntries(MOODS.map((moodType) => [moodType, 0])) as Record<Mood, number>;
 }
 
-export function calculateAverageMoodScore(
-  submissions: DashboardAnalyticsSubmission[],
-): number {
+export function calculateAverageMoodScore(submissions: DashboardAnalyticsSubmission[]): number {
   if (submissions.length === 0) {
     return 5;
   }

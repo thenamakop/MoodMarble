@@ -65,10 +65,7 @@ export class ForbiddenError extends Error {
  * workspace referenced in the route params. Throws ForbiddenError
  * on mismatch so the caller never forgets the check.
  */
-function assertWorkspaceScope(
-  jwtWorkspaceId: string,
-  paramWorkspaceId: string,
-): void {
+function assertWorkspaceScope(jwtWorkspaceId: string, paramWorkspaceId: string): void {
   if (jwtWorkspaceId !== paramWorkspaceId) {
     throw new ForbiddenError();
   }
@@ -100,12 +97,63 @@ export async function registerAdminRoutes(
   // --- Bootstrap route (static secret, not admin JWT) ---
   app.post(
     "/admin/workspace",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Create a workspace",
+        description:
+          "Creates a new workspace and the initial admin account. " +
+          "Requires either a valid Admin JWT or the bootstrap secret header " +
+          "(x-admin-bootstrap-secret) for the very first workspace creation.",
+        body: {
+          type: "object",
+          additionalProperties: true,
+          required: ["name"],
+          properties: {
+            name: { type: "string", minLength: 1, maxLength: 100 },
+          },
+        },
+        response: {
+          201: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              workspace: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  join_code: { type: "string" },
+                },
+              },
+              admin_jwt: { type: "string" },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid workspace request",
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid bootstrap secret",
+          },
+          500: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Server configuration error",
+          },
+        },
+      },
+    },
     async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
       try {
-        verifyAdminBootstrapSecret(
-          getBootstrapHeader(request),
-          options.adminBootstrapSecret,
-        );
+        verifyAdminBootstrapSecret(getBootstrapHeader(request), options.adminBootstrapSecret);
         const payload = AdminWorkspaceCreateRequestSchema.parse(request.body);
         const response = AdminWorkspaceCreateResponseSchema.parse(
           await options.adminApiService.createWorkspace(payload),
@@ -113,11 +161,7 @@ export async function registerAdminRoutes(
 
         return reply.status(201).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid admin workspace request.",
-        );
+        return handleAdminError(error, reply, "Invalid admin workspace request.");
       }
     },
   );
@@ -125,12 +169,53 @@ export async function registerAdminRoutes(
   // --- Admin JWT-protected routes ---
   app.post(
     "/admin/team",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Create a team within the workspace",
+        security: [{ adminJwt: [] }],
+        body: {
+          type: "object",
+          additionalProperties: true,
+          required: ["name"],
+          properties: {
+            name: { type: "string", minLength: 1 },
+          },
+        },
+        response: {
+          201: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              team: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                  workspace_id: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid team request",
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
         const payload = AdminTeamCreateRequestSchema.parse(request.body);
         const response = AdminTeamResponseSchema.parse(
           await options.adminApiService.createTeam({
@@ -148,6 +233,53 @@ export async function registerAdminRoutes(
 
   app.patch(
     "/admin/team/:teamId",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Update a team name",
+        security: [{ adminJwt: [] }],
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["teamId"],
+          properties: { teamId: { type: "string" } },
+        },
+        body: {
+          type: "object",
+          additionalProperties: true,
+          required: ["name"],
+          properties: { name: { type: "string", minLength: 1 } },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              team: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid team update request",
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -156,10 +288,7 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
         const { teamId } = AdminTeamParamsSchema.parse(request.params);
         const payload = AdminTeamUpdateRequestSchema.parse(request.body);
         const response = AdminTeamResponseSchema.parse(
@@ -172,17 +301,53 @@ export async function registerAdminRoutes(
 
         return reply.status(200).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid admin team update request.",
-        );
+        return handleAdminError(error, reply, "Invalid admin team update request.");
       }
     },
   );
 
   app.get(
     "/admin/workspace/:workspaceId/teams",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "List all teams in the workspace",
+        security: [{ adminJwt: [] }],
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId"],
+          properties: { workspaceId: { type: "string" } },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              teams: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: true,
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                    workspace_id: { type: "string" },
+                    member_count: { type: "integer" },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -190,13 +355,8 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(request.params);
 
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
@@ -206,17 +366,52 @@ export async function registerAdminRoutes(
 
         return reply.status(200).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid admin team list request.",
-        );
+        return handleAdminError(error, reply, "Invalid admin team list request.");
       }
     },
   );
 
   app.get(
     "/admin/workspace/:workspaceId/join-code",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Get the current workspace join code",
+        security: [{ adminJwt: [] }],
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId"],
+          properties: { workspaceId: { type: "string" } },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              workspace: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  join_code: {
+                    type: "string",
+                    pattern: "^[A-Z0-9]{6}$",
+                    description: "6-character join code to share with team members",
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -224,13 +419,8 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(request.params);
 
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
@@ -240,17 +430,51 @@ export async function registerAdminRoutes(
 
         return reply.status(200).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid admin join code request.",
-        );
+        return handleAdminError(error, reply, "Invalid admin join code request.");
       }
     },
   );
 
   app.post(
     "/admin/workspace/:workspaceId/join-code",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Rotate the workspace join code",
+        security: [{ adminJwt: [] }],
+        description:
+          "Generates a new random join code, invalidating the old one. " +
+          "Existing team members are unaffected.",
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId"],
+          properties: { workspaceId: { type: "string" } },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              workspace: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  join_code: { type: "string", pattern: "^[A-Z0-9]{6}$" },
+                },
+              },
+            },
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -258,13 +482,8 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(request.params);
 
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
@@ -274,17 +493,42 @@ export async function registerAdminRoutes(
 
         return reply.status(200).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid admin join code rotation request.",
-        );
+        return handleAdminError(error, reply, "Invalid admin join code rotation request.");
       }
     },
   );
 
   app.get(
     "/admin/workspace/:workspaceId/export",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Export anonymous mood submissions as CSV",
+        security: [{ adminJwt: [] }],
+        description:
+          "Returns a CSV file of all anonymous mood submissions for " +
+          "the workspace. No device identifiers are included. " +
+          "Content-Type: text/csv.",
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId"],
+          properties: { workspaceId: { type: "string" } },
+        },
+        response: {
+          200: {
+            type: "string",
+            description: "CSV file — mood_type,tags,hour_of_day,submission_date",
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -293,22 +537,15 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(request.params);
         const query = AdminExportQuerySchema.parse(request.query ?? {});
 
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         const records = z
           .array(AdminExportRecordSchema)
-          .parse(
-            await options.adminApiService.getExportRows({ workspaceId, query }),
-          );
+          .parse(await options.adminApiService.getExportRows({ workspaceId, query }));
         const csv = serializeAdminExportCsv(records);
         const fileName = `moodmarble-${workspaceId}-${query.start_date}-to-${query.end_date}.csv`;
 
@@ -364,6 +601,46 @@ export async function registerAdminRoutes(
 
   app.post(
     "/admin/workspace/:workspaceId/manager-codes",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Generate a manager invite code",
+        security: [{ adminJwt: [] }],
+        description:
+          "Creates a one-time 6-character code that a manager can " +
+          "redeem via POST /auth/redeem-manager-code to get a Manager JWT. " +
+          "Codes expire after 7 days.",
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId"],
+          properties: { workspaceId: { type: "string" } },
+        },
+        body: {
+          type: "object",
+          additionalProperties: true,
+          required: ["team_id"],
+          properties: { team_id: { type: "string" } },
+        },
+        response: {
+          201: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              code: { type: "string", pattern: "^[A-Z0-9]{6}$" },
+              expires_at: { type: "string", format: "date-time" },
+              team_id: { type: "string" },
+            },
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -372,28 +649,18 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId } = AdminWorkspaceParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId } = AdminWorkspaceParamsSchema.parse(request.params);
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         if (!options.databaseClient) {
-          return reply
-            .status(500)
-            .send({ message: "Database client not configured." });
+          return reply.status(500).send({ message: "Database client not configured." });
         }
 
         const body = GenerateManagerCodeBodySchema.parse(request.body);
 
         const team = await options.databaseClient.db.query.teams.findFirst({
-          where: and(
-            eq(teams.id, body.team_id),
-            eq(teams.workspaceId, workspaceId),
-          ),
+          where: and(eq(teams.id, body.team_id), eq(teams.workspaceId, workspaceId)),
         });
         if (!team) {
           return reply.status(404).send({ message: "Team not found." });
@@ -402,19 +669,16 @@ export async function registerAdminRoutes(
         let code: string | null = null;
         for (let attempt = 0; attempt < 3; attempt++) {
           const candidate = generateManagerCode();
-          const existing =
-            await options.databaseClient.db.query.managerCodes.findFirst({
-              where: eq(managerCodes.code, candidate),
-            });
+          const existing = await options.databaseClient.db.query.managerCodes.findFirst({
+            where: eq(managerCodes.code, candidate),
+          });
           if (!existing) {
             code = candidate;
             break;
           }
         }
         if (!code) {
-          return reply
-            .status(500)
-            .send({ message: "Code generation failed, please try again." });
+          return reply.status(500).send({ message: "Code generation failed, please try again." });
         }
 
         const expiresAt = new Date();
@@ -435,17 +699,57 @@ export async function registerAdminRoutes(
         });
         return reply.status(201).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid manager code generation request.",
-        );
+        return handleAdminError(error, reply, "Invalid manager code generation request.");
       }
     },
   );
 
   app.get(
     "/admin/workspace/:workspaceId/team/:teamId/manager-codes",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "List active manager codes for a team",
+        security: [{ adminJwt: [] }],
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId", "teamId"],
+          properties: {
+            workspaceId: { type: "string" },
+            teamId: { type: "string" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              codes: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: true,
+                  properties: {
+                    id: { type: "string" },
+                    code: { type: "string" },
+                    expires_at: { type: "string", format: "date-time" },
+                    used_at: { type: "string", format: "date-time", nullable: true },
+                    is_revoked: { type: "boolean" },
+                  },
+                },
+              },
+            },
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -453,30 +757,19 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId, teamId } = ManagerCodeParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId, teamId } = ManagerCodeParamsSchema.parse(request.params);
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         if (!options.databaseClient) {
-          return reply
-            .status(500)
-            .send({ message: "Database client not configured." });
+          return reply.status(500).send({ message: "Database client not configured." });
         }
 
-        const rows =
-          await options.databaseClient.db.query.managerCodes.findMany({
-            where: and(
-              eq(managerCodes.teamId, teamId),
-              eq(managerCodes.workspaceId, workspaceId),
-            ),
-            with: { team: true },
-            orderBy: (mc, { desc }) => [desc(mc.createdAt)],
-          });
+        const rows = await options.databaseClient.db.query.managerCodes.findMany({
+          where: and(eq(managerCodes.teamId, teamId), eq(managerCodes.workspaceId, workspaceId)),
+          with: { team: true },
+          orderBy: (mc, { desc }) => [desc(mc.createdAt)],
+        });
 
         const response = AdminManagerCodeListResponseSchema.parse({
           codes: rows.map((r) => ({
@@ -492,17 +785,57 @@ export async function registerAdminRoutes(
         });
         return reply.status(200).send(response);
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid manager code list request.",
-        );
+        return handleAdminError(error, reply, "Invalid manager code list request.");
       }
     },
   );
 
   app.delete(
     "/admin/workspace/:workspaceId/manager-codes/:codeId",
+    {
+      schema: {
+        tags: ["Admin"],
+        summary: "Revoke a manager invite code",
+        security: [{ adminJwt: [] }],
+        description:
+          "Marks the code as revoked. Already-redeemed Manager JWTs " +
+          "are not invalidated — only the code itself is blocked from future use.",
+        params: {
+          type: "object",
+          additionalProperties: true,
+          required: ["workspaceId", "codeId"],
+          properties: {
+            workspaceId: { type: "string" },
+            codeId: { type: "string" },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: { success: { type: "boolean" } },
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Admin JWT",
+          },
+          403: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Code does not belong to workspace",
+          },
+          404: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Code not found",
+          },
+        },
+      },
+    },
     async (
       request: FastifyRequest<{
         Params: unknown;
@@ -510,25 +843,17 @@ export async function registerAdminRoutes(
       reply: FastifyReply,
     ) => {
       try {
-        const adminJwt = verifyAdminJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
-        const { workspaceId, codeId } = RevokeManagerCodeParamsSchema.parse(
-          request.params,
-        );
+        const adminJwt = verifyAdminJwt(request.headers.authorization, options.jwtSecret);
+        const { workspaceId, codeId } = RevokeManagerCodeParamsSchema.parse(request.params);
         assertWorkspaceScope(adminJwt.workspace_id, workspaceId);
 
         if (!options.databaseClient) {
-          return reply
-            .status(500)
-            .send({ message: "Database client not configured." });
+          return reply.status(500).send({ message: "Database client not configured." });
         }
 
-        const codeRecord =
-          await options.databaseClient.db.query.managerCodes.findFirst({
-            where: eq(managerCodes.id, codeId),
-          });
+        const codeRecord = await options.databaseClient.db.query.managerCodes.findFirst({
+          where: eq(managerCodes.id, codeId),
+        });
         if (!codeRecord) {
           return reply.status(404).send({ message: "Code not found." });
         }
@@ -543,11 +868,7 @@ export async function registerAdminRoutes(
 
         return reply.status(200).send({ success: true });
       } catch (error) {
-        return handleAdminError(
-          error,
-          reply,
-          "Invalid manager code revocation request.",
-        );
+        return handleAdminError(error, reply, "Invalid manager code revocation request.");
       }
     },
   );
@@ -563,19 +884,12 @@ function getBootstrapHeader(request: FastifyRequest): string | undefined {
   return undefined;
 }
 
-function handleAdminError(
-  error: unknown,
-  reply: FastifyReply,
-  validationMessage: string,
-) {
+function handleAdminError(error: unknown, reply: FastifyReply, validationMessage: string) {
   if (error instanceof UnauthorizedError) {
     return reply.status(401).send({ message: "Unauthorized" });
   }
 
-  if (
-    error instanceof MissingJwtSecretError ||
-    error instanceof MissingAdminBootstrapSecretError
-  ) {
+  if (error instanceof MissingJwtSecretError || error instanceof MissingAdminBootstrapSecretError) {
     return reply.status(500).send({ message: error.message });
   }
 
@@ -587,10 +901,7 @@ function handleAdminError(
     return reply.status(403).send({ message: "Forbidden" });
   }
 
-  if (
-    error instanceof AdminWorkspaceNotFoundError ||
-    error instanceof AdminTeamNotFoundError
-  ) {
+  if (error instanceof AdminWorkspaceNotFoundError || error instanceof AdminTeamNotFoundError) {
     return reply.status(404).send({ message: "Resource not found." });
   }
 
@@ -607,17 +918,8 @@ function handleAdminError(
   throw error;
 }
 
-function serializeAdminExportCsv(
-  records: Array<z.infer<typeof AdminExportRecordSchema>>,
-): string {
-  const header = [
-    "team_id",
-    "team_name",
-    "mood_type",
-    "tags",
-    "hour_of_day",
-    "submission_date",
-  ];
+function serializeAdminExportCsv(records: Array<z.infer<typeof AdminExportRecordSchema>>): string {
+  const header = ["team_id", "team_name", "mood_type", "tags", "hour_of_day", "submission_date"];
 
   const lines = [
     header.join(","),

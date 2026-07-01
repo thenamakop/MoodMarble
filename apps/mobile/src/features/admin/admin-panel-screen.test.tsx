@@ -1,7 +1,7 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { AdminPanelScreen } from "@/features/admin/admin-panel-screen";
 
 jest.unmock("@/features/admin/admin-panel-screen");
-import { AdminPanelScreen } from "@/features/admin/admin-panel-screen";
 
 jest.mock("@/hooks/use-theme", () => ({
   useTheme: () => ({
@@ -43,7 +43,7 @@ describe("AdminPanelScreen", () => {
     );
 
     expect(view.getByTestId("admin-panel-screen")).toBeTruthy();
-    expect(view.getByText("Admin control panel")).toBeTruthy();
+    expect(view.getByText("admin.panel.title")).toBeTruthy();
     expect(view.getByTestId("admin-panel-nav-overview")).toBeTruthy();
     expect(view.getByTestId("admin-panel-workspace-section")).toBeTruthy();
     expect(view.getByTestId("admin-panel-team-section")).toBeTruthy();
@@ -53,21 +53,17 @@ describe("AdminPanelScreen", () => {
   });
 
   it("renders the loading state", async () => {
-    const view = await render(
-      <AdminPanelScreen contentState={{ kind: "loading" }} />,
-    );
+    const view = await render(<AdminPanelScreen contentState={{ kind: "loading" }} />);
 
     expect(view.getByTestId("admin-panel-loading-state")).toBeTruthy();
-    expect(view.getByText("Loading admin panel")).toBeTruthy();
+    expect(view.getByText("admin.panel.states.loading.title")).toBeTruthy();
   });
 
   it("renders the empty state", async () => {
-    const view = await render(
-      <AdminPanelScreen contentState={{ kind: "empty" }} />,
-    );
+    const view = await render(<AdminPanelScreen contentState={{ kind: "empty" }} />);
 
     expect(view.getByTestId("admin-panel-empty-state")).toBeTruthy();
-    expect(view.getByText("Admin setup is empty")).toBeTruthy();
+    expect(view.getByText("admin.panel.states.empty.title")).toBeTruthy();
   });
 
   it("renders the error state and retries", async () => {
@@ -90,10 +86,7 @@ describe("AdminPanelScreen", () => {
   it("renders the guarded state and returns to the app", async () => {
     const onReturnHome = jest.fn();
     const view = await render(
-      <AdminPanelScreen
-        contentState={{ kind: "guarded" }}
-        onReturnHome={onReturnHome}
-      />,
+      <AdminPanelScreen contentState={{ kind: "guarded" }} onReturnHome={onReturnHome} />,
     );
 
     expect(view.getByTestId("admin-panel-guarded-state")).toBeTruthy();
@@ -144,14 +137,8 @@ describe("AdminPanelScreen", () => {
     );
 
     fireEvent.press(view.getByTestId("admin-panel-copy-join-code"));
-    fireEvent.changeText(
-      view.getByTestId("admin-panel-export-start-date"),
-      "2026-06-01",
-    );
-    fireEvent.changeText(
-      view.getByTestId("admin-panel-export-end-date"),
-      "2026-06-30",
-    );
+    fireEvent.changeText(view.getByTestId("admin-panel-export-start-date"), "2026-06-01");
+    fireEvent.changeText(view.getByTestId("admin-panel-export-end-date"), "2026-06-30");
     await waitFor(() => {
       expect(view.getByDisplayValue("2026-06-01")).toBeTruthy();
       expect(view.getByDisplayValue("2026-06-30")).toBeTruthy();

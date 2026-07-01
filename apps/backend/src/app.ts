@@ -1,5 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 
 import { registerAuthRoutes } from "./routes/auth";
 import { registerAdminRoutes } from "./routes/admin";
@@ -19,18 +21,12 @@ import {
   InMemoryDashboardAnalyticsSource,
   type DashboardAnalyticsSource,
 } from "./services/dashboard-daily";
-import {
-  InMemoryMoodSubmissionStore,
-  type MoodSubmissionStore,
-} from "./services/mood-submissions";
+import { InMemoryMoodSubmissionStore, type MoodSubmissionStore } from "./services/mood-submissions";
 import {
   InMemorySubmissionRateLimiter,
   type SubmissionRateLimiter,
 } from "./services/submission-rate-limit";
-import {
-  InMemoryTeamMembershipStore,
-  type TeamMembershipStore,
-} from "./services/team-members";
+import { InMemoryTeamMembershipStore, type TeamMembershipStore } from "./services/team-members";
 import {
   InMemoryWorkspaceDirectory,
   type WorkspaceDirectory,
@@ -39,6 +35,7 @@ import {
 interface BuildAppOptions {
   jwtSecret?: string;
   adminBootstrapSecret?: string;
+  corsOrigin?: string;
   adminApiService?: AdminApiService;
   dashboardAnalyticsSource?: DashboardAnalyticsSource;
   moodSubmissionStore?: MoodSubmissionStore;
@@ -49,23 +46,84 @@ interface BuildAppOptions {
   databaseClient?: import("./db/client").DatabaseClient;
 }
 
-export async function buildApp(
-  options: BuildAppOptions,
-): Promise<FastifyInstance> {
+export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify();
-  const workspaceDirectory =
-    options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
-  const moodSubmissionStore =
-    options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore();
+  const workspaceDirectory = options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();
+  const moodSubmissionStore = options.moodSubmissionStore ?? new InMemoryMoodSubmissionStore();
+
+  const productionOrigin = options.corsOrigin
+    ? [new RegExp(`^${options.corsOrigin.replace(/\./g, "\\.")}$`, "u")]
+    : [];
 
   await app.register(cors, {
-    origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u],
+    origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u, ...productionOrigin],
     methods: ["GET", "POST", "PATCH", "OPTIONS"],
-    allowedHeaders: [
-      "Content-Type",
-      "Authorization",
-      "x-admin-bootstrap-secret",
-    ],
+    allowedHeaders: ["Content-Type", "Authorization", "x-admin-bootstrap-secret"],
+  });
+
+  await app.register(swagger, {
+    openapi: {
+      openapi: "3.0.3",
+      info: {
+        title: "MoodMarble API",
+        description: [
+          "Anonymous workplace mood-tracking API.",
+          "",
+          "**Authentication schemes:**",
+          "- `deviceJwt` — issued after `POST /workspace/join`.",
+          "  Identifies an anonymous device. Used for mood submission.",
+          "- `managerJwt` — issued after `POST /auth/redeem-manager-code`.",
+          "  Grants access to the team dashboard for one team.",
+          "- `adminJwt` — issued after `POST /auth/login`.",
+          "  Grants full workspace administration access.",
+        ].join("\n"),
+        version: "1.0.0",
+      },
+      tags: [
+        { name: "Public", description: "No authentication required" },
+        { name: "Device", description: "Requires Device JWT (Bearer)" },
+        { name: "Manager", description: "Requires Manager JWT (Bearer)" },
+        { name: "Admin", description: "Requires Admin JWT (Bearer)" },
+      ],
+      components: {
+        securitySchemes: {
+          deviceJwt: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Issued by POST /workspace/join. 30-day expiry. " +
+              "Identifies an anonymous device — never linked to a name or email.",
+          },
+          managerJwt: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Issued by POST /auth/redeem-manager-code. 30-day expiry. " +
+              "Scoped to a single team within a workspace.",
+          },
+          adminJwt: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Issued by POST /auth/login. 30-day expiry. " +
+              "Full workspace administration access.",
+          },
+        },
+      },
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: "/docs",
+    uiConfig: {
+      docExpansion: "list",
+      deepLinking: false,
+      persistAuthorization: true,
+    },
+    staticCSP: true,
   });
 
   await registerHealthRoutes(app);
@@ -74,7 +132,7 @@ export async function buildApp(
       jwtSecret: options.jwtSecret,
       databaseClient: options.databaseClient,
     });
-    
+
     if (process.env.NODE_ENV !== "production") {
       await registerTestRoutes(app, {
         databaseClient: options.databaseClient,
@@ -95,31 +153,24 @@ export async function buildApp(
   });
   await registerWorkspaceJoinRoute(app, {
     jwtSecret: options.jwtSecret,
-    teamMembershipStore:
-      options.teamMembershipStore ?? new InMemoryTeamMembershipStore(),
+    teamMembershipStore: options.teamMembershipStore ?? new InMemoryTeamMembershipStore(),
     workspaceDirectory,
   });
   await registerDashboardDailyRoute(app, {
     jwtSecret: options.jwtSecret,
-    analyticsSource:
-      options.dashboardAnalyticsSource ??
-      new InMemoryDashboardAnalyticsSource(),
+    analyticsSource: options.dashboardAnalyticsSource ?? new InMemoryDashboardAnalyticsSource(),
     workspaceDirectory,
     now: options.now,
   });
   await registerDashboardWeeklyRoute(app, {
     jwtSecret: options.jwtSecret,
-    analyticsSource:
-      options.dashboardAnalyticsSource ??
-      new InMemoryDashboardAnalyticsSource(),
+    analyticsSource: options.dashboardAnalyticsSource ?? new InMemoryDashboardAnalyticsSource(),
     workspaceDirectory,
     now: options.now,
   });
   await registerDashboardTagsRoute(app, {
     jwtSecret: options.jwtSecret,
-    analyticsSource:
-      options.dashboardAnalyticsSource ??
-      new InMemoryDashboardAnalyticsSource(),
+    analyticsSource: options.dashboardAnalyticsSource ?? new InMemoryDashboardAnalyticsSource(),
     workspaceDirectory,
     now: options.now,
   });
@@ -127,8 +178,7 @@ export async function buildApp(
     jwtSecret: options.jwtSecret,
     moodSubmissionStore,
     workspaceDirectory,
-    submissionRateLimiter:
-      options.submissionRateLimiter ?? new InMemorySubmissionRateLimiter(),
+    submissionRateLimiter: options.submissionRateLimiter ?? new InMemorySubmissionRateLimiter(),
     now: options.now,
   });
 

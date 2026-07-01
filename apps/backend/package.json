@@ -4,6 +4,8 @@
   "description": "",
   "scripts": {
     "dev": "tsx src/server.ts",
+    "build": "tsc --noEmit",
+    "start": "tsx src/server.ts",
     "db:check": "tsx src/db/check.ts",
     "db:generate": "drizzle-kit generate --config drizzle.config.ts",
     "db:migrate": "tsx src/db/migrate.ts",

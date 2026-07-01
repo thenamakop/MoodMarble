@@ -1,3 +1,4 @@
+import type { TagValue } from "@/contracts/mood-submission";
 import { calculateLocalMoodHistoryStreak } from "@/features/history/streak";
 
 describe("local mood history streaks", () => {
@@ -104,7 +105,7 @@ function createRecord(
       | "stressed"
       | "sad"
       | "unheard";
-    tags: string[];
+    tags: TagValue[];
     hour_of_day: number;
     submission_date: string;
     recorded_at: string;
@@ -112,8 +113,8 @@ function createRecord(
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? [],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? ([] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-16",
     recorded_at: overrides.recorded_at ?? "2026-06-16T08:00:00.000Z",

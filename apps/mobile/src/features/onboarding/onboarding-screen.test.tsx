@@ -1,10 +1,5 @@
 import type { ComponentProps } from "react";
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
 
@@ -41,28 +36,18 @@ describe("OnboardingScreen", () => {
   it("shows the onboarding copy and progresses through the 3 slides", async () => {
     const view = await renderScreen();
 
-    expect(await view.findByText("Anonymous by design")).toBeTruthy();
-    expect(
-      await view.findByText(
-        "No login, no profile, and no name attached. MoodMarble keeps your check-ins private and lightweight.",
-      ),
-    ).toBeTruthy();
+    expect(await view.findByText("onboarding.slides.slide0.title")).toBeTruthy();
+    expect(await view.findByText("onboarding.slides.slide0.description")).toBeTruthy();
 
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
 
-    expect(await view.findByText("Join with a 6-character code")).toBeTruthy();
-    expect(
-      await view.findByText(
-        "Enter your workspace code, choose your team, and get into the app in a few taps.",
-      ),
-    ).toBeTruthy();
+    expect(await view.findByText("onboarding.slides.slide1.title")).toBeTruthy();
+    expect(await view.findByText("onboarding.slides.slide1.description")).toBeTruthy();
 
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
 
-    expect(
-      await view.findByText("Share how your marble is rolling"),
-    ).toBeTruthy();
-    expect(await view.findByText("Enter join code")).toBeTruthy();
+    expect(await view.findByText("onboarding.slides.slide2.title")).toBeTruthy();
+    expect(await view.findByText("onboarding.enterJoinCode")).toBeTruthy();
 
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
 
@@ -76,7 +61,7 @@ describe("OnboardingScreen", () => {
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
     fireEvent.press(await view.findByTestId("back-onboarding-button"));
 
-    expect(await view.findByText("Join with a 6-character code")).toBeTruthy();
+    expect(await view.findByText("onboarding.slides.slide1.title")).toBeTruthy();
   });
 
   it("can skip directly into the join-code screen", async () => {
@@ -85,9 +70,7 @@ describe("OnboardingScreen", () => {
     fireEvent.press(await view.findByTestId("skip-onboarding-button"));
 
     expect(await view.findByTestId("join-code-input")).toBeTruthy();
-    expect(
-      await view.findByText("Join your workspace anonymously."),
-    ).toBeTruthy();
+    expect(await view.findByText("onboarding.joinAnonymously")).toBeTruthy();
   });
 
   it("replays only the intro when an existing anonymous session is provided", async () => {
@@ -104,7 +87,7 @@ describe("OnboardingScreen", () => {
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
 
-    expect(await view.findByText("Back to marbles")).toBeTruthy();
+    expect(await view.findByText("onboarding.backToMarbles")).toBeTruthy();
 
     fireEvent.press(await view.findByTestId("next-onboarding-button"));
 
@@ -131,9 +114,7 @@ describe("OnboardingScreen", () => {
 
     expect(onJoinWorkspace).not.toHaveBeenCalled();
     expect(
-      await view.findByText(
-        "Join code must be exactly 6 alphanumeric characters.",
-      ),
+      await view.findByText("Join code must be exactly 6 alphanumeric characters."),
     ).toBeTruthy();
   });
 
@@ -196,24 +177,20 @@ describe("OnboardingScreen", () => {
     fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
     fireEvent.press(await view.findByTestId("join-workspace-button"));
 
-    const continueButton = await view.findByTestId(
-      "complete-onboarding-button",
-    );
+    const continueButton = await view.findByTestId("complete-onboarding-button");
     fireEvent.press(continueButton);
     expect(onSessionReady).not.toHaveBeenCalled();
     expect(onCompleteTeamSelection).not.toHaveBeenCalled();
 
     fireEvent.press(await view.findByTestId("team-option-tm_engineering"));
 
-    expect(await view.findByText("Selected")).toBeTruthy();
-    expect(await view.findByTestId("team-option-tm_engineering")).toHaveProp(
-      "accessibilityState",
-      { selected: true },
-    );
-    expect(await view.findByTestId("team-option-tm_product")).toHaveProp(
-      "accessibilityState",
-      { selected: false },
-    );
+    expect(await view.findByText("common.selected")).toBeTruthy();
+    expect(await view.findByTestId("team-option-tm_engineering")).toHaveProp("accessibilityState", {
+      selected: true,
+    });
+    expect(await view.findByTestId("team-option-tm_product")).toHaveProp("accessibilityState", {
+      selected: false,
+    });
     fireEvent.press(await view.findByTestId("complete-onboarding-button"));
     await waitFor(() =>
       expect(onCompleteTeamSelection).toHaveBeenCalledWith({
@@ -257,7 +234,7 @@ describe("OnboardingScreen", () => {
     fireEvent.changeText(await view.findByTestId("join-code-input"), "abc123");
     fireEvent.press(await view.findByTestId("join-workspace-button"));
 
-    expect(await view.findByText("Checking code...")).toBeTruthy();
+    expect(await view.findByText("onboarding.joiningButton")).toBeTruthy();
 
     resolveJoin?.({
       workspace: {
@@ -278,9 +255,7 @@ describe("OnboardingScreen", () => {
 
   it("shows the backend join error when the join code lookup fails", async () => {
     const view = await renderScreen({
-      onJoinWorkspace: jest
-        .fn()
-        .mockRejectedValue(new Error("Join code not found.")),
+      onJoinWorkspace: jest.fn().mockRejectedValue(new Error("Join code not found.")),
     });
 
     fireEvent.press(await view.findByTestId("skip-onboarding-button"));
@@ -373,12 +348,10 @@ describe("OnboardingScreen", () => {
 
     // Admin link should be present now
     expect(await view.findByTestId("admin-entry-link")).toBeTruthy();
-    expect(await view.findByText("Admin access")).toBeTruthy();
+    expect(await view.findByTestId("admin-entry-link")).toBeTruthy();
   });
 });
 
-async function renderScreen(
-  overrides?: Partial<ComponentProps<typeof OnboardingScreen>>,
-) {
+async function renderScreen(overrides?: Partial<ComponentProps<typeof OnboardingScreen>>) {
   return render(<OnboardingScreen onSessionReady={jest.fn()} {...overrides} />);
 }

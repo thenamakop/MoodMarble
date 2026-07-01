@@ -1,7 +1,7 @@
 import {
   clearOnboardingReplayRequest,
   createDefaultLocalSettings,
-  DEFAULT_REMINDER_TIME,
+  DEFAULT_REMINDER_TIMES,
   LOCAL_DATA_DELETION_TARGETS,
   MAX_REMINDER_TIMES,
   normalizeReminderTimes,
@@ -12,11 +12,11 @@ import {
 } from "@/features/settings/model";
 
 describe("local settings model", () => {
-  it("creates a disabled default reminder schedule with one suggested time", () => {
+  it("creates an enabled default reminder schedule with spec-defined times", () => {
     expect(createDefaultLocalSettings()).toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: [DEFAULT_REMINDER_TIME],
+      remindersEnabled: true,
+      reminderTimes: DEFAULT_REMINDER_TIMES,
       replayOnboarding: false,
     });
   });

@@ -1,10 +1,5 @@
-import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  View,
-} from "react-native";
+import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useTranslation } from "@/hooks/use-translation";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -45,8 +40,8 @@ interface ManagerDashboardScreenProps {
 }
 
 export function ManagerDashboardScreen({
-  selectedDateLabel = "This week",
-  selectedTeamLabel = "Current team",
+  selectedDateLabel,
+  selectedTeamLabel,
   contentState = { kind: "ready" },
   viewModel = null,
   canChangeDate = false,
@@ -57,49 +52,47 @@ export function ManagerDashboardScreen({
   onSignOut,
 }: ManagerDashboardScreenProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
+  const resolvedDateLabel = selectedDateLabel ?? t("dashboard.defaultLabels.thisWeek");
+  const resolvedTeamLabel = selectedTeamLabel ?? t("dashboard.defaultLabels.currentTeam");
 
   return (
     <ThemedView style={styles.screen}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        testID="manager-dashboard-screen"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} testID="manager-dashboard-screen">
         <View style={styles.container}>
           <View style={styles.header}>
             <View style={styles.headerCopy}>
               <ThemedText type="title" style={styles.title}>
-                Manager dashboard
+                {t("dashboard.title")}
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-                Review team-level mood patterns using aggregate analytics only.
-                Individual entries, raw notes, and identity details are never
-                shown here.
+                {t("dashboard.subtitle")}
               </ThemedText>
             </View>
 
             <View style={styles.controlRow}>
               <DashboardControl
                 disabled={!canChangeDate}
-                label="Date window"
+                label={t("dashboard.controls.dateWindow")}
                 onPress={onSelectDate}
                 testID="manager-dashboard-date-picker"
                 theme={theme}
-                value={selectedDateLabel}
+                value={resolvedDateLabel}
               />
               <DashboardControl
                 disabled={!canChangeTeam}
-                label="Team"
+                label={t("dashboard.controls.team")}
                 onPress={onSelectTeam}
                 testID="manager-dashboard-team-selector"
                 theme={theme}
-                value={selectedTeamLabel}
+                value={resolvedTeamLabel}
               />
               <DashboardControl
                 disabled
-                label="Export"
+                label={t("dashboard.controls.export")}
                 testID="manager-dashboard-export-button"
                 theme={theme}
-                value="Coming soon"
+                value={t("dashboard.controls.comingSoon")}
               />
             </View>
 
@@ -119,7 +112,7 @@ export function ManagerDashboardScreen({
                 ]}
                 testID="manager-dashboard-logout"
               >
-                <ThemedText type="smallBold">Sign out</ThemedText>
+                <ThemedText type="smallBold">{t("dashboard.signOut")}</ThemedText>
               </Pressable>
             </View>
           </View>
@@ -130,10 +123,9 @@ export function ManagerDashboardScreen({
               testID="manager-dashboard-guarded-state"
               type="backgroundElement"
             >
-              <ThemedText type="subtitle">Manager access required</ThemedText>
+              <ThemedText type="subtitle">{t("dashboard.states.guarded.title")}</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
-                Use your 6-character manager code to access the dashboard.
-                Anonymous member sessions cannot view manager analytics.
+                {t("dashboard.states.guarded.body")}
               </ThemedText>
               <Pressable
                 accessibilityRole="button"
@@ -146,7 +138,9 @@ export function ManagerDashboardScreen({
                 ]}
                 testID="manager-dashboard-return-home"
               >
-                <ThemedText type="smallBold">Return to app</ThemedText>
+                <ThemedText type="smallBold">
+                  {t("dashboard.states.guarded.returnButton")}
+                </ThemedText>
               </Pressable>
             </ThemedView>
           ) : null}
@@ -158,10 +152,9 @@ export function ManagerDashboardScreen({
               type="backgroundElement"
             >
               <ActivityIndicator color={theme.text} />
-              <ThemedText type="subtitle">Loading dashboard</ThemedText>
+              <ThemedText type="subtitle">{t("dashboard.states.loading.title")}</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
-                Gathering aggregate daily, weekly, and tag analytics for this
-                team.
+                {t("dashboard.states.loading.body")}
               </ThemedText>
             </ThemedView>
           ) : null}
@@ -172,10 +165,9 @@ export function ManagerDashboardScreen({
               testID="manager-dashboard-empty-state"
               type="backgroundElement"
             >
-              <ThemedText type="subtitle">No aggregate data yet</ThemedText>
+              <ThemedText type="subtitle">{t("dashboard.states.empty.title")}</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
-                This window does not yet have enough anonymous submissions to
-                render dashboard widgets.
+                {t("dashboard.states.empty.body")}
               </ThemedText>
             </ThemedView>
           ) : null}
@@ -186,26 +178,26 @@ export function ManagerDashboardScreen({
               testID="manager-dashboard-privacy-state"
               type="backgroundElement"
             >
-              <ThemedText type="subtitle">Privacy threshold active</ThemedText>
+              <ThemedText type="subtitle">{t("dashboard.states.privacy.title")}</ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
                 {contentState.visibility === "hidden"
-                  ? "This dashboard view stays hidden until the minimum anonymous sample size is reached."
-                  : "This dashboard view is blurred because the current team is below the precise-value threshold."}
+                  ? t("dashboard.states.privacy.hidden")
+                  : t("dashboard.states.privacy.blurred")}
               </ThemedText>
             </ThemedView>
           ) : null}
 
           {contentState.kind === "ready" ? (
-            <View
-              style={styles.readyLayout}
-              testID="manager-dashboard-ready-state"
-            >
+            <View style={styles.readyLayout} testID="manager-dashboard-ready-state">
               <ThemedView style={styles.summaryPanel} type="backgroundElement">
-                <ThemedText type="smallBold">Dashboard summary</ThemedText>
+                <ThemedText type="smallBold">{t("dashboard.summary.title")}</ThemedText>
                 <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
                   {viewModel
-                    ? `Selected window: ${viewModel.summary.windowLabel}. Aggregate submissions: ${viewModel.summary.totalSubmissionsLabel}.`
-                    : "Aggregate data is ready for the selected team and date window."}
+                    ? t("dashboard.summary.withViewModel", {
+                        windowLabel: viewModel.summary.windowLabel,
+                        totalLabel: viewModel.summary.totalSubmissionsLabel,
+                      })
+                    : t("dashboard.summary.ready")}
                 </ThemedText>
               </ThemedView>
 
@@ -219,13 +211,8 @@ export function ManagerDashboardScreen({
                   }
                   type="backgroundElement"
                 >
-                  <ThemedText type="smallBold">
-                    {viewModel.banner.title}
-                  </ThemedText>
-                  <ThemedText
-                    themeColor="textSecondary"
-                    style={styles.stateCopy}
-                  >
+                  <ThemedText type="smallBold">{viewModel.banner.title}</ThemedText>
+                  <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
                     {viewModel.banner.message}
                   </ThemedText>
                 </ThemedView>
@@ -307,11 +294,7 @@ function DashboardSlotCard({
   testID: string;
 }) {
   return (
-    <ThemedView
-      style={styles.slotCard}
-      testID={testID}
-      type="backgroundElement"
-    >
+    <ThemedView style={styles.slotCard} testID={testID} type="backgroundElement">
       <ThemedText type="subtitle">{title}</ThemedText>
       <ThemedText themeColor="textSecondary" style={styles.stateCopy}>
         {description}

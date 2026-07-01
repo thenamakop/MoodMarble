@@ -1,8 +1,12 @@
 import { z } from "zod";
 
 export const LOCAL_SETTINGS_VERSION = 1;
-export const DEFAULT_REMINDER_TIME = "18:00";
 export const MAX_REMINDER_TIMES = 3;
+export const DEFAULT_REMINDER_TIMES: ReminderTime[] = [
+  "09:30",
+  "13:00",
+  "17:00",
+];
 
 const ReminderTimeSchema = z
   .string()
@@ -45,8 +49,8 @@ export const LOCAL_DATA_DELETION_TARGETS: LocalDataDeletionTarget[] = [
 export function createDefaultLocalSettings(): LocalSettings {
   return {
     version: LOCAL_SETTINGS_VERSION,
-    remindersEnabled: false,
-    reminderTimes: [DEFAULT_REMINDER_TIME],
+    remindersEnabled: true,
+    reminderTimes: DEFAULT_REMINDER_TIMES,
     replayOnboarding: false,
   };
 }

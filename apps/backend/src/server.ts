@@ -25,14 +25,13 @@ async function startServer(): Promise<void> {
   const app = await buildApp({
     jwtSecret: env.JWT_SECRET,
     adminBootstrapSecret: env.ADMIN_BOOTSTRAP_SECRET,
+    corsOrigin: env.CORS_ORIGIN,
     databaseClient,
     adminApiService: new PostgresAdminApiService({
       databaseClient,
       jwtSecret: env.JWT_SECRET,
     }),
-    dashboardAnalyticsSource: new PostgresDashboardAnalyticsSource(
-      databaseClient,
-    ),
+    dashboardAnalyticsSource: new PostgresDashboardAnalyticsSource(databaseClient),
     moodSubmissionStore: new PostgresMoodSubmissionStore(databaseClient),
     submissionRateLimiter: new RedisSubmissionRateLimiter(redis),
     teamMembershipStore: new PostgresTeamMembershipStore(databaseClient),
@@ -59,7 +58,7 @@ async function startServer(): Promise<void> {
     port: env.PORT,
   });
 
-  console.log(`Backend listening on http://127.0.0.1:${env.PORT}`);
+  console.log(`[MoodMarble] Server ready — http://${env.HOST}:${env.PORT}`);
 }
 
 void startServer();

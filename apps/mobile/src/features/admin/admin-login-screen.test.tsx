@@ -1,9 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import { AdminLoginScreen } from "@/features/admin/admin-login-screen";
 
@@ -18,7 +13,7 @@ describe("AdminLoginScreen", () => {
 
     fireEvent.press(await view.findByTestId("admin-login-submit-button"));
 
-    expect(await view.findByText("Email and password are required.")).toBeTruthy();
+    expect(await view.findByText("admin.login.errorMessages.requiredFields")).toBeTruthy();
     expect(onLogin).not.toHaveBeenCalled();
   });
 
@@ -30,7 +25,9 @@ describe("AdminLoginScreen", () => {
     fireEvent.changeText(await view.findByTestId("admin-password-input"), "secret-password");
     fireEvent.press(await view.findByTestId("admin-login-submit-button"));
 
-    await waitFor(() => expect(onLogin).toHaveBeenCalledWith("admin@example.com", "secret-password"));
+    await waitFor(() =>
+      expect(onLogin).toHaveBeenCalledWith("admin@example.com", "secret-password"),
+    );
   });
 
   it("toggles the password visibility", async () => {
@@ -40,12 +37,12 @@ describe("AdminLoginScreen", () => {
     expect(await view.findByTestId("admin-password-input")).toHaveProp("secureTextEntry", true);
 
     fireEvent.press(await view.findByTestId("admin-password-toggle"));
-    
+
     // Now visible
     expect(await view.findByTestId("admin-password-input")).toHaveProp("secureTextEntry", false);
 
     fireEvent.press(await view.findByTestId("admin-password-toggle"));
-    
+
     // Hidden again
     expect(await view.findByTestId("admin-password-input")).toHaveProp("secureTextEntry", true);
   });

@@ -8,6 +8,37 @@
     "e2e:android:preflight": "pnpm --dir apps/mobile e2e:android:preflight",
     "e2e:android:metro": "pnpm --dir apps/mobile e2e:android:metro",
     "e2e:android:build": "pnpm --dir apps/mobile e2e:android:build",
-    "e2e:android:test": "pnpm --dir apps/mobile e2e:android:test"
+    "e2e:android:test": "pnpm --dir apps/mobile e2e:android:test",
+    "eas": "pnpm --dir apps/mobile exec eas",
+    "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "packageManager": "pnpm@10.33.2",
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.8",
+    "prettier": "^3.9.1"
+  },
+  "lint-staged": {
+    "apps/mobile/**/*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "apps/backend/**/*.ts": [
+      "prettier --write"
+    ],
+    "packages/**/*.ts": [
+      "prettier --write"
+    ]
+  },
+  "dependencies": {
+    "@react-native-async-storage/async-storage": "^3.1.1",
+    "i18next": "^26.3.3",
+    "lucide-react-native": "^1.22.0",
+    "react-i18next": "^17.0.8",
+    "zustand": "^5.0.14"
   }
 }

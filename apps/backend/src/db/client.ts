@@ -11,7 +11,9 @@ export interface DatabaseClient {
 
 export function createDatabaseClient(databaseUrl: string): DatabaseClient {
   const sql = postgres(databaseUrl, {
-    max: 1,
+    max: 10,
+    idle_timeout: 20,
+    connect_timeout: 10,
     prepare: false,
   });
 
@@ -26,8 +28,6 @@ export function createDatabaseClient(databaseUrl: string): DatabaseClient {
   };
 }
 
-export async function verifyDatabaseConnection(
-  databaseClient: DatabaseClient,
-): Promise<void> {
+export async function verifyDatabaseConnection(databaseClient: DatabaseClient): Promise<void> {
   await databaseClient.sql`select version()`;
 }

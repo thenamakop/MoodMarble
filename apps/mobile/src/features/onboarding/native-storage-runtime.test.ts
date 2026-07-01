@@ -1,3 +1,5 @@
+import type { TagValue } from "@/contracts/mood-submission";
+
 describe("native onboarding storage runtime", () => {
   const originalWindow = globalThis.window;
 
@@ -6,6 +8,7 @@ describe("native onboarding storage runtime", () => {
     jest.unmock("expo-crypto");
     jest.unmock("expo-secure-store");
     jest.unmock("react-native");
+    jest.unmock("@react-native-async-storage/async-storage");
 
     if (originalWindow) {
       Object.defineProperty(globalThis, "window", {
@@ -30,11 +33,8 @@ describe("native onboarding storage runtime", () => {
     installWindowMock();
     mockNativeRuntime(secureStore);
 
-    const {
-      clearAnonymousSession,
-      loadAnonymousSession,
-      saveAnonymousSession,
-    } = require("./session") as typeof import("./session");
+    const { clearAnonymousSession, loadAnonymousSession, saveAnonymousSession } =
+      require("./session") as typeof import("./session");
 
     await saveAnonymousSession({
       workspaceId: "ws_native",
@@ -50,9 +50,7 @@ describe("native onboarding storage runtime", () => {
         deviceJwt: activeDeviceJwt,
       }),
     );
-    expect(
-      window.localStorage.getItem("moodmarble.anonymous-session"),
-    ).toBeNull();
+    expect(window.localStorage.getItem("moodmarble.anonymous-session")).toBeNull();
 
     await expect(loadAnonymousSession()).resolves.toEqual({
       workspaceId: "ws_native",
@@ -61,16 +59,12 @@ describe("native onboarding storage runtime", () => {
     });
 
     await clearAnonymousSession();
-    expect(secureStore.deleteItemAsync).toHaveBeenCalledWith(
-      "moodmarble.anonymous-session",
-    );
+    expect(secureStore.deleteItemAsync).toHaveBeenCalledWith("moodmarble.anonymous-session");
   });
 
   it("uses SecureStore for device tokens on native even when window exists", async () => {
     const secureStore = createSecureStoreMock();
-    const randomUUID = jest
-      .fn()
-      .mockReturnValue("550e8400-e29b-41d4-a716-446655440000");
+    const randomUUID = jest.fn().mockReturnValue("550e8400-e29b-41d4-a716-446655440000");
 
     installWindowMock();
     mockNativeRuntime(secureStore, randomUUID);
@@ -78,47 +72,47 @@ describe("native onboarding storage runtime", () => {
     const { clearDeviceToken, getOrCreateDeviceToken } =
       require("./device-token") as typeof import("./device-token");
 
-    await expect(getOrCreateDeviceToken()).resolves.toBe(
-      "550e8400-e29b-41d4-a716-446655440000",
-    );
+    await expect(getOrCreateDeviceToken()).resolves.toBe("550e8400-e29b-41d4-a716-446655440000");
 
-    expect(secureStore.getItemAsync).toHaveBeenCalledWith(
-      "moodmarble.anonymous-device-token",
-    );
+    expect(secureStore.getItemAsync).toHaveBeenCalledWith("moodmarble.anonymous-device-token");
     expect(secureStore.setItemAsync).toHaveBeenCalledWith(
       "moodmarble.anonymous-device-token",
       "550e8400-e29b-41d4-a716-446655440000",
     );
-    expect(
-      window.sessionStorage.getItem("moodmarble.anonymous-device-token"),
-    ).toBeNull();
+    expect(window.sessionStorage.getItem("moodmarble.anonymous-device-token")).toBeNull();
 
     await clearDeviceToken();
-    expect(secureStore.deleteItemAsync).toHaveBeenCalledWith(
-      "moodmarble.anonymous-device-token",
-    );
+    expect(secureStore.deleteItemAsync).toHaveBeenCalledWith("moodmarble.anonymous-device-token");
   });
 
-  it("uses SecureStore for local history on native even when window exists", async () => {
-    const secureStore = createSecureStoreMock({
-      "moodmarble.local-mood-history": JSON.stringify([
-        createHistoryRecord({
-          id: "history-native",
-          mood_type: "calm",
-          submission_date: "2026-06-17",
-          recorded_at: "2026-06-17T09:00:00.000Z",
-        }),
-      ]),
-    });
+  it("uses AsyncStorage (not localStorage) for local history on native even when window exists", async () => {
+    const seedData = JSON.stringify([
+      createHistoryRecord({
+        id: "history-native",
+        mood_type: "calm",
+        submission_date: "2026-06-17",
+        recorded_at: "2026-06-17T09:00:00.000Z",
+      }),
+    ]);
+    const asyncStorageStore: Record<string, string> = {
+      "moodmarble.local-mood-history": seedData,
+    };
+    const asyncStorage = {
+      getItem: jest.fn(async (key: string) => asyncStorageStore[key] ?? null),
+      setItem: jest.fn(async (key: string, value: string) => {
+        asyncStorageStore[key] = value;
+      }),
+      removeItem: jest.fn(async (key: string) => {
+        delete asyncStorageStore[key];
+      }),
+    };
 
     installWindowMock();
-    mockNativeRuntime(secureStore);
+    const secureStore = createSecureStoreMock();
+    mockNativeRuntime(secureStore, jest.fn(), asyncStorage);
 
-    const {
-      appendLocalMoodHistoryRecord,
-      clearLocalMoodHistory,
-      loadLocalMoodHistory,
-    } = require("../history/storage") as typeof import("../history/storage");
+    const { appendLocalMoodHistoryRecord, clearLocalMoodHistory, loadLocalMoodHistory } =
+      require("../history/storage") as typeof import("../history/storage");
 
     await appendLocalMoodHistoryRecord(
       createHistoryRecord({
@@ -129,16 +123,12 @@ describe("native onboarding storage runtime", () => {
       }),
     );
 
-    expect(secureStore.getItemAsync).toHaveBeenCalledWith(
-      "moodmarble.local-mood-history",
-    );
-    expect(secureStore.setItemAsync).toHaveBeenCalledWith(
+    expect(asyncStorage.getItem).toHaveBeenCalledWith("moodmarble.local-mood-history");
+    expect(asyncStorage.setItem).toHaveBeenCalledWith(
       "moodmarble.local-mood-history",
       expect.any(String),
     );
-    expect(
-      window.localStorage.getItem("moodmarble.local-mood-history"),
-    ).toBeNull();
+    expect(window.localStorage.getItem("moodmarble.local-mood-history")).toBeNull();
 
     await expect(loadLocalMoodHistory()).resolves.toEqual([
       createHistoryRecord({
@@ -156,15 +146,14 @@ describe("native onboarding storage runtime", () => {
     ]);
 
     await clearLocalMoodHistory();
-    expect(secureStore.deleteItemAsync).toHaveBeenCalledWith(
-      "moodmarble.local-mood-history",
-    );
+    expect(asyncStorage.removeItem).toHaveBeenCalledWith("moodmarble.local-mood-history");
   });
 });
 
 function mockNativeRuntime(
   secureStore: ReturnType<typeof createSecureStoreMock>,
   randomUUID = jest.fn(),
+  asyncStorage?: { getItem: jest.Mock; setItem: jest.Mock; removeItem: jest.Mock },
 ) {
   jest.doMock("react-native", () => ({
     Platform: {
@@ -175,6 +164,12 @@ function mockNativeRuntime(
   jest.doMock("expo-crypto", () => ({
     randomUUID,
   }));
+  if (asyncStorage) {
+    jest.doMock("@react-native-async-storage/async-storage", () => ({
+      __esModule: true,
+      default: asyncStorage,
+    }));
+  }
 }
 
 function createSecureStoreMock(seed: Record<string, string> = {}) {
@@ -228,13 +223,13 @@ function createHistoryRecord(
     submission_date: string;
     recorded_at: string;
     hour_of_day: number;
-    tags: string[];
+    tags: TagValue[];
   }> = {},
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? ["#team"],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? (["#team"] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-17",
     recorded_at: overrides.recorded_at ?? "2026-06-17T08:00:00.000Z",

@@ -1,28 +1,4 @@
-jest.mock("react-native", () => ({
-  Platform: {
-    OS: "web",
-  },
-}));
-
-jest.mock("expo-secure-store", () => ({
-  deleteItemAsync: jest.fn(async () => undefined),
-  getItemAsync: jest.fn(async () => null),
-  setItemAsync: jest.fn(async () => undefined),
-}));
-
-jest.mock("expo-notifications", () => ({
-  AndroidImportance: {
-    DEFAULT: "default",
-  },
-  AndroidNotificationVisibility: {
-    PUBLIC: "public",
-  },
-  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
-  getAllScheduledNotificationsAsync: jest.fn(async () => []),
-  scheduleNotificationAsync: jest.fn(async () => "scheduled-id"),
-  setNotificationChannelAsync: jest.fn(async () => undefined),
-}));
-
+import type { TagValue } from "@/contracts/mood-submission";
 import {
   clearAnonymousSession,
   loadAnonymousSession,
@@ -41,6 +17,35 @@ import {
   saveLocalSettings,
 } from "@/features/settings/storage";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
+
+jest.mock("react-native", () => ({
+  Platform: {
+    OS: "web",
+  },
+}));
+
+jest.mock("expo-secure-store", () => ({
+  deleteItemAsync: jest.fn(async () => undefined),
+  getItemAsync: jest.fn(async () => null),
+  setItemAsync: jest.fn(async () => undefined),
+}));
+
+jest.mock("@react-native-async-storage/async-storage", () =>
+  require("@react-native-async-storage/async-storage/jest"),
+);
+
+jest.mock("expo-notifications", () => ({
+  AndroidImportance: {
+    DEFAULT: "default",
+  },
+  AndroidNotificationVisibility: {
+    PUBLIC: "public",
+  },
+  cancelScheduledNotificationAsync: jest.fn(async () => undefined),
+  getAllScheduledNotificationsAsync: jest.fn(async () => []),
+  scheduleNotificationAsync: jest.fn(async () => "scheduled-id"),
+  setNotificationChannelAsync: jest.fn(async () => undefined),
+}));
 
 describe("local settings storage", () => {
   const originalWindow = globalThis.window;
@@ -72,8 +77,8 @@ describe("local settings storage", () => {
   it("loads default local settings on first launch", async () => {
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
   });
@@ -99,8 +104,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: true,
     });
 
@@ -108,8 +113,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
   });
@@ -148,8 +153,8 @@ describe("local settings storage", () => {
     ]);
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: true,
     });
   });
@@ -159,8 +164,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
 
@@ -194,8 +199,8 @@ describe("local settings storage", () => {
 
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
     await expect(loadAnonymousSession()).resolves.toEqual({
@@ -244,8 +249,8 @@ describe("local settings storage", () => {
     await expect(loadLocalMoodHistory()).resolves.toEqual([]);
     await expect(loadLocalSettings()).resolves.toEqual({
       version: 1,
-      remindersEnabled: false,
-      reminderTimes: ["18:00"],
+      remindersEnabled: true,
+      reminderTimes: ["09:30", "13:00", "17:00"],
       replayOnboarding: false,
     });
   });
@@ -258,13 +263,13 @@ function createHistoryRecord(
     submission_date: string;
     recorded_at: string;
     hour_of_day: number;
-    tags: string[];
+    tags: TagValue[];
   }> = {},
 ) {
   return {
     id: overrides.id ?? "history-default",
-    mood_type: overrides.mood_type ?? "happy",
-    tags: overrides.tags ?? ["#team"],
+    mood_type: overrides.mood_type ?? ("happy" as const),
+    tags: overrides.tags ?? (["#team"] as TagValue[]),
     hour_of_day: overrides.hour_of_day ?? 8,
     submission_date: overrides.submission_date ?? "2026-06-15",
     recorded_at: overrides.recorded_at ?? "2026-06-15T08:00:00.000Z",

@@ -1,9 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 import type { ComponentProps } from "react";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
@@ -22,17 +17,16 @@ jest.mock("@/features/notifications/permissions", () => ({
   requestNotificationPermission: jest.fn(async () => "granted"),
 }));
 
-const { getReminderRuntimeSupport } = jest.requireMock(
-  "@/features/notifications/platform",
-) as {
+const { getReminderRuntimeSupport } = jest.requireMock("@/features/notifications/platform") as {
   getReminderRuntimeSupport: jest.Mock;
 };
 
-const { getNotificationPermissionStatus, requestNotificationPermission } =
-  jest.requireMock("@/features/notifications/permissions") as {
-    getNotificationPermissionStatus: jest.Mock;
-    requestNotificationPermission: jest.Mock;
-  };
+const { getNotificationPermissionStatus, requestNotificationPermission } = jest.requireMock(
+  "@/features/notifications/permissions",
+) as {
+  getNotificationPermissionStatus: jest.Mock;
+  requestNotificationPermission: jest.Mock;
+};
 
 const defaultSettings = {
   version: 1 as const,
@@ -59,29 +53,21 @@ describe("SettingsScreen", () => {
   it("renders the Week 6 settings controls for local reminders and privacy actions", async () => {
     const view = await renderScreen();
 
-    expect(view.getByText("Daily reminders")).toBeTruthy();
+    expect(view.getByText("settings.remindersSection.title")).toBeTruthy();
     expect(view.getByDisplayValue("18:00")).toBeTruthy();
-    expect(view.getByText("Replay onboarding")).toBeTruthy();
-    expect(view.getByText("Delete local data")).toBeTruthy();
+    expect(view.getByText("settings.onboardingSection.replayButton")).toBeTruthy();
+    expect(view.getByText("settings.localDataSection.deleteButton")).toBeTruthy();
 
     fireEvent.press(view.getByTestId("settings-replay-onboarding"));
     await waitFor(() =>
-      expect(
-        view.getByText(
-          "Onboarding replay is ready the next time you return home.",
-        ),
-      ).toBeTruthy(),
+      expect(view.getByText("settings.statusMessages.onboardingReplayReady")).toBeTruthy(),
     );
 
     fireEvent.press(view.getByTestId("settings-open-clear-local-data"));
-    await waitFor(() =>
-      expect(view.getByTestId("settings-clear-local-data-prompt")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("settings-clear-local-data-prompt")).toBeTruthy());
     fireEvent.press(view.getByTestId("settings-confirm-clear-local-data"));
     await waitFor(() =>
-      expect(
-        view.getByText("Local data was cleared from this device."),
-      ).toBeTruthy(),
+      expect(view.getByText("settings.statusMessages.localDataCleared")).toBeTruthy(),
     );
   });
 
@@ -98,24 +84,16 @@ describe("SettingsScreen", () => {
     const saveSettings = jest.fn(async (settings) => settings);
     const view = await renderScreen({ saveSettings });
 
-    fireEvent(
-      view.getByTestId("settings-reminders-switch"),
-      "valueChange",
-      true,
-    );
+    fireEvent(view.getByTestId("settings-reminders-switch"), "valueChange", true);
 
-    await waitFor(() =>
-      expect(requestNotificationPermission).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(requestNotificationPermission).toHaveBeenCalledTimes(1));
     await waitFor(() =>
       expect(saveSettings).toHaveBeenCalledWith({
         ...defaultSettings,
         remindersEnabled: true,
       }),
     );
-    expect(
-      view.getByText("Daily reminders are on for this device."),
-    ).toBeTruthy();
+    expect(view.getByText("settings.statusMessages.remindersOn")).toBeTruthy();
   });
 
   it("does not enable reminders when notification permission is denied", async () => {
@@ -123,21 +101,11 @@ describe("SettingsScreen", () => {
     const saveSettings = jest.fn(async (settings) => settings);
     const view = await renderScreen({ saveSettings });
 
-    fireEvent(
-      view.getByTestId("settings-reminders-switch"),
-      "valueChange",
-      true,
-    );
+    fireEvent(view.getByTestId("settings-reminders-switch"), "valueChange", true);
 
+    await waitFor(() => expect(requestNotificationPermission).toHaveBeenCalledTimes(1));
     await waitFor(() =>
-      expect(requestNotificationPermission).toHaveBeenCalledTimes(1),
-    );
-    await waitFor(() =>
-      expect(
-        view.getByText(
-          "Notification permission was denied. Enable it in your device settings to receive reminders.",
-        ),
-      ).toBeTruthy(),
+      expect(view.getByText("settings.errorMessages.permissionDenied")).toBeTruthy(),
     );
     expect(saveSettings).not.toHaveBeenCalled();
   });
@@ -155,11 +123,7 @@ describe("SettingsScreen", () => {
       saveSettings,
     });
 
-    fireEvent(
-      view.getByTestId("settings-reminders-switch"),
-      "valueChange",
-      false,
-    );
+    fireEvent(view.getByTestId("settings-reminders-switch"), "valueChange", false);
 
     await waitFor(() =>
       expect(saveSettings).toHaveBeenCalledWith({
@@ -167,11 +131,7 @@ describe("SettingsScreen", () => {
         remindersEnabled: false,
       }),
     );
-    expect(
-      view.getByText(
-        "Daily reminders are off. Your saved times stay on this device.",
-      ),
-    ).toBeTruthy();
+    expect(view.getByText("settings.statusMessages.remindersOff")).toBeTruthy();
   });
 
   it("lets the user edit 1 to 3 reminder times and apply the saved schedule", async () => {
@@ -179,9 +139,7 @@ describe("SettingsScreen", () => {
     const view = await renderScreen({ saveSettings });
 
     fireEvent.press(view.getByTestId("settings-add-reminder-time"));
-    await waitFor(() =>
-      expect(view.getByTestId("settings-reminder-time-1")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByTestId("settings-reminder-time-1")).toBeTruthy());
     fireEvent.changeText(view.getByTestId("settings-reminder-time-0"), "20:45");
     fireEvent.changeText(view.getByTestId("settings-reminder-time-1"), "08:30");
 
@@ -198,9 +156,7 @@ describe("SettingsScreen", () => {
   });
 });
 
-async function renderScreen(
-  overrides: Partial<ComponentProps<typeof SettingsScreen>> = {},
-) {
+async function renderScreen(overrides: Partial<ComponentProps<typeof SettingsScreen>> = {}) {
   const view = await render(
     <SettingsScreen
       loadSettings={jest.fn().mockResolvedValue(defaultSettings)}
@@ -216,7 +172,7 @@ async function renderScreen(
     />,
   );
 
-  await waitFor(() => expect(view.getByText("Settings")).toBeTruthy(), {
+  await waitFor(() => expect(view.getByText("settings.title")).toBeTruthy(), {
     timeout: 5000,
   });
   return view;

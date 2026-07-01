@@ -1,0 +1,282 @@
+{
+  "common": {
+    "signOut": "Sign out",
+    "back": "Back",
+    "cancel": "Cancel",
+    "selected": "Selected",
+    "saving": "Saving...",
+    "working": "Working...",
+    "returnToApp": "Return to app",
+    "loadingGeneric": "Loading..."
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Keep reminders local to this device and manage your private MoodMarble preferences.",
+    "backToMarbles": "Back to marbles",
+    "backToMarblesLabel": "Back to marbles",
+    "signOutLabel": "Sign out",
+    "loadingSettings": "Loading local settings...",
+    "remindersSection": {
+      "title": "Daily reminders",
+      "subtitle": "Turn quiet check-in prompts on or off for this device.",
+      "savedTimesNotice": "Saved reminder times stay on this device even when reminders are turned off.",
+      "switchLabel": "Enable daily reminders"
+    },
+    "reminderTimesSection": {
+      "title": "Reminder times",
+      "subtitle": "Choose 1 to 3 local times in HH:MM 24-hour format.",
+      "reminderLabel": "Reminder {{n}}",
+      "reminderTimeLabel": "Reminder {{n}} time",
+      "removeReminderLabel": "Remove reminder {{n}}",
+      "removeButton": "Remove",
+      "addTimeLabel": "Add reminder time",
+      "addTimeButton": "Add time",
+      "applyTimesLabel": "Apply reminder times",
+      "applyTimesButton": "Apply times"
+    },
+    "onboardingSection": {
+      "title": "Onboarding",
+      "subtitle": "Replay the Week 3 privacy-first intro without creating a new identity or sending anything new to the backend.",
+      "replayButton": "Replay onboarding",
+      "replayLabel": "Replay onboarding"
+    },
+    "localDataSection": {
+      "title": "Local-only data",
+      "subtitle": "Reminder settings, personal history, and the anonymous session stay on this device unless you clear them.",
+      "deleteButton": "Delete local data",
+      "deleteLabel": "Delete local data",
+      "clearPromptTitle": "Clear data from this device?",
+      "clearPromptBody": "This removes the anonymous session, local history, saved reminder settings, and scheduled reminders from this device. Server submissions and manager analytics stay unchanged.",
+      "cancelClearLabel": "Cancel deleting local data",
+      "confirmClearLabel": "Confirm clear this device",
+      "confirmClearButton": "Clear this device"
+    },
+    "permissionStatus": {
+      "granted": "Notification permission granted.",
+      "denied": "Notifications are blocked. Tap below to open device settings.",
+      "undetermined": "Permission not requested yet. Enable reminders to request it.",
+      "unsupported": "Notifications are not available on this device.",
+      "checking": "Checking notification permission...",
+      "openSettingsLabel": "Open device notification settings",
+      "openSettingsButton": "Open device settings"
+    },
+    "statusMessages": {
+      "remindersOff": "Daily reminders are off. Your saved times stay on this device.",
+      "remindersOn": "Daily reminders are on for this device.",
+      "reminderTimesSaved": "Reminder times saved on this device.",
+      "onboardingReplayReady": "Onboarding replay is ready the next time you return home.",
+      "localDataCleared": "Local data was cleared from this device."
+    },
+    "errorMessages": {
+      "reminderPreferences": "Unable to update reminder preferences right now.",
+      "remindersNotSupported": "Reminders are not supported on this device.",
+      "permissionDenied": "Notification permission was denied. Enable it in your device settings to receive reminders.",
+      "permissionRequired": "Notification permission is required to send reminders.",
+      "permissionRequiredForApply": "Notification permission is required. Enable reminders first or grant permission in device settings.",
+      "openDeviceSettings": "Unable to open device settings.",
+      "saveReminderTimes": "Unable to save reminder times right now.",
+      "onboardingReplay": "Unable to prepare onboarding replay right now.",
+      "clearLocalData": "Unable to clear local data right now."
+    }
+  },
+  "onboarding": {
+    "appName": "MoodMarble",
+    "skipButton": "Skip",
+    "nextButton": "Next",
+    "backButton": "Back",
+    "backToMarbles": "Back to marbles",
+    "enterJoinCode": "Enter join code",
+    "joinAnonymously": "Join your workspace anonymously.",
+    "joinCodePlaceholder": "ABC123",
+    "joinCodeLabel": "Enter your 6-character join code",
+    "joinButton": "Check code",
+    "joiningButton": "Checking code...",
+    "continueButton": "Continue",
+    "savingSessionButton": "Saving...",
+    "slides": {
+      "slide0": {
+        "accent": "Privacy first",
+        "title": "Anonymous by design",
+        "description": "No login, no profile, and no name attached. MoodMarble keeps your check-ins private and lightweight."
+      },
+      "slide1": {
+        "accent": "Simple start",
+        "title": "Join with a 6-character code",
+        "description": "Enter your workspace code, choose your team, and get into the app in a few taps."
+      },
+      "slide2": {
+        "accent": "Ready to begin",
+        "title": "Share how your marble is rolling",
+        "description": "The app stays fast and private-feeling so you can understand how to begin in seconds."
+      }
+    },
+    "teamSelection": {
+      "chooseTeam": "Choose your team",
+      "chooseTeamSubtitle": "You joined {{workspaceName}}. Select the team you belong to.",
+      "selectedLabel": "Selected",
+      "continueButton": "Continue",
+      "savingButton": "Saving..."
+    },
+    "errorMessages": {
+      "joinCodeInvalid": "Join code must be exactly 6 alphanumeric characters.",
+      "joinCodeRequired": "Join code is required.",
+      "joinWorkspace": "Unable to join workspace right now.",
+      "saveSession": "Unable to save session right now.",
+      "returnToMarbles": "Unable to return to marbles right now."
+    },
+    "adminLink": "Admin login",
+    "adminLinkSubtitle": "Are you an admin?",
+    "managerLink": "Manager login",
+    "managerLinkSubtitle": "Are you a manager?"
+  },
+  "admin": {
+    "panel": {
+      "title": "Admin control panel",
+      "subtitle": "Prepare workspace setup, team management, join-code sharing, and anonymous CSV export without touching member or manager flows.",
+      "kickerAdmin": "Admin only",
+      "kickerShell": "Week 7 shell",
+      "signOut": "Sign out",
+      "overviewSummaryTitle": "Panel overview",
+      "overviewSummaryWithWorkspace": "Workspace: {{workspaceName}}. Teams ready: {{teamCount}}. Join code visibility stays admin-only.",
+      "overviewSummaryEmpty": "Use this admin shell to prepare workspace setup, teams, join codes, and exports before wiring live actions.",
+      "noWorkspace": "No workspace connected",
+      "workspaceIdPending": "Pending",
+      "joinCodeNotGenerated": "Not generated yet",
+      "nav": {
+        "overview": "Overview",
+        "workspace": "Workspace",
+        "team": "Teams",
+        "joinCode": "Join code",
+        "managerCodes": "Manager codes",
+        "export": "Export"
+      },
+      "states": {
+        "guarded": {
+          "title": "Admin access required",
+          "body": "Open this route with workspace-scoped admin access or bootstrap a new workspace with the admin setup secret. Anonymous member and manager sessions cannot use admin data.",
+          "returnButton": "Return to app",
+          "loginButton": "Admin login"
+        },
+        "loading": {
+          "title": "Loading admin panel",
+          "body": "Preparing workspace controls, team placeholders, join-code preview, and export actions."
+        },
+        "empty": {
+          "title": "Admin setup is empty",
+          "body": "No admin workspace details are available yet. Start with workspace creation, then add teams and generate a join code."
+        },
+        "error": {
+          "title": "Admin panel unavailable",
+          "retryButton": "Retry shell"
+        }
+      },
+      "sections": {
+        "workspace": {
+          "title": "Workspace",
+          "body": "Set up the workspace name and keep the admin shell scoped to one organization at a time.",
+          "nameLabel": "Workspace name",
+          "idLabel": "Workspace ID",
+          "creationNote": "Workspace creation is available from the bootstrap panel. Once created, this section stays focused on the active admin scope."
+        },
+        "team": {
+          "title": "Team management",
+          "body": "Create, rename, and review team groups without exposing member identities.",
+          "emptyTeams": "No teams yet. Add the first team after workspace setup.",
+          "addTeamTitle": "Add team",
+          "addTeamPlaceholder": "Product",
+          "createTeamButton": "Create team",
+          "renameTeamTitle": "Rename selected team",
+          "renameTeamPlaceholder": "Engineering",
+          "renameTeamButton": "Rename team"
+        },
+        "joinCode": {
+          "title": "Join code",
+          "body": "View the active join code and keep member entry anonymous.",
+          "activeCodeLabel": "Active code",
+          "copyButton": "Copy join code",
+          "refreshButton": "Refresh join code"
+        },
+        "managerCodes": {
+          "title": "Manager codes",
+          "body": "Generate one-time 6-character codes for team managers. Each code can only be used once.",
+          "noTeamsNotice": "Add a team first to generate manager codes.",
+          "generateButton": "Generate code",
+          "revokeButton": "Revoke"
+        },
+        "export": {
+          "title": "Export",
+          "body": "Trigger anonymized CSV export without revealing raw notes, device tokens, or member identities.",
+          "note": "Export range and download wiring will stay admin-only and reuse the existing privacy-safe backend contract.",
+          "startDatePlaceholder": "2026-06-01",
+          "endDatePlaceholder": "2026-06-30",
+          "runButton": "Run export"
+        }
+      },
+      "workspaceSetup": {
+        "title": "Bootstrap workspace",
+        "secretLabel": "Bootstrap secret",
+        "secretPlaceholder": "admin-bootstrap-secret",
+        "nameLabel": "Workspace name",
+        "namePlaceholder": "MoodMarble HQ",
+        "createButton": "Create workspace",
+        "creatingButton": "Creating..."
+      }
+    },
+    "login": {
+      "title": "Admin Login",
+      "subtitle": "Sign in to manage your workspace and teams.",
+      "emailLabel": "Email",
+      "emailPlaceholder": "admin@example.com",
+      "passwordLabel": "Password",
+      "showPassword": "Show",
+      "hidePassword": "Hide",
+      "signingIn": "Signing in...",
+      "signInButton": "Sign in",
+      "backButton": "Back",
+      "errorMessages": {
+        "requiredFields": "Email and password are required.",
+        "loginFailed": "Unable to login right now."
+      }
+    }
+  },
+  "dashboard": {
+    "title": "Manager dashboard",
+    "subtitle": "Review team-level mood patterns using aggregate analytics only. Individual entries, raw notes, and identity details are never shown here.",
+    "signOut": "Sign out",
+    "controls": {
+      "dateWindow": "Date window",
+      "team": "Team",
+      "export": "Export",
+      "comingSoon": "Coming soon"
+    },
+    "defaultLabels": {
+      "thisWeek": "This week",
+      "currentTeam": "Current team"
+    },
+    "summary": {
+      "title": "Dashboard summary",
+      "withViewModel": "Selected window: {{windowLabel}}. Aggregate submissions: {{totalLabel}}.",
+      "ready": "Aggregate data is ready for the selected team and date window."
+    },
+    "states": {
+      "loading": {
+        "title": "Loading dashboard",
+        "body": "Gathering aggregate daily, weekly, and tag analytics for this team."
+      },
+      "empty": {
+        "title": "No aggregate data yet",
+        "body": "This window does not yet have enough anonymous submissions to render dashboard widgets."
+      },
+      "privacy": {
+        "title": "Privacy threshold active",
+        "hidden": "This dashboard view stays hidden until the minimum anonymous sample size is reached.",
+        "blurred": "This dashboard view is blurred because the current team is below the precise-value threshold."
+      },
+      "guarded": {
+        "title": "Manager access required",
+        "body": "Use your 6-character manager code to access the dashboard. Anonymous member sessions cannot view manager analytics.",
+        "returnButton": "Return to app"
+      }
+    }
+  }
+}

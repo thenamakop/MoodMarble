@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { useTranslation } from "@/hooks/use-translation";
 import {
   ActivityIndicator,
   Pressable,
@@ -31,13 +32,13 @@ interface AdminPanelViewModel {
   workspaceName: string | null;
   joinCode: string | null;
   teams: AdminTeam[];
-  managerCodes?: Array<{
+  managerCodes?: {
     id: string;
     code: string;
     team_name: string;
     expires_at: string;
     status: "active" | "used" | "expired" | "revoked";
-  }>;
+  }[];
 }
 
 interface AdminPanelScreenProps {
@@ -51,29 +52,20 @@ interface AdminPanelScreenProps {
   viewModel?: AdminPanelViewModel | null;
   onCopyJoinCode?: (joinCode: string) => void | Promise<void>;
   onCreateTeam?: (name: string) => void | Promise<void>;
-  onCreateWorkspace?: (input: {
-    bootstrapSecret: string;
-    name: string;
-  }) => void | Promise<void>;
-  onExport?: (input: {
-    endDate: string;
-    startDate: string;
-  }) => void | Promise<void>;
+  onCreateWorkspace?: (input: { bootstrapSecret: string; name: string }) => void | Promise<void>;
+  onExport?: (input: { endDate: string; startDate: string }) => void | Promise<void>;
   onGenerateManagerCode?: (teamId: string) => void | Promise<void>;
   onReturnHome?: () => void;
   onRevokeManagerCode?: (codeId: string) => void | Promise<void>;
   onRotateJoinCode?: () => void | Promise<void>;
   onRetry?: () => void;
-  onUpdateTeam?: (input: {
-    name: string;
-    teamId: string;
-  }) => void | Promise<void>;
+  onUpdateTeam?: (input: { name: string; teamId: string }) => void | Promise<void>;
 }
 
-const SECTION_ORDER: Array<{
+const SECTION_ORDER: {
   focus: AdminSectionFocus;
   label: string;
-}> = [
+}[] = [
   { focus: "overview", label: "Overview" },
   { focus: "workspace", label: "Workspace" },
   { focus: "team", label: "Teams" },
@@ -100,12 +92,10 @@ export function AdminPanelScreen({
   onUpdateTeam,
 }: AdminPanelScreenProps) {
   const theme = useTheme();
+  const { t } = useTranslation();
   const scrollViewRef = useRef<ScrollViewType>(null);
-  const sectionOffsetsRef = useRef<Partial<Record<AdminSectionFocus, number>>>(
-    {},
-  );
-  const [activeFocus, setActiveFocus] =
-    useState<AdminSectionFocus>(sectionFocus);
+  const sectionOffsetsRef = useRef<Partial<Record<AdminSectionFocus, number>>>({});
+  const [activeFocus, setActiveFocus] = useState<AdminSectionFocus>(sectionFocus);
   const [workspaceNameDraft, setWorkspaceNameDraft] = useState("");
   const [bootstrapSecretDraft, setBootstrapSecretDraft] = useState("");
   const [newTeamNameDraft, setNewTeamNameDraft] = useState("");
@@ -121,13 +111,14 @@ export function AdminPanelScreen({
       scrollViewRef.current?.scrollTo({ y, animated: true });
     }
   }
-  const workspaceName = viewModel?.workspaceName ?? "No workspace connected";
-  const workspaceId = viewModel?.workspaceId ?? "Pending";
-  const joinCode = viewModel?.joinCode ?? "Not generated yet";
+  const workspaceName = viewModel?.workspaceName ?? t("admin.panel.noWorkspace");
+  const workspaceId = viewModel?.workspaceId ?? t("admin.panel.workspaceIdPending");
+  const joinCode = viewModel?.joinCode ?? t("admin.panel.joinCodeNotGenerated");
   const teams = viewModel?.teams ?? [];
 
   useEffect(() => {
     if (teams.length === 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- reset when teams list emptied externally
       setSelectedTeamId(null);
       setRenameTeamNameDraft("");
       return;
@@ -173,7 +164,7 @@ export function AdminPanelScreen({
                     },
                   ]}
                 >
-                  <ThemedText type="smallBold">Admin only</ThemedText>
+                  <ThemedText type="smallBold">{t("admin.panel.kickerAdmin")}</ThemedText>
                 </ThemedView>
                 <ThemedView
                   style={[
@@ -183,16 +174,15 @@ export function AdminPanelScreen({
                     },
                   ]}
                 >
-                  <ThemedText type="smallBold">Week 7 shell</ThemedText>
+                  <ThemedText type="smallBold">{t("admin.panel.kickerShell")}</ThemedText>
                 </ThemedView>
               </View>
 
               <ThemedText type="title" style={styles.title}>
-                Admin control panel
+                {t("admin.panel.title")}
               </ThemedText>
               <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-                Prepare workspace setup, team management, join-code sharing, and
-                anonymous CSV export without touching member or manager flows.
+                {t("admin.panel.subtitle")}
               </ThemedText>
             </View>
 
@@ -213,7 +203,7 @@ export function AdminPanelScreen({
                 ]}
                 testID="admin-panel-logout"
               >
-                <ThemedText type="smallBold">Sign out</ThemedText>
+                <ThemedText type="smallBold">{t("admin.panel.signOut")}</ThemedText>
               </Pressable>
             </View>
           </View>
@@ -252,11 +242,14 @@ export function AdminPanelScreen({
             testID="admin-panel-summary"
             type="backgroundElement"
           >
-            <ThemedText type="smallBold">Panel overview</ThemedText>
+            <ThemedText type="smallBold">{t("admin.panel.overviewSummaryTitle")}</ThemedText>
             <ThemedText themeColor="textSecondary" style={styles.summaryCopy}>
               {viewModel
-                ? `Workspace: ${workspaceName}. Teams ready: ${teams.length}. Join code visibility stays admin-only.`
-                : "Use this admin shell to prepare workspace setup, teams, join codes, and exports before wiring live actions."}
+                ? t("admin.panel.overviewSummaryWithWorkspace", {
+                    workspaceName,
+                    teamCount: teams.length,
+                  })
+                : t("admin.panel.overviewSummaryEmpty")}
             </ThemedText>
           </ThemedView>
 
@@ -266,9 +259,7 @@ export function AdminPanelScreen({
                 styles.feedbackBanner,
                 {
                   backgroundColor:
-                    feedbackState.kind === "success"
-                      ? "#D9F7E8"
-                      : theme.backgroundSelected,
+                    feedbackState.kind === "success" ? "#D9F7E8" : theme.backgroundSelected,
                 },
               ]}
               testID={`admin-panel-feedback-${feedbackState.kind}`}
@@ -279,8 +270,8 @@ export function AdminPanelScreen({
 
           {contentState.kind === "guarded" ? (
             <StatePanel
-              body="Open this route with workspace-scoped admin access or bootstrap a new workspace with the admin setup secret. Anonymous member and manager sessions cannot use admin data."
-              title="Admin access required"
+              body={t("admin.panel.states.guarded.body")}
+              title={t("admin.panel.states.guarded.title")}
               testID="admin-panel-guarded-state"
             >
               <View style={styles.guardedActionRow}>
@@ -295,7 +286,9 @@ export function AdminPanelScreen({
                   ]}
                   testID="admin-panel-guarded-return-home"
                 >
-                  <ThemedText type="smallBold">Return to app</ThemedText>
+                  <ThemedText type="smallBold">
+                    {t("admin.panel.states.guarded.returnButton")}
+                  </ThemedText>
                 </Pressable>
 
                 <Link href="/admin-login" asChild>
@@ -309,11 +302,8 @@ export function AdminPanelScreen({
                     ]}
                     testID="admin-panel-guarded-login"
                   >
-                    <ThemedText
-                      type="smallBold"
-                      style={styles.primaryButtonText}
-                    >
-                      Admin login
+                    <ThemedText type="smallBold" style={styles.primaryButtonText}>
+                      {t("admin.panel.states.guarded.loginButton")}
                     </ThemedText>
                   </Pressable>
                 </Link>
@@ -333,8 +323,8 @@ export function AdminPanelScreen({
 
           {contentState.kind === "loading" ? (
             <StatePanel
-              body="Preparing workspace controls, team placeholders, join-code preview, and export actions."
-              title="Loading admin panel"
+              body={t("admin.panel.states.loading.body")}
+              title={t("admin.panel.states.loading.title")}
               testID="admin-panel-loading-state"
             >
               <ActivityIndicator color={theme.text} />
@@ -343,8 +333,8 @@ export function AdminPanelScreen({
 
           {contentState.kind === "empty" ? (
             <StatePanel
-              body="No admin workspace details are available yet. Start with workspace creation, then add teams and generate a join code."
-              title="Admin setup is empty"
+              body={t("admin.panel.states.empty.body")}
+              title={t("admin.panel.states.empty.title")}
               testID="admin-panel-empty-state"
             >
               <WorkspaceSetupForm
@@ -362,7 +352,7 @@ export function AdminPanelScreen({
           {contentState.kind === "error" ? (
             <StatePanel
               body={contentState.message}
-              title="Admin panel unavailable"
+              title={t("admin.panel.states.error.title")}
               testID="admin-panel-error-state"
             >
               <Pressable
@@ -376,7 +366,9 @@ export function AdminPanelScreen({
                 ]}
                 testID="admin-panel-retry"
               >
-                <ThemedText type="smallBold">Retry shell</ThemedText>
+                <ThemedText type="smallBold">
+                  {t("admin.panel.states.error.retryButton")}
+                </ThemedText>
               </Pressable>
             </StatePanel>
           ) : null}
@@ -384,37 +376,37 @@ export function AdminPanelScreen({
           {contentState.kind === "ready" ? (
             <View style={styles.readyLayout} testID="admin-panel-ready-state">
               <AdminSectionCard
-                body="Set up the workspace name and keep the admin shell scoped to one organization at a time."
+                body={t("admin.panel.sections.workspace.body")}
                 focus="workspace"
-                isActive={
-                  activeFocus === "workspace" || activeFocus === "overview"
-                }
+                isActive={activeFocus === "workspace" || activeFocus === "overview"}
                 onLayout={(y) => {
                   sectionOffsetsRef.current.workspace = y;
                 }}
                 testID="admin-panel-workspace-section"
-                title="Workspace"
+                title={t("admin.panel.sections.workspace.title")}
               >
-                <DetailRow label="Workspace name" value={workspaceName} />
-                <DetailRow label="Workspace ID" value={workspaceId} />
-                <ThemedText
-                  themeColor="textSecondary"
-                  style={styles.sectionCopy}
-                >
-                  Workspace creation is available from the bootstrap panel. Once
-                  created, this section stays focused on the active admin scope.
+                <DetailRow
+                  label={t("admin.panel.sections.workspace.nameLabel")}
+                  value={workspaceName}
+                />
+                <DetailRow
+                  label={t("admin.panel.sections.workspace.idLabel")}
+                  value={workspaceId}
+                />
+                <ThemedText themeColor="textSecondary" style={styles.sectionCopy}>
+                  {t("admin.panel.sections.workspace.creationNote")}
                 </ThemedText>
               </AdminSectionCard>
 
               <AdminSectionCard
-                body="Create, rename, and review team groups without exposing member identities."
+                body={t("admin.panel.sections.team.body")}
                 focus="team"
                 isActive={activeFocus === "team"}
                 onLayout={(y) => {
                   sectionOffsetsRef.current.team = y;
                 }}
                 testID="admin-panel-team-section"
-                title="Team management"
+                title={t("admin.panel.sections.team.title")}
               >
                 {teams.length > 0 ? (
                   <View style={styles.teamChipRow}>
@@ -449,20 +441,19 @@ export function AdminPanelScreen({
                     ))}
                   </View>
                 ) : (
-                  <ThemedText
-                    testID="admin-panel-team-empty-copy"
-                    themeColor="textSecondary"
-                  >
-                    No teams yet. Add the first team after workspace setup.
+                  <ThemedText testID="admin-panel-team-empty-copy" themeColor="textSecondary">
+                    {t("admin.panel.sections.team.emptyTeams")}
                   </ThemedText>
                 )}
                 <View style={styles.formBlock}>
-                  <ThemedText type="smallBold">Add team</ThemedText>
+                  <ThemedText type="smallBold">
+                    {t("admin.panel.sections.team.addTeamTitle")}
+                  </ThemedText>
                   <TextInput
                     autoCapitalize="words"
                     autoCorrect={false}
                     onChangeText={setNewTeamNameDraft}
-                    placeholder="Product"
+                    placeholder={t("admin.panel.sections.team.addTeamPlaceholder")}
                     placeholderTextColor={theme.textSecondary}
                     style={[
                       styles.textInput,
@@ -476,10 +467,12 @@ export function AdminPanelScreen({
                     value={newTeamNameDraft}
                   />
                   <ActionButton
-                    disabled={
-                      isActionPending || newTeamNameDraft.trim().length === 0
+                    disabled={isActionPending || newTeamNameDraft.trim().length === 0}
+                    label={
+                      isActionPending
+                        ? t("common.saving")
+                        : t("admin.panel.sections.team.createTeamButton")
                     }
-                    label={isActionPending ? "Saving..." : "Create team"}
                     onPress={() => {
                       void onCreateTeam?.(newTeamNameDraft.trim());
                     }}
@@ -488,13 +481,15 @@ export function AdminPanelScreen({
                   />
                 </View>
                 <View style={styles.formBlock}>
-                  <ThemedText type="smallBold">Rename selected team</ThemedText>
+                  <ThemedText type="smallBold">
+                    {t("admin.panel.sections.team.renameTeamTitle")}
+                  </ThemedText>
                   <TextInput
                     autoCapitalize="words"
                     autoCorrect={false}
                     editable={Boolean(selectedTeam)}
                     onChangeText={setRenameTeamNameDraft}
-                    placeholder="Engineering"
+                    placeholder={t("admin.panel.sections.team.renameTeamPlaceholder")}
                     placeholderTextColor={theme.textSecondary}
                     style={[
                       styles.textInput,
@@ -510,11 +505,13 @@ export function AdminPanelScreen({
                   />
                   <ActionButton
                     disabled={
-                      isActionPending ||
-                      !selectedTeam ||
-                      renameTeamNameDraft.trim().length === 0
+                      isActionPending || !selectedTeam || renameTeamNameDraft.trim().length === 0
                     }
-                    label={isActionPending ? "Saving..." : "Rename team"}
+                    label={
+                      isActionPending
+                        ? t("common.saving")
+                        : t("admin.panel.sections.team.renameTeamButton")
+                    }
                     onPress={() => {
                       if (!selectedTeam) {
                         return;
@@ -532,20 +529,27 @@ export function AdminPanelScreen({
               </AdminSectionCard>
 
               <AdminSectionCard
-                body="View the active join code and keep member entry anonymous."
+                body={t("admin.panel.sections.joinCode.body")}
                 focus="join-code"
                 isActive={activeFocus === "join-code"}
                 onLayout={(y) => {
                   sectionOffsetsRef.current["join-code"] = y;
                 }}
                 testID="admin-panel-join-code-section"
-                title="Join code"
+                title={t("admin.panel.sections.joinCode.title")}
               >
-                <DetailRow label="Active code" value={joinCode} />
+                <DetailRow
+                  label={t("admin.panel.sections.joinCode.activeCodeLabel")}
+                  value={joinCode}
+                />
                 <View style={styles.actionRow}>
                   <ActionButton
                     disabled={isActionPending || !viewModel?.joinCode}
-                    label={isActionPending ? "Working..." : "Copy join code"}
+                    label={
+                      isActionPending
+                        ? t("common.working")
+                        : t("admin.panel.sections.joinCode.copyButton")
+                    }
                     onPress={() => {
                       if (!viewModel?.joinCode) {
                         return;
@@ -558,7 +562,11 @@ export function AdminPanelScreen({
                   />
                   <ActionButton
                     disabled={isActionPending || !viewModel?.workspaceId}
-                    label={isActionPending ? "Working..." : "Refresh join code"}
+                    label={
+                      isActionPending
+                        ? t("common.working")
+                        : t("admin.panel.sections.joinCode.refreshButton")
+                    }
                     onPress={() => {
                       void onRotateJoinCode?.();
                     }}
@@ -570,18 +578,18 @@ export function AdminPanelScreen({
               </AdminSectionCard>
 
               <AdminSectionCard
-                body="Generate one-time 6-character codes for team managers. Each code can only be used once."
+                body={t("admin.panel.sections.managerCodes.body")}
                 focus="manager-codes"
                 isActive={activeFocus === "manager-codes"}
                 onLayout={(y) => {
                   sectionOffsetsRef.current["manager-codes"] = y;
                 }}
                 testID="admin-panel-manager-codes-section"
-                title="Manager codes"
+                title={t("admin.panel.sections.managerCodes.title")}
               >
                 {teams.length === 0 ? (
                   <ThemedText themeColor="textSecondary" type="small">
-                    Add a team first to generate manager codes.
+                    {t("admin.panel.sections.managerCodes.noTeamsNotice")}
                   </ThemedText>
                 ) : (
                   <>
@@ -590,7 +598,11 @@ export function AdminPanelScreen({
                         <ThemedText type="smallBold">{team.name}</ThemedText>
                         <ActionButton
                           disabled={isActionPending}
-                          label={isActionPending ? "Working…" : "Generate code"}
+                          label={
+                            isActionPending
+                              ? t("common.working")
+                              : t("admin.panel.sections.managerCodes.generateButton")
+                          }
                           onPress={() => {
                             void onGenerateManagerCode?.(team.id);
                           }}
@@ -607,16 +619,14 @@ export function AdminPanelScreen({
                             style={styles.managerCodeItem}
                             testID={`manager-code-item-${mc.id}`}
                           >
-                            <ThemedText style={styles.managerCodeText}>
-                              {mc.code}
-                            </ThemedText>
+                            <ThemedText style={styles.managerCodeText}>{mc.code}</ThemedText>
                             <ThemedText themeColor="textSecondary" type="small">
                               {mc.team_name} · {mc.status}
                             </ThemedText>
                             {mc.status === "active" && (
                               <ActionButton
                                 disabled={isActionPending}
-                                label="Revoke"
+                                label={t("admin.panel.sections.managerCodes.revokeButton")}
                                 onPress={() => {
                                   void onRevokeManagerCode?.(mc.id);
                                 }}
@@ -633,28 +643,24 @@ export function AdminPanelScreen({
               </AdminSectionCard>
 
               <AdminSectionCard
-                body="Trigger anonymized CSV export without revealing raw notes, device tokens, or member identities."
+                body={t("admin.panel.sections.export.body")}
                 focus="export"
                 isActive={activeFocus === "export"}
                 onLayout={(y) => {
                   sectionOffsetsRef.current.export = y;
                 }}
                 testID="admin-panel-export-section"
-                title="Export"
+                title={t("admin.panel.sections.export.title")}
               >
-                <ThemedText
-                  themeColor="textSecondary"
-                  style={styles.sectionCopy}
-                >
-                  Export range and download wiring will stay admin-only and
-                  reuse the existing privacy-safe backend contract.
+                <ThemedText themeColor="textSecondary" style={styles.sectionCopy}>
+                  {t("admin.panel.sections.export.note")}
                 </ThemedText>
                 <View style={styles.formBlock}>
                   <TextInput
                     autoCapitalize="none"
                     autoCorrect={false}
                     onChangeText={setExportStartDate}
-                    placeholder="2026-06-01"
+                    placeholder={t("admin.panel.sections.export.startDatePlaceholder")}
                     placeholderTextColor={theme.textSecondary}
                     style={[
                       styles.textInput,
@@ -671,7 +677,7 @@ export function AdminPanelScreen({
                     autoCapitalize="none"
                     autoCorrect={false}
                     onChangeText={setExportEndDate}
-                    placeholder="2026-06-30"
+                    placeholder={t("admin.panel.sections.export.endDatePlaceholder")}
                     placeholderTextColor={theme.textSecondary}
                     style={[
                       styles.textInput,
@@ -690,7 +696,9 @@ export function AdminPanelScreen({
                       exportStartDate.trim().length === 0 ||
                       exportEndDate.trim().length === 0
                     }
-                    label={isActionPending ? "Preparing..." : "Export CSV"}
+                    label={
+                      isActionPending ? "Preparing..." : t("admin.panel.sections.export.runButton")
+                    }
                     onPress={() => {
                       void onExport?.({
                         startDate: exportStartDate.trim(),
@@ -722,11 +730,7 @@ function StatePanel({
   children?: React.ReactNode;
 }) {
   return (
-    <ThemedView
-      style={styles.statePanel}
-      testID={testID}
-      type="backgroundElement"
-    >
+    <ThemedView style={styles.statePanel} testID={testID} type="backgroundElement">
       <ThemedText type="subtitle" style={styles.stateTitle}>
         {title}
       </ThemedText>
@@ -786,10 +790,7 @@ function AdminSectionCard({
             },
           ]}
         >
-          <ThemedText
-            style={isActive ? styles.activeFocusText : undefined}
-            type="smallBold"
-          >
+          <ThemedText style={isActive ? styles.activeFocusText : undefined} type="smallBold">
             {focus === "join-code" ? "Join code" : focus}
           </ThemedText>
         </ThemedView>
@@ -822,20 +823,19 @@ function WorkspaceSetupForm({
   isActionPending: boolean;
   onChangeWorkspaceName: (value: string) => void;
   onChangeBootstrapSecret: (value: string) => void;
-  onCreateWorkspace?: (input: {
-    bootstrapSecret: string;
-    name: string;
-  }) => void | Promise<void>;
+  onCreateWorkspace?: (input: { bootstrapSecret: string; name: string }) => void | Promise<void>;
   theme: ReturnType<typeof useTheme>;
 }) {
+  const { t } = useTranslation();
+
   return (
     <View style={styles.formBlock}>
-      <ThemedText type="smallBold">Create workspace</ThemedText>
+      <ThemedText type="smallBold">{t("admin.panel.workspaceSetup.title")}</ThemedText>
       <TextInput
         autoCapitalize="words"
         autoCorrect={false}
         onChangeText={onChangeWorkspaceName}
-        placeholder="MoodMarble HQ"
+        placeholder={t("admin.panel.workspaceSetup.namePlaceholder")}
         placeholderTextColor={theme.textSecondary}
         style={[
           styles.textInput,
@@ -852,7 +852,7 @@ function WorkspaceSetupForm({
         autoCapitalize="none"
         autoCorrect={false}
         onChangeText={onChangeBootstrapSecret}
-        placeholder="Admin bootstrap secret"
+        placeholder={t("admin.panel.workspaceSetup.secretPlaceholder")}
         placeholderTextColor={theme.textSecondary}
         secureTextEntry
         style={[
@@ -872,7 +872,11 @@ function WorkspaceSetupForm({
           workspaceNameDraft.trim().length === 0 ||
           bootstrapSecretDraft.trim().length === 0
         }
-        label={isActionPending ? "Creating..." : "Create workspace"}
+        label={
+          isActionPending
+            ? t("admin.panel.workspaceSetup.creatingButton")
+            : t("admin.panel.workspaceSetup.createButton")
+        }
         onPress={() => {
           void onCreateWorkspace?.({
             name: workspaceNameDraft.trim(),
@@ -910,8 +914,7 @@ function ActionButton({
         styles.actionButton,
         {
           backgroundColor: variant === "primary" ? "#208AEF" : theme.background,
-          borderColor:
-            variant === "primary" ? "#208AEF" : theme.backgroundSelected,
+          borderColor: variant === "primary" ? "#208AEF" : theme.backgroundSelected,
           opacity: disabled ? 0.45 : pressed ? 0.85 : 1,
         },
       ]}
@@ -927,11 +930,7 @@ function ActionButton({
   );
 }
 
-export type {
-  AdminPanelContentState,
-  AdminPanelScreenProps,
-  AdminPanelViewModel,
-};
+export type { AdminPanelContentState, AdminPanelScreenProps, AdminPanelViewModel };
 
 const styles = StyleSheet.create({
   screen: {

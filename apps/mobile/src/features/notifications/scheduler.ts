@@ -60,8 +60,7 @@ export interface NotificationSchedulerModule {
   }) => Promise<string>;
 }
 
-type ReminderNotificationsModule = NotificationSchedulerModule &
-  ReminderNotificationPlatformModule;
+type ReminderNotificationsModule = NotificationSchedulerModule & ReminderNotificationPlatformModule;
 
 export async function syncStoredReminderSchedule(
   options: ReminderSchedulerOptions = {},
@@ -80,10 +79,7 @@ export async function syncReminderSchedule(
     appOwnership: options.appOwnership,
   });
 
-  if (
-    !runtimeSupport.supportsLocalNotifications ||
-    !runtimeSupport.canManageSchedules
-  ) {
+  if (!runtimeSupport.supportsLocalNotifications || !runtimeSupport.canManageSchedules) {
     return {
       status: "unsupported",
       scheduledTimes: [],
@@ -117,16 +113,13 @@ export async function syncReminderSchedule(
 
   await prepareReminderNotificationPlatformAsync(platformModule, platformOs);
 
-  const scheduledRequests =
-    await notificationsModule.getAllScheduledNotificationsAsync();
+  const scheduledRequests = await notificationsModule.getAllScheduledNotificationsAsync();
   const existingReminderIdentifiers = new Set(
     scheduledRequests
       .filter((request) => isMoodMarbleReminderRequest(request))
       .map((request) => request.identifier),
   );
-  const desiredIdentifiers = settings.reminderTimes.map(
-    buildReminderScheduleIdentifier,
-  );
+  const desiredIdentifiers = settings.reminderTimes.map(buildReminderScheduleIdentifier);
   const desiredIdentifierSet = new Set(desiredIdentifiers);
   const cancelledIdentifiers: string[] = [];
   const createdIdentifiers: string[] = [];
@@ -145,12 +138,11 @@ export async function syncReminderSchedule(
       continue;
     }
 
-    const scheduledIdentifier =
-      await notificationsModule.scheduleNotificationAsync({
-        identifier,
-        content: buildReminderNotificationContent(reminderTime),
-        trigger: buildReminderTrigger(reminderTime, platformOs),
-      });
+    const scheduledIdentifier = await notificationsModule.scheduleNotificationAsync({
+      identifier,
+      content: buildReminderNotificationContent(reminderTime),
+      trigger: buildReminderTrigger(reminderTime, platformOs),
+    });
 
     createdIdentifiers.push(scheduledIdentifier);
   }
@@ -180,18 +172,14 @@ export async function cancelScheduledReminderNotifications(
     appOwnership: options.appOwnership,
   });
 
-  if (
-    !runtimeSupport.supportsLocalNotifications ||
-    !runtimeSupport.canManageSchedules
-  ) {
+  if (!runtimeSupport.supportsLocalNotifications || !runtimeSupport.canManageSchedules) {
     return [];
   }
 
   const notificationsModule =
     options.notificationsModule ??
     (await (options.loadNotificationsModule ?? loadNotificationsModule)());
-  const scheduledRequests =
-    await notificationsModule.getAllScheduledNotificationsAsync();
+  const scheduledRequests = await notificationsModule.getAllScheduledNotificationsAsync();
   const cancelledIdentifiers: string[] = [];
 
   for (const request of scheduledRequests) {
@@ -199,25 +187,21 @@ export async function cancelScheduledReminderNotifications(
       continue;
     }
 
-    await notificationsModule.cancelScheduledNotificationAsync(
-      request.identifier,
-    );
+    await notificationsModule.cancelScheduledNotificationAsync(request.identifier);
     cancelledIdentifiers.push(request.identifier);
   }
 
   return cancelledIdentifiers.sort();
 }
 
-export function buildReminderScheduleIdentifier(
-  reminderTime: ReminderTime,
-): string {
+export function buildReminderScheduleIdentifier(reminderTime: ReminderTime): string {
   return `${REMINDER_NOTIFICATION_NAMESPACE}.${reminderTime.replace(":", "")}`;
 }
 
 function buildReminderNotificationContent(reminderTime: ReminderTime) {
   return {
-    title: "Mood check-in",
-    body: "Take a quiet moment to drop today's marble.",
+    title: "How's your marble rolling? 🪨",
+    body: "Take a moment to check in — it's anonymous and takes 5 seconds.",
     sound: false,
     data: {
       reminderTime,
@@ -254,8 +238,7 @@ function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
   const requestData = request.content.data;
 
   return (
-    typeof requestData?.source === "string" &&
-    requestData.source === REMINDER_NOTIFICATION_SOURCE
+    typeof requestData?.source === "string" && requestData.source === REMINDER_NOTIFICATION_SOURCE
   );
 }
 

@@ -23,12 +23,10 @@ jest.mock("@/features/dashboard/dashboard-charts", () => {
 
 describe("ManagerDashboardScreen", () => {
   it("renders the manager dashboard shell with its control placeholders", async () => {
-    const view = await render(
-      <ManagerDashboardScreen contentState={{ kind: "ready" }} />,
-    );
+    const view = await render(<ManagerDashboardScreen contentState={{ kind: "ready" }} />);
 
     expect(view.getByTestId("manager-dashboard-screen")).toBeTruthy();
-    expect(view.getByText("Manager dashboard")).toBeTruthy();
+    expect(view.getByText("dashboard.title")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-date-picker")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-team-selector")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-export-button")).toBeTruthy();
@@ -38,10 +36,7 @@ describe("ManagerDashboardScreen", () => {
   it("renders the Sign out button and calls onSignOut when tapped", async () => {
     const onSignOut = jest.fn().mockResolvedValue(undefined);
     const view = await render(
-      <ManagerDashboardScreen
-        contentState={{ kind: "ready" }}
-        onSignOut={onSignOut}
-      />,
+      <ManagerDashboardScreen contentState={{ kind: "ready" }} onSignOut={onSignOut} />,
     );
 
     expect(view.getByTestId("manager-dashboard-logout")).toBeTruthy();
@@ -50,41 +45,32 @@ describe("ManagerDashboardScreen", () => {
   });
 
   it("renders the loading state", async () => {
-    const view = await render(
-      <ManagerDashboardScreen contentState={{ kind: "loading" }} />,
-    );
+    const view = await render(<ManagerDashboardScreen contentState={{ kind: "loading" }} />);
 
     expect(view.getByTestId("manager-dashboard-loading-state")).toBeTruthy();
-    expect(view.getByText("Loading dashboard")).toBeTruthy();
+    expect(view.getByText("dashboard.states.loading.title")).toBeTruthy();
   });
 
   it("renders the empty state", async () => {
-    const view = await render(
-      <ManagerDashboardScreen contentState={{ kind: "empty" }} />,
-    );
+    const view = await render(<ManagerDashboardScreen contentState={{ kind: "empty" }} />);
 
     expect(view.getByTestId("manager-dashboard-empty-state")).toBeTruthy();
-    expect(view.getByText("No aggregate data yet")).toBeTruthy();
+    expect(view.getByText("dashboard.states.empty.title")).toBeTruthy();
   });
 
   it("renders the privacy-threshold state", async () => {
     const view = await render(
-      <ManagerDashboardScreen
-        contentState={{ kind: "privacy", visibility: "hidden" }}
-      />,
+      <ManagerDashboardScreen contentState={{ kind: "privacy", visibility: "hidden" }} />,
     );
 
     expect(view.getByTestId("manager-dashboard-privacy-state")).toBeTruthy();
-    expect(view.getByText("Privacy threshold active")).toBeTruthy();
+    expect(view.getByText("dashboard.states.privacy.title")).toBeTruthy();
   });
 
   it("renders the guarded access state and returns to the app", async () => {
     const onReturnHome = jest.fn();
     const view = await render(
-      <ManagerDashboardScreen
-        contentState={{ kind: "guarded" }}
-        onReturnHome={onReturnHome}
-      />,
+      <ManagerDashboardScreen contentState={{ kind: "guarded" }} onReturnHome={onReturnHome} />,
     );
 
     expect(view.getByTestId("manager-dashboard-guarded-state")).toBeTruthy();
@@ -113,9 +99,7 @@ describe("ManagerDashboardScreen", () => {
   });
 
   it("keeps the ready state aggregate-only and separate from member data", async () => {
-    const view = await render(
-      <ManagerDashboardScreen contentState={{ kind: "ready" }} />,
-    );
+    const view = await render(<ManagerDashboardScreen contentState={{ kind: "ready" }} />);
 
     expect(view.queryByText(/device token/i)).toBeNull();
     expect(view.queryByText(/joined-device-jwt/i)).toBeNull();
