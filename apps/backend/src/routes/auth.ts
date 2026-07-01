@@ -20,10 +20,7 @@ export interface AuthRouteOptions {
 }
 
 // Minimal in-memory rate limiting map for login
-const loginRateLimitMap = new Map<
-  string,
-  { count: number; expiresAt: number }
->();
+const loginRateLimitMap = new Map<string, { count: number; expiresAt: number }>();
 const MAX_LOGIN_ATTEMPTS = 5;
 const LOGIN_RATE_LIMIT_WINDOW_MS = 15 * 60 * 1000; // 15 minutes
 
@@ -42,12 +39,62 @@ export async function registerAuthRoutes(
     "/auth/login",
     {
       schema: {
+        tags: ["Public"],
+        summary: "Admin login",
+        description:
+          "Authenticates an admin with email and password. " +
+          "Rate-limited to 5 attempts per IP per 15 minutes.",
         body: {
           type: "object",
+          additionalProperties: true,
           required: ["email", "password"],
           properties: {
             email: { type: "string", format: "email" },
             password: { type: "string", minLength: 1 },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              admin_jwt: {
+                type: "string",
+                description: "Signed Admin JWT — include as Bearer token",
+              },
+              workspace: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                },
+              },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid email or password format",
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid email or password",
+          },
+          429: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Too many login attempts",
+          },
+          500: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Server configuration error",
           },
         },
       },
@@ -89,8 +136,7 @@ export async function registerAuthRoutes(
       // Used so that login attempts for unknown emails take the same time as
       // attempts for known emails — prevents user enumeration via timing.
       // Generated once with: bcrypt.hashSync("DUMMY", 12). Safe to hardcode.
-      const DUMMY_HASH =
-        "$2a$12$KIXBp4PoFGmHn0EbVFd12eqB9LH3V6VbBjkHC6vGf3F1emLe4KGLG";
+      const DUMMY_HASH = "$2a$12$KIXBp4PoFGmHn0EbVFd12eqB9LH3V6VbBjkHC6vGf3F1emLe4KGLG";
       const hashToCompare = admin?.passwordHash ?? DUMMY_HASH;
 
       const isValid = await bcrypt.compare(password, hashToCompare);
@@ -125,63 +171,122 @@ export async function registerAuthRoutes(
     },
   );
 
-  app.post("/auth/redeem-manager-code", async (request, reply) => {
-    const parsed = RedeemManagerCodeRequestSchema.safeParse(request.body);
-    if (!parsed.success) {
-      return reply.status(400).send({
-        message: "Manager code must be 6 uppercase letters or numbers.",
-      });
-    }
+  app.post(
+    "/auth/redeem-manager-code",
+    {
+      schema: {
+        tags: ["Public"],
+        summary: "Redeem manager invite code",
+        description:
+          "Validates a one-time 6-character manager invite code " +
+          "and returns a Manager JWT scoped to the assigned team. " +
+          "The code is marked as used and cannot be redeemed again.",
+        body: {
+          type: "object",
+          additionalProperties: true,
+          required: ["code"],
+          properties: {
+            code: {
+              type: "string",
+              description: "6-character alphanumeric manager invite code",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              manager_jwt: {
+                type: "string",
+                description: "Signed Manager JWT",
+              },
+              workspace_id: { type: "string" },
+              team_id: { type: "string" },
+              team_name: { type: "string" },
+              manager_teams: {
+                type: "string",
+                description: "teamId:teamName string expected by the manager route",
+              },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid code format",
+          },
+          404: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid or expired manager code",
+          },
+          500: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Database error while validating code",
+          },
+        },
+      },
+    },
+    async (request, reply) => {
+      const parsed = RedeemManagerCodeRequestSchema.safeParse(request.body);
+      if (!parsed.success) {
+        return reply.status(400).send({
+          message: "Manager code must be 6 uppercase letters or numbers.",
+        });
+      }
 
-    const { code } = parsed.data;
-    const now = new Date();
+      const { code } = parsed.data;
+      const now = new Date();
 
-    let codeRecord:
-      | (typeof managerCodes.$inferSelect & {
-          team: { name: string; workspaceId: string };
-        })
-      | undefined;
+      let codeRecord:
+        | (typeof managerCodes.$inferSelect & {
+            team: { name: string; workspaceId: string };
+          })
+        | undefined;
 
-    try {
-      codeRecord = await options.databaseClient.db.query.managerCodes.findFirst(
-        {
+      try {
+        codeRecord = await options.databaseClient.db.query.managerCodes.findFirst({
           where: eq(managerCodes.code, code),
           with: { team: true },
-        },
-      );
-    } catch {
-      return reply.status(500).send({ message: "Unable to validate code." });
-    }
+        });
+      } catch {
+        return reply.status(500).send({ message: "Unable to validate code." });
+      }
 
-    // All failure paths return the same response — no state leakage
-    const INVALID = { message: "Invalid or expired manager code." } as const;
+      // All failure paths return the same response — no state leakage
+      const INVALID = { message: "Invalid or expired manager code." } as const;
 
-    if (!codeRecord) return reply.status(404).send(INVALID);
-    if (codeRecord.isRevoked === 1) return reply.status(404).send(INVALID);
-    if (codeRecord.usedAt !== null) return reply.status(404).send(INVALID);
-    if (codeRecord.expiresAt < now) return reply.status(404).send(INVALID);
+      if (!codeRecord) return reply.status(404).send(INVALID);
+      if (codeRecord.isRevoked === 1) return reply.status(404).send(INVALID);
+      if (codeRecord.usedAt !== null) return reply.status(404).send(INVALID);
+      if (codeRecord.expiresAt < now) return reply.status(404).send(INVALID);
 
-    // Mark as used
-    await options.databaseClient.db
-      .update(managerCodes)
-      .set({ usedAt: now })
-      .where(eq(managerCodes.id, codeRecord.id));
+      // Mark as used
+      await options.databaseClient.db
+        .update(managerCodes)
+        .set({ usedAt: now })
+        .where(eq(managerCodes.id, codeRecord.id));
 
-    const { managerJwt } = createManagerJwt(options.jwtSecret, {
-      workspace_id: codeRecord.workspaceId,
-      team_id: codeRecord.teamId,
-      role: "manager",
-    });
+      const { managerJwt } = createManagerJwt(options.jwtSecret, {
+        workspace_id: codeRecord.workspaceId,
+        team_id: codeRecord.teamId,
+        role: "manager",
+      });
 
-    // manager_teams format expected by /manager route: "teamId:teamName"
-    const managerTeams = `${codeRecord.teamId}:${codeRecord.team.name}`;
+      // manager_teams format expected by /manager route: "teamId:teamName"
+      const managerTeams = `${codeRecord.teamId}:${codeRecord.team.name}`;
 
-    return reply.status(200).send({
-      manager_jwt: managerJwt,
-      workspace_id: codeRecord.workspaceId,
-      team_id: codeRecord.teamId,
-      team_name: codeRecord.team.name,
-      manager_teams: managerTeams,
-    });
-  });
+      return reply.status(200).send({
+        manager_jwt: managerJwt,
+        workspace_id: codeRecord.workspaceId,
+        team_id: codeRecord.teamId,
+        team_name: codeRecord.team.name,
+        manager_teams: managerTeams,
+      });
+    },
+  );
 }

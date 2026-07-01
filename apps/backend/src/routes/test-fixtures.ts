@@ -2,13 +2,7 @@ import type { FastifyInstance } from "fastify";
 import { sql } from "drizzle-orm";
 import type { DatabaseClient } from "../db/client";
 import { seedAdmin } from "../../scripts/seed-admin";
-import {
-  workspaces,
-  teams,
-  managerCodes,
-  teamMembers,
-  moodSubmissions,
-} from "../db/schema";
+import { workspaces, teams, managerCodes, teamMembers, moodSubmissions } from "../db/schema";
 import { clearLoginRateLimit } from "./auth";
 
 // ---------------------------------------------------------------------------
@@ -30,15 +24,7 @@ import { clearLoginRateLimit } from "./auth";
 const DASHBOARD_E2E_WINDOW_START = "2026-06-16";
 
 type DashboardMoodType =
-  | "energised"
-  | "happy"
-  | "calm"
-  | "focused"
-  | "neutral"
-  | "tired"
-  | "stressed"
-  | "sad"
-  | "unheard";
+  "energised" | "happy" | "calm" | "focused" | "neutral" | "tired" | "stressed" | "sad" | "unheard";
 
 const DASHBOARD_DAILY_CLUSTER: Array<{
   moodType: DashboardMoodType;
@@ -55,10 +41,7 @@ const DASHBOARD_DAILY_CLUSTER: Array<{
   { moodType: "happy", tags: ["#team"], hour: 17 },
 ];
 
-function getDashboardDateKeysInRange(
-  startKey: string,
-  endKey: string,
-): string[] {
+function getDashboardDateKeysInRange(startKey: string, endKey: string): string[] {
   const start = new Date(`${startKey}T00:00:00.000Z`);
   const end = new Date(`${endKey}T00:00:00.000Z`);
   const keys: string[] = [];
@@ -82,9 +65,7 @@ export async function seedDashboardFixtures(
 
   // If the system clock is somehow before the E2E window, still seed today.
   const dateKeys =
-    rangeEnd < rangeStart
-      ? [todayKey]
-      : getDashboardDateKeysInRange(rangeStart, rangeEnd);
+    rangeEnd < rangeStart ? [todayKey] : getDashboardDateKeysInRange(rangeStart, rangeEnd);
 
   // Seed 6 distinct team members (> threshold of 5). Use deterministic ids
   // so the manual seed script is idempotent.
@@ -102,10 +83,7 @@ export async function seedDashboardFixtures(
 
   // Seed a full daily cluster for every covered day.
   for (const dateKey of dateKeys) {
-    for (const [
-      index,
-      { moodType, tags, hour },
-    ] of DASHBOARD_DAILY_CLUSTER.entries()) {
+    for (const [index, { moodType, tags, hour }] of DASHBOARD_DAILY_CLUSTER.entries()) {
       await databaseClient.db
         .insert(moodSubmissions)
         .values({
@@ -129,7 +107,7 @@ export async function registerTestRoutes(
   app: FastifyInstance,
   options: TestFixturesOptions,
 ): Promise<void> {
-  app.post("/__test/reset", async (request, reply) => {
+  app.post("/__test/reset", { schema: { hide: true } }, async (request, reply) => {
     if (process.env.NODE_ENV === "production") {
       return reply.status(403).send({ message: "Forbidden in production" });
     }
@@ -159,9 +137,7 @@ export async function registerTestRoutes(
           await databaseClient.db.execute(sql.raw(`DELETE FROM "${table}"`));
         } catch (tableError) {
           // Table may not exist yet if migrations are pending — log and continue.
-          console.warn(
-            `[test-reset] Skipped clearing "${table}": ${String(tableError)}`,
-          );
+          console.warn(`[test-reset] Skipped clearing "${table}": ${String(tableError)}`);
         }
       }
 
@@ -180,11 +156,7 @@ export async function registerTestRoutes(
       });
 
       // 4. Reseed admin account
-      const seedExitCode = await seedAdmin(
-        "admin@example.com",
-        "password1234",
-        databaseClient,
-      );
+      const seedExitCode = await seedAdmin("admin@example.com", "password1234", databaseClient);
 
       if (seedExitCode !== 0) {
         return reply.status(500).send({
@@ -207,9 +179,7 @@ export async function registerTestRoutes(
         });
       } catch {
         // manager_codes table may not exist yet if migration is pending — non-fatal
-        console.warn(
-          "[test-reset] Could not seed manager code (migration may be pending)",
-        );
+        console.warn("[test-reset] Could not seed manager code (migration may be pending)");
       }
 
       // 6. Seed dashboard fixtures so all privacy thresholds are cleared
@@ -220,8 +190,7 @@ export async function registerTestRoutes(
     } catch (error) {
       // Return the actual error message so it is visible in E2E console output
       // without having to tail server logs. Never do this in production.
-      const errorMessage =
-        error instanceof Error ? error.message : String(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("[test-reset] Reset failed:", errorMessage);
       return reply.status(500).send({
         message: "Test reset failed",

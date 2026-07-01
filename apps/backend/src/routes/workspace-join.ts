@@ -38,11 +38,84 @@ export async function registerWorkspaceJoinRoute(
 
   app.post(
     "/workspace/join",
+    {
+      schema: {
+        tags: ["Public"],
+        summary: "Join a workspace with an invite code",
+        description:
+          "Accepts a 6-character workspace join code and a " +
+          "device-generated UUID. Returns a Device JWT that identifies " +
+          "the anonymous device for future requests. The device token is " +
+          "never stored in mood submissions.",
+        body: {
+          type: "object",
+          additionalProperties: true,
+          properties: {
+            join_code: {
+              type: "string",
+              description: "6-character workspace join code",
+            },
+            device_token: {
+              type: "string",
+              description: "Client-generated UUID v4 — anonymous device identity",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              workspace: {
+                type: "object",
+                additionalProperties: true,
+                properties: {
+                  id: { type: "string" },
+                  name: { type: "string" },
+                },
+              },
+              teams: {
+                type: "array",
+                items: {
+                  type: "object",
+                  additionalProperties: true,
+                  properties: {
+                    id: { type: "string" },
+                    name: { type: "string" },
+                  },
+                },
+              },
+              device_jwt: {
+                type: "string",
+                description:
+                  "Signed Device JWT — include as Bearer token in /mood and /workspace/team-member",
+              },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Invalid workspace join payload",
+          },
+          404: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Join code not found",
+          },
+          500: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Server configuration error",
+          },
+        },
+      },
+    },
     async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
       try {
-        return reply
-          .status(200)
-          .send(await workspaceJoinService.joinWorkspace(request.body));
+        return reply.status(200).send(await workspaceJoinService.joinWorkspace(request.body));
       } catch (error) {
         if (error instanceof WorkspaceJoinNotFoundError) {
           return reply.status(404).send({
@@ -73,18 +146,63 @@ export async function registerWorkspaceJoinRoute(
 
   app.post(
     "/workspace/team-member",
+    {
+      schema: {
+        tags: ["Device"],
+        summary: "Register device as a team member",
+        security: [{ deviceJwt: [] }],
+        description:
+          "Associates the authenticated device with a specific team " +
+          "within the workspace the device joined. Must be called after " +
+          "POST /workspace/join before the device can submit moods.",
+        body: {
+          type: "object",
+          additionalProperties: true,
+          required: ["team_id"],
+          properties: {
+            team_id: {
+              type: "string",
+              description: "Team within the joined workspace",
+            },
+          },
+        },
+        response: {
+          200: {
+            type: "object",
+            additionalProperties: true,
+            properties: {
+              status: { type: "string", enum: ["registered"] },
+            },
+          },
+          400: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "team_id does not belong to the device's workspace",
+          },
+          401: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Missing or invalid Device JWT",
+          },
+          500: {
+            type: "object",
+            additionalProperties: true,
+            properties: { message: { type: "string" } },
+            description: "Server configuration error",
+          },
+        },
+      },
+    },
     async (request: FastifyRequest<{ Body: unknown }>, reply: FastifyReply) => {
       try {
-        const deviceJwt = verifyDeviceJwt(
-          request.headers.authorization,
-          options.jwtSecret,
-        );
+        const deviceJwt = verifyDeviceJwt(request.headers.authorization, options.jwtSecret);
         const parsedPayload = TeamMembershipRequestSchema.parse(request.body);
-        const teamBelongsToWorkspace =
-          await options.workspaceDirectory.hasTeamInWorkspace(
-            deviceJwt.workspace_id,
-            parsedPayload.team_id,
-          );
+        const teamBelongsToWorkspace = await options.workspaceDirectory.hasTeamInWorkspace(
+          deviceJwt.workspace_id,
+          parsedPayload.team_id,
+        );
 
         if (!teamBelongsToWorkspace) {
           return reply.status(400).send({

@@ -1,5 +1,7 @@
 import cors from "@fastify/cors";
 import Fastify, { type FastifyInstance } from "fastify";
+import swagger from "@fastify/swagger";
+import swaggerUi from "@fastify/swagger-ui";
 
 import { registerAuthRoutes } from "./routes/auth";
 import { registerAdminRoutes } from "./routes/admin";
@@ -57,6 +59,71 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u, ...productionOrigin],
     methods: ["GET", "POST", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-admin-bootstrap-secret"],
+  });
+
+  await app.register(swagger, {
+    openapi: {
+      openapi: "3.0.3",
+      info: {
+        title: "MoodMarble API",
+        description: [
+          "Anonymous workplace mood-tracking API.",
+          "",
+          "**Authentication schemes:**",
+          "- `deviceJwt` — issued after `POST /workspace/join`.",
+          "  Identifies an anonymous device. Used for mood submission.",
+          "- `managerJwt` — issued after `POST /auth/redeem-manager-code`.",
+          "  Grants access to the team dashboard for one team.",
+          "- `adminJwt` — issued after `POST /auth/login`.",
+          "  Grants full workspace administration access.",
+        ].join("\n"),
+        version: "1.0.0",
+      },
+      tags: [
+        { name: "Public", description: "No authentication required" },
+        { name: "Device", description: "Requires Device JWT (Bearer)" },
+        { name: "Manager", description: "Requires Manager JWT (Bearer)" },
+        { name: "Admin", description: "Requires Admin JWT (Bearer)" },
+      ],
+      components: {
+        securitySchemes: {
+          deviceJwt: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Issued by POST /workspace/join. 30-day expiry. " +
+              "Identifies an anonymous device — never linked to a name or email.",
+          },
+          managerJwt: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Issued by POST /auth/redeem-manager-code. 30-day expiry. " +
+              "Scoped to a single team within a workspace.",
+          },
+          adminJwt: {
+            type: "http",
+            scheme: "bearer",
+            bearerFormat: "JWT",
+            description:
+              "Issued by POST /auth/login. 30-day expiry. " +
+              "Full workspace administration access.",
+          },
+        },
+      },
+    },
+  });
+
+  await app.register(swaggerUi, {
+    routePrefix: "/docs",
+    uiConfig: {
+      docExpansion: "list",
+      deepLinking: false,
+      persistAuthorization: true,
+    },
+    staticCSP: true,
   });
 
   await registerHealthRoutes(app);
