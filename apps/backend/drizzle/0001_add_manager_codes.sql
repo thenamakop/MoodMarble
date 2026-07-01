@@ -13,12 +13,12 @@ CREATE TABLE IF NOT EXISTS "manager_codes" (
 );
 --> statement-breakpoint
 ALTER TABLE "manager_codes"
-  ADD CONSTRAINT IF NOT EXISTS "manager_codes_workspace_id_workspaces_id_fk"
+  ADD CONSTRAINT "manager_codes_workspace_id_workspaces_id_fk"
   FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id")
   ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
 ALTER TABLE "manager_codes"
-  ADD CONSTRAINT IF NOT EXISTS "manager_codes_team_id_teams_id_fk"
+  ADD CONSTRAINT "manager_codes_team_id_teams_id_fk"
   FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id")
   ON DELETE cascade ON UPDATE no action;
 --> statement-breakpoint
