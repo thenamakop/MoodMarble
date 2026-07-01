@@ -1,0 +1,24 @@
+[build]
+# The Dockerfile is inside apps/backend/ but must be built from the
+# repo root so it can access the pnpm-workspace.yaml and root
+# node_modules. The dockerfilePath is relative to the repo root.
+dockerfilePath = "apps/backend/Dockerfile"
+dockerContext  = "."
+
+[deploy]
+# Health check: Railway hits this path after deploy to confirm
+# the container is serving traffic. The GET /health route returns
+# {"status":"ok"} with HTTP 200. If this path returns a non-2xx
+# response within healthcheckTimeout seconds, Railway rolls back.
+healthcheckPath    = "/health"
+healthcheckTimeout = 60
+
+# Railway's process must bind to $PORT, which it injects.
+# Our server binds to env.PORT (defaults to 3000) and env.HOST
+# (defaults to 0.0.0.0). Both are set in Railway Variables.
+startCommand = "node_modules/.bin/tsx apps/backend/src/server.ts"
+
+# Restart policy: restart on crash, stop retrying after 3 failures
+# in a 10-minute window (Railway's default window).
+restartPolicyType       = "on_failure"
+restartPolicyMaxRetries = 3

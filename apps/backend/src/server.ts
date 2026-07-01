@@ -63,6 +63,11 @@ async function startServer(): Promise<void> {
   });
 
   console.log(`[MoodMarble] Server ready — http://${env.HOST}:${env.PORT}`);
+
+  process.on("SIGTERM", () => {
+    console.log("[MoodMarble] SIGTERM received — shutting down gracefully.");
+    void app.close();
+  });
 }
 
 void startServer();
