@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "MoodMarble",
+    "owner": "thenamak",
     "slug": "MoodMarble",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,6 +9,7 @@
     "scheme": "moodmarble",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "bundleIdentifier": "com.thenamak.moodmarble",
       "icon": "./assets/expo.icon"
     },
     "android": {
@@ -23,6 +25,15 @@
     "web": {
       "output": "static",
       "favicon": "./assets/images/favicon.png"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a2e9955a-fd6c-4ffa-b90b-f9256c657cae"
+      }
     },
     "plugins": [
       "expo-router",
