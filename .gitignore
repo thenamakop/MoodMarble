@@ -32,3 +32,6 @@ eas-build-local-projs/
 
 # Mobile local env overrides (device-specific, never commit)
 apps/mobile/.env.local
+
+# npm lockfile — project uses pnpm
+package-lock.json
