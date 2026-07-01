@@ -20,6 +20,11 @@ interface ManagerDashboardChartsProps {
   viewModel: ManagerDashboardViewModel;
 }
 
+/**
+ * Renders the manager dashboard chart cards.
+ *
+ * @param viewModel - Chart data and visibility state for each dashboard metric.
+ */
 export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProps) {
   const chartTheme = VictoryTheme?.clean;
 
@@ -231,6 +236,17 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
   );
 }
 
+/**
+ * Renders a dashboard chart card with privacy-aware fallback content.
+ *
+ * @param title - The card title.
+ * @param description - A short description shown under the title.
+ * @param visibility - The chart's privacy state.
+ * @param thresholdMessage - Message shown when values are blurred.
+ * @param hiddenMessage - Message shown when the chart is hidden.
+ * @param children - The chart content to render when visible.
+ * @param testID - Base test identifier for the card and its state-specific content.
+ */
 function ChartCard({
   title,
   description,
@@ -285,6 +301,13 @@ function ChartCard({
   );
 }
 
+/**
+ * Chooses the heatmap cell color for a score and visibility state.
+ *
+ * @param scoreValue - The heatmap score used to select a color
+ * @param visibility - The current metric visibility state
+ * @returns A hex color string for the heatmap cell
+ */
 function getHeatmapFill(scoreValue: number, visibility: DashboardMetricVisibility): string {
   if (visibility === "hidden") {
     return "#9ca3af";

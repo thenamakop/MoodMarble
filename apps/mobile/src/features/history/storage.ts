@@ -14,6 +14,14 @@ const LocalMoodHistoryRecordsSchema = z.array(LocalMoodHistoryRecordSchema);
 
 let webHistoryMemoryFallback: string | null = null;
 
+/**
+ * Loads the persisted local mood history records.
+ *
+ * Returns an empty array when no saved history exists or when the stored value cannot be parsed or validated. Corrupt
+ * stored data is cleared before returning.
+ *
+ * @returns The normalized local mood history records.
+ */
 export async function loadLocalMoodHistory(): Promise<LocalMoodHistoryRecord[]> {
   const storedValue = await readStoredHistory();
 
@@ -40,6 +48,14 @@ export async function loadLocalMoodHistory(): Promise<LocalMoodHistoryRecord[]> 
   return normalizeLocalMoodHistoryRecords(parsedRecords.data);
 }
 
+/**
+ * Saves local mood history records.
+ *
+ * Persists the normalized records and updates the in-memory web fallback used when web storage is unavailable.
+ *
+ * @param records - Mood history records to save
+ * @returns The normalized records that were persisted
+ */
 export async function saveLocalMoodHistory(
   records: LocalMoodHistoryRecord[],
 ): Promise<LocalMoodHistoryRecord[]> {
@@ -71,6 +87,12 @@ export async function saveLocalMoodHistory(
   return normalizedRecords;
 }
 
+/**
+ * Appends a mood history record and saves the updated history.
+ *
+ * @param record - The record to add to local mood history
+ * @returns The saved mood history records
+ */
 export async function appendLocalMoodHistoryRecord(
   record: LocalMoodHistoryRecord,
 ): Promise<LocalMoodHistoryRecord[]> {
@@ -80,10 +102,18 @@ export async function appendLocalMoodHistoryRecord(
   return saveLocalMoodHistory(nextHistory);
 }
 
+/**
+ * Groups the saved local mood history by day.
+ *
+ * @returns The mood history organized into day-based groups.
+ */
 export async function loadGroupedLocalMoodHistory(): Promise<LocalMoodHistoryDayGroup[]> {
   return groupLocalMoodHistoryByDay(await loadLocalMoodHistory());
 }
 
+/**
+ * Clears the stored mood history.
+ */
 export async function clearLocalMoodHistory(): Promise<void> {
   const webStorage = getWebHistoryStorage();
 
@@ -104,6 +134,11 @@ export async function clearLocalMoodHistory(): Promise<void> {
   await AsyncStorage.removeItem(HISTORY_STORAGE_KEY);
 }
 
+/**
+ * Reads the persisted local mood history payload.
+ *
+ * @returns The stored history string, or `null` when no history is available.
+ */
 async function readStoredHistory(): Promise<string | null> {
   const webStorage = getWebHistoryStorage();
 
@@ -122,6 +157,11 @@ async function readStoredHistory(): Promise<string | null> {
   return AsyncStorage.getItem(HISTORY_STORAGE_KEY);
 }
 
+/**
+ * Gets a usable browser storage object for local mood history.
+ *
+ * @returns The available `localStorage` or `sessionStorage` instance, or `null` if storage is unavailable.
+ */
 function getWebHistoryStorage(): Storage | null {
   if (Platform.OS !== "web" || typeof window === "undefined") {
     return null;

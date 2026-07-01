@@ -26,6 +26,11 @@ interface RegisterDashboardDailyRouteOptions {
   now?: () => Date;
 }
 
+/**
+ * Registers the daily dashboard route for a team.
+ *
+ * @param options - Route dependencies and configuration, including the JWT secret, analytics source, optional clock, and workspace directory lookup.
+ */
 export async function registerDashboardDailyRoute(
   app: FastifyInstance,
   options: RegisterDashboardDailyRouteOptions,

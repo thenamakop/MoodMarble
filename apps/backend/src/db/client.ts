@@ -9,6 +9,12 @@ export interface DatabaseClient {
   close(): Promise<void>;
 }
 
+/**
+ * Creates a database client for the configured PostgreSQL schema.
+ *
+ * @param databaseUrl - The PostgreSQL connection URL
+ * @returns A database client with Drizzle access, the underlying SQL connection, and a close method
+ */
 export function createDatabaseClient(databaseUrl: string): DatabaseClient {
   const sql = postgres(databaseUrl, {
     max: 10,
@@ -28,6 +34,11 @@ export function createDatabaseClient(databaseUrl: string): DatabaseClient {
   };
 }
 
+/**
+ * Verifies that the database connection is reachable.
+ *
+ * @param databaseClient - The database client to test.
+ */
 export async function verifyDatabaseConnection(databaseClient: DatabaseClient): Promise<void> {
   await databaseClient.sql`select version()`;
 }

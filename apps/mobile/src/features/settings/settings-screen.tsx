@@ -43,6 +43,12 @@ interface SettingsScreenProps {
   openAppSettings?: () => Promise<void>;
 }
 
+/**
+ * Renders the settings screen for reminder preferences, onboarding replay, and local data management.
+ *
+ * The screen loads and persists reminder settings, handles notification permission actions, and shows
+ * feedback for reminder, onboarding, and data-clearing operations.
+ */
 export function SettingsScreen({
   loadSettings = loadLocalSettings,
   onClearLocalData = clearLocalDeviceData,
@@ -662,6 +668,14 @@ export function SettingsScreen({
   );
 }
 
+/**
+ * Displays the current notification permission status and, when denied, an action to open app settings.
+ *
+ * @param busy - Whether the status is being refreshed.
+ * @param onOpenSettings - Called when the open-settings action is pressed.
+ * @param status - The current notification permission state.
+ * @param theme - Theme values used for button styling.
+ */
 function PermissionStatusRow({
   busy,
   onOpenSettings,
@@ -715,6 +729,12 @@ function PermissionStatusRow({
   );
 }
 
+/**
+ * Suggests the next reminder time to add.
+ *
+ * @param existingTimes - The reminder times already in use.
+ * @returns The first suggested time that is not present, or the next hour after the last listed time.
+ */
 function getNextSuggestedReminderTime(existingTimes: string[]): string {
   for (const suggestedTime of SUGGESTED_REMINDER_TIMES) {
     if (!existingTimes.includes(suggestedTime)) {

@@ -18,6 +18,12 @@ interface LocalHistoryScreenProps {
   onReturnHome?: () => void;
 }
 
+/**
+ * Renders the local history screen with timeline and calendar views, mood filters, and navigation back home.
+ *
+ * @param initialView - The view shown when the screen opens.
+ * @param onReturnHome - Called when the back button is pressed.
+ */
 export function LocalHistoryScreen({
   initialView = "timeline",
   onReturnHome,
@@ -151,6 +157,16 @@ export function LocalHistoryScreen({
   );
 }
 
+/**
+ * Renders a switch button for the history view.
+ *
+ * @param icon - Icon component displayed next to the label.
+ * @param isActive - Whether the button is selected.
+ * @param label - Text shown on the button and in its accessibility label.
+ * @param onPress - Called when the button is pressed.
+ * @param testID - Test identifier for the button.
+ * @param theme - Current theme values used for button and icon styling.
+ */
 function HistorySwitchButton({
   icon: Icon,
   isActive,

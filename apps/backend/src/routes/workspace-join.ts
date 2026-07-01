@@ -27,6 +27,15 @@ const TeamMembershipRequestSchema = z
   })
   .strict();
 
+/**
+ * Registers the workspace join and team-member routes.
+ *
+ * Sets up the public workspace join endpoint and the device-authenticated team membership endpoint
+ * using the provided services and configuration.
+ *
+ * @param app - The Fastify application instance.
+ * @param options - Route dependencies and configuration.
+ */
 export async function registerWorkspaceJoinRoute(
   app: FastifyInstance,
   options: RegisterWorkspaceJoinRouteOptions,

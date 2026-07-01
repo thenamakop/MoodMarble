@@ -46,6 +46,14 @@ interface BuildAppOptions {
   databaseClient?: import("./db/client").DatabaseClient;
 }
 
+/**
+ * Creates a configured Fastify app with API documentation, CORS, and route registrations.
+ *
+ * Uses in-memory defaults for optional workspace, mood, membership, analytics, and rate-limiting dependencies.
+ *
+ * @param options - Build configuration and optional dependencies.
+ * @returns The configured Fastify instance.
+ */
 export async function buildApp(options: BuildAppOptions): Promise<FastifyInstance> {
   const app = Fastify();
   const workspaceDirectory = options.workspaceDirectory ?? new InMemoryWorkspaceDirectory();

@@ -39,6 +39,12 @@ interface ManagerDashboardScreenProps {
   onSignOut?: () => Promise<void> | void;
 }
 
+/**
+ * Renders the manager dashboard screen with localized header controls and state-specific content.
+ *
+ * The screen shows date and team selectors, a sign-out action, and one of several content states:
+ * guarded access, loading, empty, privacy, or the ready dashboard layout.
+ */
 export function ManagerDashboardScreen({
   selectedDateLabel,
   selectedTeamLabel,
@@ -284,6 +290,13 @@ function DashboardControl({
   );
 }
 
+/**
+ * Renders a placeholder dashboard card with a title and description.
+ *
+ * @param title - The card title.
+ * @param description - The supporting text shown below the title.
+ * @param testID - The test identifier for the card.
+ */
 function DashboardSlotCard({
   title,
   description,

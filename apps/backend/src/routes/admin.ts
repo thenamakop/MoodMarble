@@ -61,9 +61,11 @@ export class ForbiddenError extends Error {
 }
 
 /**
- * Asserts that the admin JWT's workspace scope matches the
- * workspace referenced in the route params. Throws ForbiddenError
- * on mismatch so the caller never forgets the check.
+ * Ensures the admin JWT workspace matches the route workspace.
+ *
+ * @param jwtWorkspaceId - Workspace ID from the admin JWT
+ * @param paramWorkspaceId - Workspace ID from the route parameters
+ * @throws `ForbiddenError` when the workspace IDs do not match
  */
 function assertWorkspaceScope(jwtWorkspaceId: string, paramWorkspaceId: string): void {
   if (jwtWorkspaceId !== paramWorkspaceId) {
@@ -90,6 +92,13 @@ interface RegisterAdminRoutesOptions {
   databaseClient?: DatabaseClient;
 }
 
+/**
+ * Registers the admin routes for workspace and manager-code management.
+ *
+ * This includes the bootstrap workspace creation route, workspace-scoped admin
+ * routes protected by Admin JWTs, and manager invite code routes that require
+ * both workspace scope and a configured database client.
+ */
 export async function registerAdminRoutes(
   app: FastifyInstance,
   options: RegisterAdminRoutesOptions,
@@ -874,6 +883,12 @@ export async function registerAdminRoutes(
   );
 }
 
+/**
+ * Extracts the admin bootstrap secret from the request headers.
+ *
+ * @param request - The incoming Fastify request.
+ * @returns The bootstrap header value when present as a string, or `undefined` otherwise.
+ */
 function getBootstrapHeader(request: FastifyRequest): string | undefined {
   const headerValue = request.headers[ADMIN_BOOTSTRAP_HEADER];
 
@@ -884,6 +899,13 @@ function getBootstrapHeader(request: FastifyRequest): string | undefined {
   return undefined;
 }
 
+/**
+ * Maps admin route errors to HTTP responses.
+ *
+ * @param error - The error raised while handling a request
+ * @param reply - The Fastify reply used to send the response
+ * @param validationMessage - The message to return for validation errors
+ */
 function handleAdminError(error: unknown, reply: FastifyReply, validationMessage: string) {
   if (error instanceof UnauthorizedError) {
     return reply.status(401).send({ message: "Unauthorized" });
@@ -918,6 +940,12 @@ function handleAdminError(error: unknown, reply: FastifyReply, validationMessage
   throw error;
 }
 
+/**
+ * Serializes admin export records as CSV.
+ *
+ * @param records - The export records to include
+ * @returns A CSV string with the export header and rows
+ */
 function serializeAdminExportCsv(records: Array<z.infer<typeof AdminExportRecordSchema>>): string {
   const header = ["team_id", "team_name", "mood_type", "tags", "hour_of_day", "submission_date"];
 
