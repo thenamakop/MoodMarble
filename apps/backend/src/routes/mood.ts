@@ -22,6 +22,13 @@ interface RegisterMoodRouteOptions {
   now?: () => Date;
 }
 
+/**
+ * Registers the device mood submission route.
+ *
+ * Configures a POST `/mood` endpoint that accepts a mood submission, verifies the device JWT,
+ * enforces workspace and team membership checks, applies daily rate limiting, and stores the
+ * submission before returning the created marble identifier.
+ */
 export async function registerMoodRoute(
   app: FastifyInstance,
   options: RegisterMoodRouteOptions,

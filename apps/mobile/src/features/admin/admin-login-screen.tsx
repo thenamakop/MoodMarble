@@ -20,6 +20,12 @@ interface AdminLoginScreenProps {
   onReturnHome?: () => void;
 }
 
+/**
+ * Renders the admin login screen.
+ *
+ * @param onLogin - Called with the trimmed email and password when the form is submitted.
+ * @param onReturnHome - Renders a back button that returns to the home screen.
+ */
 export function AdminLoginScreen({ onLogin, onReturnHome }: AdminLoginScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation();

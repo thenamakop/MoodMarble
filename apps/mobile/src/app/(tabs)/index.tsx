@@ -26,6 +26,13 @@ import { useTheme } from "@/hooks/use-theme";
 import { loadAdminSession } from "@/features/admin/session";
 import { buildAdminRouteParams } from "@/features/admin/route-state";
 
+/**
+ * Restores the anonymous home session and renders the appropriate screen.
+ *
+ * Shows a loading state while the session is being restored, routes to the admin screen when an
+ * admin session is present, replays onboarding when requested, and switches between the marble tray,
+ * local history, and settings screens on native platforms.
+ */
 export default function HomeScreen() {
   const theme = useTheme();
   const router = useRouter();
@@ -228,6 +235,14 @@ export default function HomeScreen() {
   );
 }
 
+/**
+ * Removes anonymous-session query parameters from the current route.
+ *
+ * On web, preserves the current path and hash while replacing the URL in place.
+ * On native platforms, navigates to the root route.
+ *
+ * @param router - The router used for native navigation
+ */
 function scrubUrl(router: ReturnType<typeof useRouter>) {
   if (Platform.OS === "web" && typeof window !== "undefined") {
     const cleanUrl = `${window.location.origin}${window.location.pathname}${window.location.hash}`;
@@ -238,6 +253,12 @@ function scrubUrl(router: ReturnType<typeof useRouter>) {
   router.replace("/");
 }
 
+/**
+ * Normalizes a query parameter value for stable dependency tracking.
+ *
+ * @param value - The parameter value to normalize
+ * @returns A stable key for the value, or `null` when no value is present
+ */
 function getParamDependencyKey(value: string | string[] | undefined): string | null {
   if (typeof value === "string") {
     return `string:${value}`;

@@ -27,6 +27,12 @@ interface RegisterDashboardTagsRouteOptions {
   now?: () => Date;
 }
 
+/**
+ * Registers the manager dashboard tag analytics route.
+ *
+ * @param app - The Fastify application instance.
+ * @param options - Route configuration and service dependencies.
+ */
 export async function registerDashboardTagsRoute(
   app: FastifyInstance,
   options: RegisterDashboardTagsRouteOptions,

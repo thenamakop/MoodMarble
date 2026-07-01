@@ -10,7 +10,11 @@ import { RedisSubmissionRateLimiter } from "./services/submission-rate-limit";
 import { PostgresTeamMembershipStore } from "./services/team-members";
 import { PostgresWorkspaceDirectory } from "./services/workspace-directory";
 
-// Removed debug-point instrumentation
+/**
+ * Starts the application server.
+ *
+ * Initializes database and Redis connections, builds the app, and begins listening on the configured host and port.
+ */
 
 async function startServer(): Promise<void> {
   const env = getAppEnv();

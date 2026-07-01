@@ -1,5 +1,8 @@
 import type { FastifyInstance } from "fastify";
 
+/**
+ * Registers the health check route.
+ */
 export async function registerHealthRoutes(app: FastifyInstance): Promise<void> {
   app.get(
     "/health",

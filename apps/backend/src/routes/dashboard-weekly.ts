@@ -27,6 +27,11 @@ interface RegisterDashboardWeeklyRouteOptions {
   now?: () => Date;
 }
 
+/**
+ * Registers the weekly dashboard route for a team.
+ *
+ * @param options - Route dependencies and configuration.
+ */
 export async function registerDashboardWeeklyRoute(
   app: FastifyInstance,
   options: RegisterDashboardWeeklyRouteOptions,

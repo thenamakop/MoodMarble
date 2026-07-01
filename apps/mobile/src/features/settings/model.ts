@@ -46,6 +46,11 @@ export const LOCAL_DATA_DELETION_TARGETS: LocalDataDeletionTarget[] = [
   "local-reminder-settings",
 ];
 
+/**
+ * Creates the default local settings.
+ *
+ * @returns The default settings object with reminders enabled, default reminder times, and onboarding replay disabled.
+ */
 export function createDefaultLocalSettings(): LocalSettings {
   return {
     version: LOCAL_SETTINGS_VERSION,

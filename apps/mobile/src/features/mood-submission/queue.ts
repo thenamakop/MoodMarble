@@ -27,6 +27,11 @@ export type PendingSubmission = z.infer<typeof PendingSubmissionSchema>;
 
 let webQueueMemoryFallback: string | null = null;
 
+/**
+ * Reads the persisted queue from storage.
+ *
+ * @returns The stored queue string, or `null` if no queue is saved.
+ */
 async function readRawQueue(): Promise<string | null> {
   if (Platform.OS === "web") {
     return webQueueMemoryFallback;
@@ -35,6 +40,13 @@ async function readRawQueue(): Promise<string | null> {
   return SecureStore.getItemAsync(QUEUE_STORAGE_KEY);
 }
 
+/**
+ * Persists the raw queue string.
+ *
+ * Uses an in-memory fallback on web and secure storage on native.
+ *
+ * @param value - The serialized queue data to store
+ */
 async function writeRawQueue(value: string): Promise<void> {
   if (Platform.OS === "web") {
     webQueueMemoryFallback = value;
@@ -44,6 +56,9 @@ async function writeRawQueue(value: string): Promise<void> {
   await SecureStore.setItemAsync(QUEUE_STORAGE_KEY, value);
 }
 
+/**
+ * Deletes the stored queue.
+ */
 async function deleteRawQueue(): Promise<void> {
   if (Platform.OS === "web") {
     webQueueMemoryFallback = null;
@@ -55,7 +70,11 @@ async function deleteRawQueue(): Promise<void> {
 
 // ---------------------------------------------------------------------------
 // Public API
-// ---------------------------------------------------------------------------
+/**
+ * Loads the persisted pending submission queue.
+ *
+ * @returns The stored pending submissions, or an empty array if none exists or the stored data is invalid.
+ */
 
 export async function loadQueue(): Promise<PendingSubmission[]> {
   try {
@@ -77,6 +96,13 @@ export async function loadQueue(): Promise<PendingSubmission[]> {
   }
 }
 
+/**
+ * Saves pending submissions to persistent storage.
+ *
+ * Clears the stored queue when `items` is empty.
+ *
+ * @param items - The pending submissions to store
+ */
 export async function saveQueue(items: PendingSubmission[]): Promise<void> {
   if (items.length === 0) {
     await deleteRawQueue();
@@ -86,6 +112,12 @@ export async function saveQueue(items: PendingSubmission[]): Promise<void> {
   await writeRawQueue(JSON.stringify(items));
 }
 
+/**
+ * Enqueues a mood submission for later retry and keeps the queue within its size limit.
+ *
+ * @param payload - The mood submission to store
+ * @param deviceJwt - The device token to associate with the queued submission
+ */
 export async function enqueueSubmission(payload: MoodSubmission, deviceJwt: string): Promise<void> {
   const current = await loadQueue();
 
@@ -103,6 +135,12 @@ export async function enqueueSubmission(payload: MoodSubmission, deviceJwt: stri
   await saveQueue(next);
 }
 
+/**
+ * Attempts to submit queued mood submissions and updates the stored queue.
+ *
+ * Stops at the first network error and keeps the remaining items in the queue.
+ * Items that fail with other errors are removed from the queue and the drain continues.
+ */
 export async function drainQueue(): Promise<void> {
   const queue = await loadQueue();
 
@@ -134,6 +172,13 @@ export async function drainQueue(): Promise<void> {
   await saveQueue(remaining);
 }
 
+/**
+ * Submits a mood entry immediately, or queues it when the network is unavailable.
+ *
+ * @param payload - The mood submission to send.
+ * @param deviceJwt - The device token used to authenticate the submission.
+ * @throws Re-throws submission errors other than network failures.
+ */
 export async function submitMoodSubmissionWithQueue(
   payload: MoodSubmission,
   deviceJwt: string,
