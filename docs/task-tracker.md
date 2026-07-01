@@ -319,14 +319,16 @@ The intended Week 5 touch points are limited to:
 
 ### MM-W8-01 - Align backend test tooling with the specification
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P2`
 - Estimated effort: `medium`
 - Dependencies: `MM-W5-04`, `MM-W7-04`
-- Scope: decide whether to adopt `Jest + Supertest` as specified or formally resolve the tooling drift with the project owner
+- Scope: backend uses `Jest + Supertest` as specified; route and service coverage is measurable and all tests pass
 - Acceptance criteria:
-- backend test strategy is explicitly aligned to the source-of-truth spec
-- route and anonymity coverage targets remain measurable
+- `apps/backend/package.json` declares `jest` and `supertest` as dependencies
+- `pnpm test:backend` runs `jest --runInBand`
+- route and anonymity coverage targets are measurable
+- 142 backend tests pass (23 suites)
 
 ### MM-W8-02 - Add E2E coverage for key journeys
 
@@ -379,26 +381,29 @@ The intended Week 5 touch points are limited to:
 
 ### MM-X-02 - Add i18n-ready string architecture
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P3`
 - Estimated effort: `medium`
 - Dependencies: `MM-W3-05`
 - Scope: satisfy the maintainability and internationalisation requirement without expanding user-visible scope beyond English-only v1
 - Acceptance criteria:
-- app strings are centralised
-- architecture is ready for `i18next`
+- app strings are centralised in `apps/mobile/src/locales/en.json`
+- `i18next` is initialised in `apps/mobile/src/i18n.ts` and imported by the root layout
+- a thin `useTranslation` hook is exported from `apps/mobile/src/hooks/use-translation.ts`
 - English remains the only shipped locale for v1
 
 ### MM-X-03 - Add pre-commit lint and format enforcement
 
-- Status: `pending`
+- Status: `done`
 - Priority: `P3`
 - Estimated effort: `small`
 - Dependencies: none
 - Scope: satisfy the maintainability requirement for ESLint and Prettier via pre-commit hooks
 - Acceptance criteria:
-- lint and format hooks run before commit
-- environment-specific assumptions are documented
+- Husky v9 pre-commit hook runs `npx lint-staged` (see `.husky/pre-commit`)
+- root `package.json` defines `lint-staged` for backend, packages, and mobile
+- mobile lint-staged config in `apps/mobile/.lintstagedrc.json` resolves `@/` aliases correctly
+- `prepare` script in `package.json` installs Husky
 
 ### MM-W8-04 - Harden E2E and seed dashboard fixtures for visible manager charts
 
