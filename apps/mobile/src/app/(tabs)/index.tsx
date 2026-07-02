@@ -40,10 +40,12 @@ export default function HomeScreen() {
     workspace_id?: string;
     team_id?: string;
     device_jwt?: string;
+    cleared?: string;
   }>();
   const workspaceIdParamKey = getParamDependencyKey(params.workspace_id);
   const teamIdParamKey = getParamDependencyKey(params.team_id);
   const deviceJwtParamKey = getParamDependencyKey(params.device_jwt);
+  const clearedParamKey = getParamDependencyKey(params.cleared);
   const [session, setSession] = useState<AnonymousSession | null>(null);
   const [replaySession, setReplaySession] = useState<AnonymousSession | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
@@ -57,6 +59,12 @@ export default function HomeScreen() {
     const syncVersion = ++sessionSyncVersionRef.current;
 
     async function syncSession() {
+      // Strip ?cleared=1 from the URL immediately so it does not persist or
+      // re-trigger if the user refreshes.
+      if (params.cleared) {
+        scrubUrl(router);
+      }
+
       // Check admin session first
       const adminSession = await loadAdminSession();
       if (adminSession && !cancelled && sessionSyncVersionRef.current === syncVersion) {
@@ -108,7 +116,7 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
+  }, [clearedParamKey, deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
 
   useEffect(() => {
     // Keep persisted reminder schedules aligned after app restarts without

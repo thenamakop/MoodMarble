@@ -103,12 +103,12 @@ describe("SettingsRoute", () => {
     expect(replace).toHaveBeenCalledWith("/");
   });
 
-  it("signs out: clears local device data and returns to the main app", async () => {
+  it("signs out: clears local device data and navigates to / with cleared param to force session re-check", async () => {
     const view = await render(<SettingsRoute />);
 
     fireEvent.press(view.getByTestId("settings-route-sign-out"));
 
     await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
-    expect(replace).toHaveBeenCalledWith("/");
+    expect(replace).toHaveBeenCalledWith({ pathname: "/", params: { cleared: "1" } });
   });
 });

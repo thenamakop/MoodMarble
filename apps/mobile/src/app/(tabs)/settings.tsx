@@ -22,7 +22,7 @@ export default function SettingsRoute() {
       }}
       onSignOut={async () => {
         await clearLocalDeviceData();
-        router.replace("/");
+        router.replace({ pathname: "/", params: { cleared: "1" } });
       }}
     />
   );
