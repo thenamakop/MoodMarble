@@ -56,7 +56,6 @@
       ],
       "expo-secure-store",
       "expo-notifications",
-      "./plugins/withExpoHaptics",
       "./plugins/withDetoxAndroid"
     ],
     "experiments": {
