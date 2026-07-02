@@ -25,16 +25,50 @@ export type PendingSubmission = z.infer<typeof PendingSubmissionSchema>;
 // Storage helpers
 // ---------------------------------------------------------------------------
 
-let webQueueMemoryFallback: string | null = null;
+/**
+ * Returns the localStorage object when running on web, or null.
+ * Falls back to null gracefully if localStorage is unavailable (e.g. private
+ * browsing with storage blocked).
+ */
+function getWebStorage(): Storage | null {
+  if (Platform.OS !== "web" || typeof window === "undefined") {
+    return null;
+  }
+
+  try {
+    const storage = window.localStorage;
+
+    if (
+      storage &&
+      typeof storage.getItem === "function" &&
+      typeof storage.setItem === "function" &&
+      typeof storage.removeItem === "function"
+    ) {
+      return storage;
+    }
+  } catch {
+    // localStorage blocked (private browsing, etc.)
+  }
+
+  return null;
+}
 
 /**
  * Reads the persisted queue from storage.
  *
+ * Uses localStorage on web and SecureStore on native.
+ *
  * @returns The stored queue string, or `null` if no queue is saved.
  */
 async function readRawQueue(): Promise<string | null> {
+  const webStorage = getWebStorage();
+
+  if (webStorage) {
+    return webStorage.getItem(QUEUE_STORAGE_KEY);
+  }
+
   if (Platform.OS === "web") {
-    return webQueueMemoryFallback;
+    return null;
   }
 
   return SecureStore.getItemAsync(QUEUE_STORAGE_KEY);
@@ -43,13 +77,19 @@ async function readRawQueue(): Promise<string | null> {
 /**
  * Persists the raw queue string.
  *
- * Uses an in-memory fallback on web and secure storage on native.
+ * Uses localStorage on web and SecureStore on native.
  *
  * @param value - The serialized queue data to store
  */
 async function writeRawQueue(value: string): Promise<void> {
+  const webStorage = getWebStorage();
+
+  if (webStorage) {
+    webStorage.setItem(QUEUE_STORAGE_KEY, value);
+    return;
+  }
+
   if (Platform.OS === "web") {
-    webQueueMemoryFallback = value;
     return;
   }
 
@@ -60,8 +100,14 @@ async function writeRawQueue(value: string): Promise<void> {
  * Deletes the stored queue.
  */
 async function deleteRawQueue(): Promise<void> {
+  const webStorage = getWebStorage();
+
+  if (webStorage) {
+    webStorage.removeItem(QUEUE_STORAGE_KEY);
+    return;
+  }
+
   if (Platform.OS === "web") {
-    webQueueMemoryFallback = null;
     return;
   }
 
@@ -189,6 +235,10 @@ export async function submitMoodSubmissionWithQueue(
     if (error instanceof TypeError) {
       // Network error — queue for later and return normally so the caller
       // shows the optimistic confirmation overlay.
+      console.warn(
+        "[MoodMarble] Mood submission failed (network error) — queued for retry.",
+        error instanceof Error ? error.message : error,
+      );
       await enqueueSubmission(payload, deviceJwt);
       return;
     }

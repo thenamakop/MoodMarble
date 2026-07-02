@@ -59,8 +59,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "android": "expo start --clear --host localhost --android",
-    "ios": "expo start --clear --host localhost --ios",
+    "android": "expo start --clear --host lan --android",
+    "ios": "expo start --clear --host lan --ios",
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",

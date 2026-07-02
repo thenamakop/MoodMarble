@@ -117,13 +117,39 @@ export default function HomeScreen() {
   }, []);
 
   useEffect(() => {
+    // Native: drain queue when app comes back to foreground.
     const sub = AppState.addEventListener("change", (nextState) => {
       if (nextState === "active") {
         void drainQueue();
       }
     });
 
-    return () => sub.remove();
+    // Web: AppState does not fire reliably. Use the Page Visibility API so
+    // queued submissions are retried when the tab regains focus.
+    function handleVisibilityChange() {
+      if (
+        Platform.OS === "web" &&
+        typeof document !== "undefined" &&
+        document.visibilityState === "visible"
+      ) {
+        void drainQueue();
+      }
+    }
+
+    if (Platform.OS === "web" && typeof document !== "undefined") {
+      document.addEventListener("visibilitychange", handleVisibilityChange);
+      // Also drain immediately on mount so any queue from a previous session
+      // is flushed as soon as the tab is ready.
+      void drainQueue();
+    }
+
+    return () => {
+      sub.remove();
+
+      if (Platform.OS === "web" && typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", handleVisibilityChange);
+      }
+    };
   }, []);
 
   async function refreshNativeHomeState() {
