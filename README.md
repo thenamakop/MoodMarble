@@ -568,9 +568,11 @@ pnpm start
 Open using:
 
 - Expo Go (Android) for onboarding, join, mood submission, history, manager route shell, and local settings UI
-- Expo Go (iOS)
+- Expo Go (iOS) — now unblocked; storage was previously crashing on Expo Go due to `@react-native-async-storage/async-storage@3.x` requiring Nitro Modules (not available in Expo Go). All storage now uses `expo-secure-store`, which is available in Expo Go SDK 54.
 - Android Emulator
-- iOS Simulator
+- iOS Simulator — runs via `pnpm --filter moodmarble run ios` or through Expo Go on the simulator
+
+> **iOS development build / TestFlight**: A proper iOS `.ipa` binary (for TestFlight or App Store distribution) requires an EAS iOS build (`eas build --platform ios`). This has not been run yet. See the Upcoming section below.
 
 ### Reminder Runtime Notes
 
@@ -578,7 +580,8 @@ Open using:
 - Reminder schedules always save locally on the current device.
 - Android Expo Go can open the app and settings screen, but Android reminder scheduling requires a development build.
 - Android development builds can schedule and cancel local reminder notifications.
-- iOS supports local reminder scheduling in supported native runtimes.
+- iOS Expo Go can open the app and settings screen, but iOS reminder scheduling requires a development build or simulator build.
+- iOS development builds (via `eas build --platform ios --profile development`) can schedule and cancel local reminder notifications.
 - Web keeps reminder settings local-only and does not schedule notifications.
 
 ### Android Development Build
@@ -786,6 +789,7 @@ pnpm e2e:android:test:headless
 ### Upcoming
 
 - EAS build configuration and CI/CD pipeline
+- **iOS EAS development build and TestFlight distribution** — `eas build --platform ios` has not been run yet. This was blocked until now because `@react-native-async-storage/async-storage@3.x` used Nitro Modules, which are unavailable in Expo Go and in any development build that has not been rebuilt after the dependency was introduced. That dependency has been removed and all storage migrated to `expo-secure-store` (commit `e29a622`). The iOS build path is now clear to proceed.
 - Rate limiting on `POST /auth/redeem-manager-code` (see `docs/SECURITY.md`)
 - Multiple administrator support
 - Admin "Forgot Password" / password reset flow
