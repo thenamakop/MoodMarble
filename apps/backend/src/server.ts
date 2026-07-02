@@ -18,14 +18,13 @@ import { PostgresWorkspaceDirectory } from "./services/workspace-directory";
  */
 
 async function startServer(): Promise<void> {
+  const env = getAppEnv();
+
   // Sentry must initialise before any other code so it can
   // capture errors that happen during startup (e.g. bad env,
   // failed DB connection, port already in use).
-  // We read DSN directly from process.env at this point because
-  // getAppEnv() hasn't been called yet.
-  initialiseSentry(process.env.SENTRY_DSN);
+  initialiseSentry(env.SENTRY_DSN);
 
-  const env = getAppEnv();
   const databaseClient = createDatabaseClient(env.DATABASE_URL);
   const redis = new Redis(env.REDIS_URL, {
     lazyConnect: true,

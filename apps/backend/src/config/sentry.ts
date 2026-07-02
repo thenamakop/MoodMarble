@@ -1,7 +1,26 @@
+import { createRequire } from "node:module";
+
 import * as Sentry from "@sentry/node";
-import { nodeProfilingIntegration } from "@sentry/profiling-node";
+
+const sentryRequire = createRequire(process.cwd() + "/package.json");
 
 let initialised = false;
+
+function getProfilingIntegration(): unknown | undefined {
+  try {
+    const profiling = sentryRequire("@sentry/profiling-node") as {
+      nodeProfilingIntegration?: () => unknown;
+    };
+
+    return profiling.nodeProfilingIntegration?.();
+  } catch (error) {
+    console.warn(
+      "[Sentry] Profiling integration unavailable; continuing without profiling.",
+      error instanceof Error ? error.message : error,
+    );
+    return undefined;
+  }
+}
 
 export function initialiseSentry(dsn: string | undefined): void {
   if (initialised || !dsn) {
@@ -11,10 +30,17 @@ export function initialiseSentry(dsn: string | undefined): void {
     return;
   }
 
+  const integrations: Array<unknown> = [];
+  const profilingIntegration = getProfilingIntegration();
+
+  if (profilingIntegration) {
+    integrations.push(profilingIntegration);
+  }
+
   Sentry.init({
     dsn,
     environment: process.env.NODE_ENV ?? "production",
-    integrations: [nodeProfilingIntegration()],
+    integrations,
     // Sample 10% of transactions for performance tracing.
     // Set to 0 to disable performance tracing on the free tier.
     tracesSampleRate: 0.1,
