@@ -30,27 +30,26 @@ jest.mock("@/features/settings/settings-screen", () => {
       onClearLocalData,
       onRequestOnboardingReplay,
       onReturnHome,
+      onSignOut,
     }: {
       onClearLocalData?: () => Promise<void> | void;
       onRequestOnboardingReplay?: () => Promise<void> | void;
       onReturnHome?: () => void;
+      onSignOut?: () => Promise<void> | void;
     }) => (
       <View>
         <Text>settings-screen-route</Text>
         <Pressable onPress={onReturnHome} testID="settings-route-return-home">
           <Text>return-home</Text>
         </Pressable>
-        <Pressable
-          onPress={onRequestOnboardingReplay}
-          testID="settings-route-replay"
-        >
+        <Pressable onPress={onRequestOnboardingReplay} testID="settings-route-replay">
           <Text>replay</Text>
         </Pressable>
-        <Pressable
-          onPress={onClearLocalData}
-          testID="settings-route-clear-local-data"
-        >
+        <Pressable onPress={onClearLocalData} testID="settings-route-clear-local-data">
           <Text>clear-local-data</Text>
+        </Pressable>
+        <Pressable onPress={onSignOut} testID="settings-route-sign-out">
+          <Text>sign-out</Text>
         </Pressable>
       </View>
     ),
@@ -91,9 +90,7 @@ describe("SettingsRoute", () => {
 
     fireEvent.press(view.getByTestId("settings-route-replay"));
 
-    await waitFor(() =>
-      expect(requestStoredOnboardingReplay).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(requestStoredOnboardingReplay).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith("/");
   });
 
@@ -101,6 +98,15 @@ describe("SettingsRoute", () => {
     const view = await render(<SettingsRoute />);
 
     fireEvent.press(view.getByTestId("settings-route-clear-local-data"));
+
+    await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
+    expect(replace).toHaveBeenCalledWith("/");
+  });
+
+  it("signs out: clears local device data and returns to the main app", async () => {
+    const view = await render(<SettingsRoute />);
+
+    fireEvent.press(view.getByTestId("settings-route-sign-out"));
 
     await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith("/");

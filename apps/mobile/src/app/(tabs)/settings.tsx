@@ -20,6 +20,10 @@ export default function SettingsRoute() {
       onReturnHome={() => {
         router.replace("/");
       }}
+      onSignOut={async () => {
+        await clearLocalDeviceData();
+        router.replace("/");
+      }}
     />
   );
 }
