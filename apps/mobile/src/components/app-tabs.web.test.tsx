@@ -6,11 +6,7 @@ import AppTabs from "@/components/app-tabs.web";
 const mockPush = jest.fn();
 
 jest.mock("expo-router", () => {
-  const React = require("react");
-  const { View } = require("react-native");
-
   return {
-    Slot: () => <View testID="tab-slot" />,
     usePathname: () => "/manager",
     useRouter: () => ({
       push: mockPush,
@@ -37,10 +33,9 @@ describe("AppTabs web", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the active route slot with marbles, history, and settings navigation buttons", async () => {
-    const { getByTestId, getByText, queryByText } = await render(<AppTabs />);
+  it("renders marbles, history, and settings navigation buttons", async () => {
+    const { getByText, queryByText } = await render(<AppTabs />);
 
-    expect(getByTestId("tab-slot")).toBeTruthy();
     expect(getByText("Marbles")).toBeTruthy();
     expect(getByText("History")).toBeTruthy();
     expect(getByText("Settings")).toBeTruthy();

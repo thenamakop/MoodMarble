@@ -1,4 +1,4 @@
-import { Slot, usePathname, useRouter } from "expo-router";
+import { usePathname, useRouter } from "expo-router";
 import { Pressable, useColorScheme, View, StyleSheet } from "react-native";
 
 import { ThemedText } from "./themed-text";
@@ -6,40 +6,45 @@ import { ThemedView } from "./themed-view";
 
 import { Colors, MaxContentWidth, Spacing } from "@/constants/theme";
 
+/**
+ * Custom web tab bar rendered by the (tabs) Tabs navigator on web.
+ *
+ * Passed as the `tabBar` prop to `<Tabs>` in `(tabs)/_layout.web.tsx`, so it
+ * replaces the default BottomTabBar. The screen content itself is rendered by
+ * the Tabs navigator via its normal slot mechanism — this component only draws
+ * the navigation pill at the top.
+ */
 export default function AppTabs() {
   const router = useRouter();
   const pathname = usePathname();
 
   return (
-    <View style={styles.layout}>
-      <Slot />
-      <CustomTabList>
-        <TabButton
-          isFocused={pathname === "/"}
-          onPress={() => {
-            router.push("/");
-          }}
-        >
-          Marbles
-        </TabButton>
-        <TabButton
-          isFocused={pathname === "/history"}
-          onPress={() => {
-            router.push("/history");
-          }}
-        >
-          History
-        </TabButton>
-        <TabButton
-          isFocused={pathname === "/settings"}
-          onPress={() => {
-            router.push("/settings");
-          }}
-        >
-          Settings
-        </TabButton>
-      </CustomTabList>
-    </View>
+    <CustomTabList>
+      <TabButton
+        isFocused={pathname === "/" || pathname === ""}
+        onPress={() => {
+          router.push("/");
+        }}
+      >
+        Marbles
+      </TabButton>
+      <TabButton
+        isFocused={pathname === "/history"}
+        onPress={() => {
+          router.push("/history");
+        }}
+      >
+        History
+      </TabButton>
+      <TabButton
+        isFocused={pathname === "/settings"}
+        onPress={() => {
+          router.push("/settings");
+        }}
+      >
+        Settings
+      </TabButton>
+    </CustomTabList>
   );
 }
 
