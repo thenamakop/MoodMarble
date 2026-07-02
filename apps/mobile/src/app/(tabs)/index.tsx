@@ -59,9 +59,12 @@ export default function HomeScreen() {
     const syncVersion = ++sessionSyncVersionRef.current;
 
     async function syncSession() {
-      // Strip ?cleared=1 from the URL immediately so it does not persist or
-      // re-trigger if the user refreshes.
-      if (params.cleared) {
+      // Strip ?cleared=1 from the URL on web so it does not persist in the
+      // browser address bar or re-trigger on manual refresh.
+      // On native there is no URL bar to clean — calling scrubUrl() there
+      // would invoke router.replace("/") and restart this effect in a loop,
+      // keeping isLoadingSession true indefinitely.
+      if (params.cleared && Platform.OS === "web") {
         scrubUrl(router);
       }
 
