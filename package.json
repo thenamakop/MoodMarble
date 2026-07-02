@@ -35,7 +35,6 @@
     ]
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^3.1.1",
     "i18next": "^26.3.3",
     "lucide-react-native": "^1.22.0",
     "react-i18next": "^17.0.8",
