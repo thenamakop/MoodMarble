@@ -26,10 +26,12 @@ describe("joinWorkspace", () => {
       delete process.env.EXPO_PUBLIC_API_BASE_URL;
     }
 
+    // NODE_ENV is read-only in @types/node — cast to mutate in tests.
+    const mutableEnv = process.env as Record<string, string | undefined>;
     if (originalNodeEnv) {
-      process.env.NODE_ENV = originalNodeEnv;
+      mutableEnv.NODE_ENV = originalNodeEnv;
     } else {
-      delete process.env.NODE_ENV;
+      delete mutableEnv.NODE_ENV;
     }
   });
 
@@ -158,7 +160,7 @@ describe("joinWorkspace", () => {
   });
 
   it("keeps the stable join message in production when the network request fails", async () => {
-    process.env.NODE_ENV = "production";
+    (process.env as Record<string, string | undefined>).NODE_ENV = "production";
     (globalThis.fetch as jest.Mock).mockRejectedValue(new TypeError("Network request failed"));
 
     await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");

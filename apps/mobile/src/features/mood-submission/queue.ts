@@ -241,7 +241,7 @@ function isTransientNetworkError(error: unknown): boolean {
   // AbortError wraps a DOMException; its name is "AbortError".
   // When fetch is aborted (e.g. our timeout fires), the thrown error is
   // a TypeError whose cause is a DOMException with name "AbortError".
-  const cause = (error as { cause?: unknown }).cause;
+  const { cause } = error as { cause?: unknown };
 
   if (cause instanceof DOMException && cause.name === "AbortError") {
     return false;
