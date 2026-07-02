@@ -7,7 +7,7 @@ import { LocalHistoryScreen } from "@/features/history/history-screen";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
-import { saveAnonymousSession } from "@/features/onboarding/session";
+import { saveAnonymousSession, clearAnonymousSession } from "@/features/onboarding/session";
 import {
   getAnonymousSessionFromParams,
   restoreAnonymousSession,
@@ -40,12 +40,10 @@ export default function HomeScreen() {
     workspace_id?: string;
     team_id?: string;
     device_jwt?: string;
-    cleared?: string;
   }>();
   const workspaceIdParamKey = getParamDependencyKey(params.workspace_id);
   const teamIdParamKey = getParamDependencyKey(params.team_id);
   const deviceJwtParamKey = getParamDependencyKey(params.device_jwt);
-  const clearedParamKey = getParamDependencyKey(params.cleared);
   const [session, setSession] = useState<AnonymousSession | null>(null);
   const [replaySession, setReplaySession] = useState<AnonymousSession | null>(null);
   const [isLoadingSession, setIsLoadingSession] = useState(true);
@@ -59,15 +57,6 @@ export default function HomeScreen() {
     const syncVersion = ++sessionSyncVersionRef.current;
 
     async function syncSession() {
-      // Strip ?cleared=1 from the URL on web so it does not persist in the
-      // browser address bar or re-trigger on manual refresh.
-      // On native there is no URL bar to clean — calling scrubUrl() there
-      // would invoke router.replace("/") and restart this effect in a loop,
-      // keeping isLoadingSession true indefinitely.
-      if (params.cleared && Platform.OS === "web") {
-        scrubUrl(router);
-      }
-
       // Check admin session first
       const adminSession = await loadAdminSession();
       if (adminSession && !cancelled && sessionSyncVersionRef.current === syncVersion) {
@@ -119,7 +108,7 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
-  }, [clearedParamKey, deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
+  }, [deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
 
   useEffect(() => {
     // Keep persisted reminder schedules aligned after app restarts without
@@ -237,9 +226,8 @@ export default function HomeScreen() {
         }}
         onReturnHome={() => setActiveNativeScreen("marbles")}
         onSignOut={async () => {
-          setIsLoadingSession(true);
-          await clearLocalDeviceData();
-          await refreshNativeHomeState();
+          await clearAnonymousSession();
+          router.replace("/");
         }}
       />
     );

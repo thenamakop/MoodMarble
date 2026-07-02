@@ -1,6 +1,7 @@
 import { useRouter } from "expo-router";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
+import { clearAnonymousSession } from "@/features/onboarding/session";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 import { requestStoredOnboardingReplay } from "@/features/settings/storage";
 
@@ -21,8 +22,8 @@ export default function SettingsRoute() {
         router.replace("/");
       }}
       onSignOut={async () => {
-        await clearLocalDeviceData();
-        router.replace({ pathname: "/", params: { cleared: "1" } });
+        await clearAnonymousSession();
+        router.replace("/");
       }}
     />
   );
