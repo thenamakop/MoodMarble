@@ -108,6 +108,11 @@ export default function HomeScreen() {
     return () => {
       cancelled = true;
     };
+    // params itself is intentionally excluded: useLocalSearchParams returns a
+    // new object reference on every render, which would cause the effect to
+    // re-run continuously. The stable *ParamKey strings derived above track
+    // only the specific URL params this effect cares about.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deviceJwtParamKey, router, teamIdParamKey, workspaceIdParamKey]);
 
   useEffect(() => {

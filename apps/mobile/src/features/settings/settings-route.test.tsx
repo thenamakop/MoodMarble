@@ -27,7 +27,11 @@ jest.mock("@/features/settings/storage", () => ({
 }));
 
 jest.mock("@/features/settings/settings-screen", () => {
+  // require() is necessary here: jest.mock factories are hoisted before
+  // import statements, so ES imports are not yet bound at this point.
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable, Text, View } = require("react-native");
 
   return {
