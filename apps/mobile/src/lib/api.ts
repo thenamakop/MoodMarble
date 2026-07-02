@@ -1,7 +1,7 @@
 import * as Device from "expo-device";
 import { Platform } from "react-native";
 
-export const LOCALHOST_API_BASE_URL = "http://localhost:3000";
+export const LOCALHOST_API_BASE_URL = "http://127.0.0.1:3000";
 export const ANDROID_EMULATOR_API_BASE_URL = "http://10.0.2.2:3000";
 
 export function resolveApiBaseUrl(): string {
@@ -23,9 +23,7 @@ export function resolveApiBaseUrl(): string {
     return LOCALHOST_API_BASE_URL;
   }
 
-  throw new Error(
-    "EXPO_PUBLIC_API_BASE_URL must be set when running on a physical device.",
-  );
+  throw new Error("EXPO_PUBLIC_API_BASE_URL must be set when running on a physical device.");
 }
 
 export function createApiUrl(path: string): string {
@@ -41,8 +39,7 @@ export function getApiRequestErrorMessage(
     return stableMessage;
   }
 
-  const details =
-    error instanceof Error ? `${error.name}: ${error.message}` : String(error);
+  const details = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 
   return requestUrl
     ? `${stableMessage} Dev details: ${details} (${requestUrl})`

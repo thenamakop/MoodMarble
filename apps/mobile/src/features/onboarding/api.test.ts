@@ -1,7 +1,4 @@
-import {
-  finalizeAnonymousTeamSelection,
-  joinWorkspace,
-} from "@/features/onboarding/api";
+import { finalizeAnonymousTeamSelection, joinWorkspace } from "@/features/onboarding/api";
 import { getOrCreateDeviceToken } from "@/features/onboarding/device-token";
 
 jest.mock("@/features/onboarding/device-token", () => ({
@@ -17,9 +14,7 @@ describe("joinWorkspace", () => {
   beforeEach(() => {
     globalThis.fetch = jest.fn() as typeof fetch;
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
-    mockedGetOrCreateDeviceToken.mockResolvedValue(
-      "550e8400-e29b-41d4-a716-446655440000",
-    );
+    mockedGetOrCreateDeviceToken.mockResolvedValue("550e8400-e29b-41d4-a716-446655440000");
   });
 
   afterEach(() => {
@@ -71,7 +66,7 @@ describe("joinWorkspace", () => {
     });
 
     expect(globalThis.fetch).toHaveBeenCalledWith(
-      "http://localhost:3000/workspace/join",
+      "http://127.0.0.1:3000/workspace/join",
       expect.objectContaining({
         method: "POST",
         headers: {
@@ -140,9 +135,7 @@ describe("joinWorkspace", () => {
       json: jest.fn().mockResolvedValue({ message: "Join code not found." }),
     });
 
-    await expect(joinWorkspace("ABC123")).rejects.toThrow(
-      "Join code not found.",
-    );
+    await expect(joinWorkspace("ABC123")).rejects.toThrow("Join code not found.");
   });
 
   it("falls back to the stable join message for unsafe backend errors", async () => {
@@ -153,30 +146,22 @@ describe("joinWorkspace", () => {
       }),
     });
 
-    await expect(joinWorkspace("ABC123")).rejects.toThrow(
-      "Unable to join workspace right now.",
-    );
+    await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");
   });
 
   it("falls back to a stable message when the network request itself fails", async () => {
-    (globalThis.fetch as jest.Mock).mockRejectedValue(
-      new TypeError("Network request failed"),
-    );
+    (globalThis.fetch as jest.Mock).mockRejectedValue(new TypeError("Network request failed"));
 
     await expect(joinWorkspace("ABC123")).rejects.toThrow(
-      "Unable to join workspace right now. Dev details: TypeError: Network request failed (http://localhost:3000/workspace/join)",
+      "Unable to join workspace right now. Dev details: TypeError: Network request failed (http://127.0.0.1:3000/workspace/join)",
     );
   });
 
   it("keeps the stable join message in production when the network request fails", async () => {
     process.env.NODE_ENV = "production";
-    (globalThis.fetch as jest.Mock).mockRejectedValue(
-      new TypeError("Network request failed"),
-    );
+    (globalThis.fetch as jest.Mock).mockRejectedValue(new TypeError("Network request failed"));
 
-    await expect(joinWorkspace("ABC123")).rejects.toThrow(
-      "Unable to join workspace right now.",
-    );
+    await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");
   });
 });
 
@@ -203,19 +188,16 @@ describe("finalizeAnonymousTeamSelection", () => {
       finalizeAnonymousTeamSelection("tm_product", "device-jwt-token"),
     ).resolves.toBeUndefined();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith(
-      "http://localhost:3000/workspace/team-member",
-      {
-        method: "POST",
-        headers: {
-          Authorization: "Bearer device-jwt-token",
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          team_id: "tm_product",
-        }),
+    expect(globalThis.fetch).toHaveBeenCalledWith("http://127.0.0.1:3000/workspace/team-member", {
+      method: "POST",
+      headers: {
+        Authorization: "Bearer device-jwt-token",
+        "Content-Type": "application/json",
       },
-    );
+      body: JSON.stringify({
+        team_id: "tm_product",
+      }),
+    });
   });
 
   it("surfaces a stable error when team selection fails", async () => {
@@ -226,8 +208,8 @@ describe("finalizeAnonymousTeamSelection", () => {
       }),
     });
 
-    await expect(
-      finalizeAnonymousTeamSelection("tm_unknown", "device-jwt-token"),
-    ).rejects.toThrow("Invalid team selection payload.");
+    await expect(finalizeAnonymousTeamSelection("tm_unknown", "device-jwt-token")).rejects.toThrow(
+      "Invalid team selection payload.",
+    );
   });
 });

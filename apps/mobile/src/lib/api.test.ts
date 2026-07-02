@@ -40,11 +40,11 @@ describe("resolveApiBaseUrl", () => {
     expect(resolveApiBaseUrl()).toBe("http://192.168.1.40:3000");
   });
 
-  it("defaults to localhost on web", () => {
+  it("defaults to 127.0.0.1 on web", () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
     const { resolveApiBaseUrl } = loadApiModule("web", false);
 
-    expect(resolveApiBaseUrl()).toBe("http://localhost:3000");
+    expect(resolveApiBaseUrl()).toBe("http://127.0.0.1:3000");
   });
 
   it("defaults to 10.0.2.2 on the Android emulator", () => {
@@ -54,11 +54,11 @@ describe("resolveApiBaseUrl", () => {
     expect(resolveApiBaseUrl()).toBe("http://10.0.2.2:3000");
   });
 
-  it("keeps localhost on the iOS simulator", () => {
+  it("defaults to 127.0.0.1 on the iOS simulator", () => {
     delete process.env.EXPO_PUBLIC_API_BASE_URL;
     const { resolveApiBaseUrl } = loadApiModule("ios", false);
 
-    expect(resolveApiBaseUrl()).toBe("http://localhost:3000");
+    expect(resolveApiBaseUrl()).toBe("http://127.0.0.1:3000");
   });
 
   it("requires EXPO_PUBLIC_API_BASE_URL on a physical device", () => {

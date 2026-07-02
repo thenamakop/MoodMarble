@@ -64,7 +64,13 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
     : [];
 
   await app.register(cors, {
-    origin: [/^https?:\/\/localhost:\d+$/u, /^https?:\/\/127\.0\.0\.1:\d+$/u, ...productionOrigin],
+    origin: [
+      /^https?:\/\/localhost:\d+$/u,
+      /^https?:\/\/127\.0\.0\.1:\d+$/u,
+      /^https?:\/\/\[::1\]:\d+$/u,
+      /^https?:\/\/10\.0\.2\.2:\d+$/u,
+      ...productionOrigin,
+    ],
     methods: ["GET", "POST", "PATCH", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization", "x-admin-bootstrap-secret"],
   });

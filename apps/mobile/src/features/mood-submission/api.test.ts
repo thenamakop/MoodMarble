@@ -51,7 +51,7 @@ describe("submitMoodSubmission", () => {
   });
 
   it("falls back to the local backend URL", () => {
-    expect(createApiUrl("/mood")).toBe("http://localhost:3000/mood");
+    expect(createApiUrl("/mood")).toBe("http://127.0.0.1:3000/mood");
   });
 
   it("throws a stable error for failed requests", async () => {
@@ -78,9 +78,7 @@ describe("submitMoodSubmission", () => {
   it("surfaces the backend rate-limit message when provided", async () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,
-      json: jest
-        .fn()
-        .mockResolvedValue({ message: "Daily mood submission limit reached." }),
+      json: jest.fn().mockResolvedValue({ message: "Daily mood submission limit reached." }),
     });
 
     await expect(
@@ -102,8 +100,7 @@ describe("submitMoodSubmission", () => {
     (globalThis.fetch as jest.Mock).mockResolvedValue({
       ok: false,
       json: jest.fn().mockResolvedValue({
-        message:
-          "Submission rejected for device 550e8400-e29b-41d4-a716-446655440000.",
+        message: "Submission rejected for device 550e8400-e29b-41d4-a716-446655440000.",
       }),
     });
 
