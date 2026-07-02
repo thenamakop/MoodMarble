@@ -1,6 +1,8 @@
 import { render } from "@testing-library/react-native";
 import { View } from "react-native";
 
+import AppTabs from "@/components/app-tabs.web";
+
 const mockPush = jest.fn();
 
 jest.mock("expo-router", () => {
@@ -30,19 +32,29 @@ jest.mock("@/components/themed-view", () => ({
   },
 }));
 
-import AppTabs from "@/components/app-tabs.web";
-
 describe("AppTabs web", () => {
   afterEach(() => {
     jest.clearAllMocks();
   });
 
-  it("renders the active route slot with a single visible marbles navigation button", async () => {
+  it("renders the active route slot with marbles, history, and settings navigation buttons", async () => {
     const { getByTestId, getByText, queryByText } = await render(<AppTabs />);
 
     expect(getByTestId("tab-slot")).toBeTruthy();
     expect(getByText("Marbles")).toBeTruthy();
-    expect(queryByText("History")).toBeNull();
+    expect(getByText("History")).toBeTruthy();
+    expect(getByText("Settings")).toBeTruthy();
+    // Admin and manager routes are not tab bar items
     expect(queryByText("Manager")).toBeNull();
+  });
+
+  it("navigates to history when the history button is pressed", async () => {
+    const { getByText } = await render(<AppTabs />);
+    getByText("History").props.onClick?.();
+  });
+
+  it("navigates to settings when the settings button is pressed", async () => {
+    const { getByText } = await render(<AppTabs />);
+    getByText("Settings").props.onClick?.();
   });
 });

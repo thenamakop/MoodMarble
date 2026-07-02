@@ -22,6 +22,22 @@ export default function AppTabs() {
         >
           Marbles
         </TabButton>
+        <TabButton
+          isFocused={pathname === "/history"}
+          onPress={() => {
+            router.push("/history");
+          }}
+        >
+          History
+        </TabButton>
+        <TabButton
+          isFocused={pathname === "/settings"}
+          onPress={() => {
+            router.push("/settings");
+          }}
+        >
+          Settings
+        </TabButton>
       </CustomTabList>
     </View>
   );
@@ -40,19 +56,13 @@ export function TabButton({
     <Pressable
       accessibilityRole="link"
       onPress={onPress}
-      style={({ pressed }) => [
-        styles.tabButtonPressable,
-        pressed && styles.pressed,
-      ]}
+      style={({ pressed }) => [styles.tabButtonPressable, pressed && styles.pressed]}
     >
       <ThemedView
         type={isFocused ? "backgroundSelected" : "backgroundElement"}
         style={styles.tabButtonView}
       >
-        <ThemedText
-          type="small"
-          themeColor={isFocused ? "text" : "textSecondary"}
-        >
+        <ThemedText type="small" themeColor={isFocused ? "text" : "textSecondary"}>
           {children}
         </ThemedText>
       </ThemedView>

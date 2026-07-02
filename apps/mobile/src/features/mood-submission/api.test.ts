@@ -119,6 +119,28 @@ describe("submitMoodSubmission", () => {
     ).rejects.toThrow("Unable to submit mood right now.");
   });
 
+  it("throws when the request is aborted by the timeout", async () => {
+    // DOMException.name is a read-only getter — construct directly via the
+    // two-arg constructor which sets name = "AbortError" natively.
+    (globalThis.fetch as jest.Mock).mockRejectedValue(
+      new DOMException("The operation was aborted.", "AbortError"),
+    );
+
+    await expect(
+      submitMoodSubmission(
+        {
+          workspace_id: "ws_test",
+          team_id: "tm_test",
+          mood_type: "calm",
+          tags: [],
+          hour_of_day: 10,
+          submission_date: "2026-06-16",
+        },
+        "device-jwt-token",
+      ),
+    ).rejects.toThrow("The operation was aborted.");
+  });
+
   it("fails fast when the anonymous session jwt is missing", async () => {
     await expect(
       submitMoodSubmission(
