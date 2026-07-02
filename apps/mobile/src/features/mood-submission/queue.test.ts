@@ -133,15 +133,42 @@ describe("drainQueue", () => {
 });
 
 describe("submitMoodSubmissionWithQueue", () => {
-  it("resolves normally on network error (optimistic UX)", async () => {
+  it("resolves with queued:false when the backend accepts the submission", async () => {
+    mockSubmit.mockResolvedValue(undefined);
+
+    const result = await submitMoodSubmissionWithQueue(PAYLOAD, JWT);
+
+    expect(result).toEqual({ queued: false });
+    expect(await loadQueue()).toHaveLength(0);
+  });
+
+  it("resolves with queued:true on a transient network error (offline/no connectivity)", async () => {
     mockSubmit.mockRejectedValueOnce(new TypeError("Network request failed"));
 
-    await expect(submitMoodSubmissionWithQueue(PAYLOAD, JWT)).resolves.toBeUndefined();
+    const result = await submitMoodSubmissionWithQueue(PAYLOAD, JWT);
 
-    // Item should have been enqueued.
+    expect(result).toEqual({ queued: true });
+
+    // Item should have been enqueued for later retry.
     const queue = await loadQueue();
     expect(queue).toHaveLength(1);
     expect(queue[0].payload).toEqual(PAYLOAD);
+  });
+
+  it("rethrows on timeout (AbortError) — does not silently queue on wrong URL/host", async () => {
+    // An AbortError means our timeout fired — the server was unreachable
+    // for too long. This is a config/connectivity problem, not a transient
+    // offline state. Rethrow so the caller shows an error instead of claiming
+    // the submission will be retried later.
+    const abortError = new DOMException("The operation was aborted.", "AbortError");
+    const wrappedTypeError = new TypeError("fetch failed");
+    Object.defineProperty(wrappedTypeError, "cause", { value: abortError });
+    mockSubmit.mockRejectedValueOnce(wrappedTypeError);
+
+    await expect(submitMoodSubmissionWithQueue(PAYLOAD, JWT)).rejects.toThrow("fetch failed");
+
+    // Nothing should have been queued.
+    expect(await loadQueue()).toHaveLength(0);
   });
 
   it("rethrows on daily limit error", async () => {

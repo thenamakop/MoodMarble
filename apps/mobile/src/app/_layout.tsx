@@ -1,5 +1,6 @@
 import "@/i18n";
 import { initialiseSentry } from "@/config/sentry";
+import { logResolvedApiBaseUrl } from "@/lib/api";
 import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
 import { useColorScheme } from "react-native";
@@ -7,6 +8,7 @@ import { useColorScheme } from "react-native";
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { useNotificationHandler } from "@/features/notifications/handler";
 initialiseSentry();
+logResolvedApiBaseUrl();
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();

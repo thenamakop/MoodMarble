@@ -13,21 +13,18 @@ const ANIMATIONS_ENABLED = process.env.NODE_ENV !== "test";
 interface SubmissionConfirmationProps {
   mood: MoodValue | null;
   onDismiss: () => void;
+  /** When true, the submission was saved locally and will retry when the backend is reachable. */
+  queued?: boolean;
 }
 
 export function SubmissionConfirmation({
   mood,
   onDismiss,
+  queued = false,
 }: SubmissionConfirmationProps) {
-  const [dropTranslateY] = useState(
-    () => new Animated.Value(ANIMATIONS_ENABLED ? -120 : 0),
-  );
-  const [dropScale] = useState(
-    () => new Animated.Value(ANIMATIONS_ENABLED ? 0.75 : 1),
-  );
-  const [fadeOpacity] = useState(
-    () => new Animated.Value(ANIMATIONS_ENABLED ? 0 : 1),
-  );
+  const [dropTranslateY] = useState(() => new Animated.Value(ANIMATIONS_ENABLED ? -120 : 0));
+  const [dropScale] = useState(() => new Animated.Value(ANIMATIONS_ENABLED ? 0.75 : 1));
+  const [fadeOpacity] = useState(() => new Animated.Value(ANIMATIONS_ENABLED ? 0 : 1));
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -133,16 +130,15 @@ export function SubmissionConfirmation({
         ]}
       >
         <ThemedView type="backgroundElement" style={styles.card}>
-          <View
-            style={[styles.marble, { backgroundColor: MOOD_COLORS[mood] }]}
-          />
+          <View style={[styles.marble, { backgroundColor: MOOD_COLORS[mood] }]} />
 
           <ThemedText type="subtitle" style={styles.title}>
-            Marble shared anonymously.
+            {queued ? "Saved locally." : "Marble shared anonymously."}
           </ThemedText>
           <ThemedText style={styles.message} themeColor="textSecondary">
-            {MOOD_LABELS[mood]} has been dropped into the tray. Thank you for
-            checking in.
+            {queued
+              ? `${MOOD_LABELS[mood]} was saved on your device and will be shared when the backend is reachable.`
+              : `${MOOD_LABELS[mood]} has been dropped into the tray. Thank you for checking in.`}
           </ThemedText>
           <ThemedText type="small" themeColor="textSecondary">
             Tap anywhere to close

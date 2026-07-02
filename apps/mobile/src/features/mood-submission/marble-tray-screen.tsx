@@ -45,7 +45,7 @@ interface MarbleTrayScreenProps {
   deviceJwt?: string;
   onOpenHistory?: () => void;
   onOpenSettings?: () => void;
-  onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<void>;
+  onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<{ queued: boolean }>;
   getCurrentHour?: () => number;
   getCurrentSubmissionDate?: () => string;
 }
@@ -75,6 +75,7 @@ export function MarbleTrayScreen({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmationMood, setConfirmationMood] = useState<MoodValue | null>(null);
+  const [lastSubmissionQueued, setLastSubmissionQueued] = useState(false);
 
   const hasSubmissionContext = Boolean(workspaceId && teamId && deviceJwt);
   const canSubmit = Boolean(selectedMood) && hasSubmissionContext && !isSubmitting;
@@ -152,7 +153,8 @@ export function MarbleTrayScreen({
         submission_date: getCurrentSubmissionDate(),
       });
 
-      await onSubmitMood(payload, deviceJwt);
+      const result = await onSubmitMood(payload, deviceJwt);
+      const queued = result?.queued ?? false;
       try {
         await appendLocalMoodHistoryRecord(
           createLocalMoodHistoryRecord(extractLocalMoodHistoryRecordInput(payload)),
@@ -164,6 +166,7 @@ export function MarbleTrayScreen({
       setSelectedMood(null);
       setSelectedTags([]);
       setNote("");
+      setLastSubmissionQueued(queued);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setConfirmationMood(submittedMood);
     } catch (error) {
@@ -179,7 +182,11 @@ export function MarbleTrayScreen({
 
   return (
     <ThemedView style={styles.screen}>
-      <SubmissionConfirmation mood={confirmationMood} onDismiss={handleDismissConfirmation} />
+      <SubmissionConfirmation
+        mood={confirmationMood}
+        onDismiss={handleDismissConfirmation}
+        queued={lastSubmissionQueued}
+      />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}

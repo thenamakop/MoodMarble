@@ -225,26 +225,58 @@ export async function drainQueue(): Promise<void> {
  * @param deviceJwt - The device token used to authenticate the submission.
  * @throws Re-throws submission errors other than network failures.
  */
+/**
+ * Returns true for errors that indicate a transient network problem where
+ * retrying later makes sense (e.g. no connectivity, server unreachable).
+ *
+ * Abort errors (timeout, wrong host) are NOT treated as queueable — they
+ * indicate a configuration problem that won't resolve by itself, and silently
+ * queuing them would hide the real failure from the user.
+ */
+function isTransientNetworkError(error: unknown): boolean {
+  if (!(error instanceof TypeError)) {
+    return false;
+  }
+
+  // AbortError wraps a DOMException; its name is "AbortError".
+  // When fetch is aborted (e.g. our timeout fires), the thrown error is
+  // a TypeError whose cause is a DOMException with name "AbortError".
+  const cause = (error as { cause?: unknown }).cause;
+
+  if (cause instanceof DOMException && cause.name === "AbortError") {
+    return false;
+  }
+
+  // Also check the error itself in environments where AbortError surfaces
+  // directly as a DOMException rather than as the TypeError's cause.
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return false;
+  }
+
+  return true;
+}
+
 export async function submitMoodSubmissionWithQueue(
   payload: MoodSubmission,
   deviceJwt: string,
-): Promise<void> {
+): Promise<{ queued: boolean }> {
   try {
     await submitMoodSubmission(payload, deviceJwt);
+    return { queued: false };
   } catch (error) {
-    if (error instanceof TypeError) {
-      // Network error — queue for later and return normally so the caller
-      // shows the optimistic confirmation overlay.
+    if (isTransientNetworkError(error)) {
+      // Genuine network error (no connectivity, DNS failure, etc.) — queue
+      // for later retry and let the caller show a "queued" state.
       console.warn(
         "[MoodMarble] Mood submission failed (network error) — queued for retry.",
         error instanceof Error ? error.message : error,
       );
       await enqueueSubmission(payload, deviceJwt);
-      return;
+      return { queued: true };
     }
 
-    // Daily limit, auth error, 4xx, etc. — rethrow so the screen displays
-    // the appropriate error message.
+    // Timeout (abort), daily limit, auth error, 4xx, etc. — rethrow so the
+    // caller can surface the correct error message.
     throw error;
   }
 }

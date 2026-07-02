@@ -163,6 +163,34 @@ describe("joinWorkspace", () => {
 
     await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");
   });
+
+  it("surfaces a clear error when the request is aborted by the timeout", async () => {
+    (globalThis.fetch as jest.Mock).mockRejectedValue(
+      new DOMException("The operation was aborted.", "AbortError"),
+    );
+
+    await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");
+  });
+
+  it("includes a signal in the fetch call for timeout support", async () => {
+    (globalThis.fetch as jest.Mock).mockResolvedValue({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        workspace: { id: "ws_test", name: "MoodMarble Workspace" },
+        teams: [{ id: "tm_product", name: "Product" }],
+        device_jwt: "device-jwt-token",
+      }),
+    });
+
+    await joinWorkspace("ABC123");
+
+    const [, fetchOptions] = (globalThis.fetch as jest.Mock).mock.calls[0] as [
+      string,
+      { signal?: AbortSignal },
+    ];
+    expect(fetchOptions.signal).toBeDefined();
+    expect(fetchOptions.signal).toBeInstanceOf(AbortSignal);
+  });
 });
 
 describe("finalizeAnonymousTeamSelection", () => {
@@ -188,16 +216,19 @@ describe("finalizeAnonymousTeamSelection", () => {
       finalizeAnonymousTeamSelection("tm_product", "device-jwt-token"),
     ).resolves.toBeUndefined();
 
-    expect(globalThis.fetch).toHaveBeenCalledWith("http://127.0.0.1:3000/workspace/team-member", {
-      method: "POST",
-      headers: {
-        Authorization: "Bearer device-jwt-token",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        team_id: "tm_product",
+    expect(globalThis.fetch).toHaveBeenCalledWith(
+      "http://127.0.0.1:3000/workspace/team-member",
+      expect.objectContaining({
+        method: "POST",
+        headers: {
+          Authorization: "Bearer device-jwt-token",
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          team_id: "tm_product",
+        }),
       }),
-    });
+    );
   });
 
   it("surfaces a stable error when team selection fails", async () => {

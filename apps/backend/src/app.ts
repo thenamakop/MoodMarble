@@ -65,10 +65,17 @@ export async function buildApp(options: BuildAppOptions): Promise<FastifyInstanc
 
   await app.register(cors, {
     origin: [
+      // Loopback — web dev and iOS simulator
       /^https?:\/\/localhost:\d+$/u,
       /^https?:\/\/127\.0\.0\.1:\d+$/u,
       /^https?:\/\/\[::1\]:\d+$/u,
+      // Android emulator host alias
       /^https?:\/\/10\.0\.2\.2:\d+$/u,
+      // Private LAN ranges — physical device connected to the same network
+      // (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+      /^https?:\/\/192\.168\.\d{1,3}\.\d{1,3}:\d+$/u,
+      /^https?:\/\/10\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$/u,
+      /^https?:\/\/172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}:\d+$/u,
       ...productionOrigin,
     ],
     methods: ["GET", "POST", "PATCH", "OPTIONS"],
