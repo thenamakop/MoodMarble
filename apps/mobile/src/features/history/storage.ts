@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 import { z } from "zod";
 
@@ -80,7 +80,7 @@ export async function saveLocalMoodHistory(
   }
 
   try {
-    await AsyncStorage.setItem(HISTORY_STORAGE_KEY, serializedHistory);
+    await SecureStore.setItemAsync(HISTORY_STORAGE_KEY, serializedHistory);
   } catch (error) {
     console.error("[MoodMarble] Failed to write mood history:", error);
   }
@@ -131,7 +131,7 @@ export async function clearLocalMoodHistory(): Promise<void> {
     return;
   }
 
-  await AsyncStorage.removeItem(HISTORY_STORAGE_KEY);
+  await SecureStore.deleteItemAsync(HISTORY_STORAGE_KEY);
 }
 
 /**
@@ -154,7 +154,7 @@ async function readStoredHistory(): Promise<string | null> {
     return webHistoryMemoryFallback;
   }
 
-  return AsyncStorage.getItem(HISTORY_STORAGE_KEY);
+  return SecureStore.getItemAsync(HISTORY_STORAGE_KEY);
 }
 
 /**

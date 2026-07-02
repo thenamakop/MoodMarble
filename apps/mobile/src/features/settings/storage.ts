@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 import { Platform } from "react-native";
 
 import {
@@ -70,7 +70,7 @@ export async function saveLocalSettings(settings: LocalSettings): Promise<LocalS
     return normalizedSettings;
   }
 
-  await AsyncStorage.setItem(LOCAL_SETTINGS_STORAGE_KEY, serializedSettings);
+  await SecureStore.setItemAsync(LOCAL_SETTINGS_STORAGE_KEY, serializedSettings);
   return normalizedSettings;
 }
 
@@ -112,7 +112,7 @@ export async function clearLocalSettings(): Promise<void> {
     return;
   }
 
-  await AsyncStorage.removeItem(LOCAL_SETTINGS_STORAGE_KEY);
+  await SecureStore.deleteItemAsync(LOCAL_SETTINGS_STORAGE_KEY);
 }
 
 /**
@@ -135,7 +135,7 @@ async function readStoredLocalSettings(): Promise<string | null> {
     return webLocalSettingsMemoryFallback;
   }
 
-  return AsyncStorage.getItem(LOCAL_SETTINGS_STORAGE_KEY);
+  return SecureStore.getItemAsync(LOCAL_SETTINGS_STORAGE_KEY);
 }
 
 /**
