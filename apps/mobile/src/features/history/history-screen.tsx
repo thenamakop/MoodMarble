@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useRouter } from "expo-router";
-import { Calendar, Clock } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Calendar, Clock, ChevronDown } from "lucide-react-native";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -32,6 +32,12 @@ export function LocalHistoryScreen({
   const theme = useTheme();
   const [activeView, setActiveView] = useState<HistoryView>(initialView);
   const [selectedMoodFilter, setSelectedMoodFilter] = useState<MoodValue | null>(null);
+  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
+
+  const handleFilterSelect = useCallback((filter: MoodValue | null) => {
+    setSelectedMoodFilter(filter);
+    setIsFilterDropdownOpen(false);
+  }, []);
 
   const handleReturnHome = useCallback(() => {
     if (onReturnHome) {
@@ -92,60 +98,112 @@ export function LocalHistoryScreen({
           </View>
         </View>
 
-        <View style={styles.filterRow} testID="mood-filter-row">
+        <View style={styles.filterDropdownRow}>
           <Pressable
-            accessibilityLabel="Show all moods"
+            accessibilityLabel="Open mood filter"
             accessibilityRole="button"
-            accessibilityState={{ selected: selectedMoodFilter === null }}
-            onPress={() => setSelectedMoodFilter(null)}
+            onPress={() => setIsFilterDropdownOpen(true)}
             style={({ pressed }) => [
-              styles.filterChip,
+              styles.filterDropdownButton,
               {
-                backgroundColor:
-                  selectedMoodFilter === null ? theme.backgroundSelected : theme.backgroundElement,
-                borderColor: selectedMoodFilter === null ? theme.text : theme.backgroundSelected,
+                backgroundColor: theme.backgroundElement,
+                borderColor: theme.backgroundSelected,
                 opacity: pressed ? 0.85 : 1,
               },
             ]}
-            testID="mood-filter-all"
+            testID="mood-filter-dropdown-button"
           >
-            <ThemedText type="small" style={styles.filterChipText}>
-              All
-            </ThemedText>
+            <View style={styles.filterDropdownButtonContent}>
+              <ThemedText type="smallBold">
+                {selectedMoodFilter ? MOOD_LABELS[selectedMoodFilter] : "All moods"}
+              </ThemedText>
+              <ChevronDown size={16} color={theme.text} />
+            </View>
           </Pressable>
 
-          {MOODS.map((mood) => {
-            const isSelected = selectedMoodFilter === mood;
+          {selectedMoodFilter ? (
+            <Pressable
+              accessibilityLabel="Clear mood filter"
+              accessibilityRole="button"
+              onPress={() => setSelectedMoodFilter(null)}
+              style={({ pressed }) => [
+                styles.filterClearButton,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.backgroundSelected,
+                  opacity: pressed ? 0.85 : 1,
+                },
+              ]}
+              testID="mood-filter-clear"
+            >
+              <ThemedText type="small">Clear</ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
 
-            return (
+        <Modal
+          animationType="fade"
+          transparent
+          visible={isFilterDropdownOpen}
+          onRequestClose={() => setIsFilterDropdownOpen(false)}
+        >
+          <View style={styles.modalContainer}>
+            <Pressable
+              style={styles.dropdownBackdrop}
+              onPress={() => setIsFilterDropdownOpen(false)}
+            />
+
+            <View
+              style={[
+                styles.dropdownPanel,
+                { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected },
+              ]}
+            >
               <Pressable
-                key={mood}
-                accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
+                accessibilityLabel="Show all moods"
                 accessibilityRole="button"
-                accessibilityState={{ selected: isSelected }}
-                onPress={() => setSelectedMoodFilter(isSelected ? null : mood)}
+                onPress={() => handleFilterSelect(null)}
                 style={({ pressed }) => [
-                  styles.filterChip,
+                  styles.dropdownItem,
                   {
-                    backgroundColor: isSelected
-                      ? theme.backgroundSelected
-                      : theme.backgroundElement,
-                    borderColor: isSelected ? MOOD_COLORS[mood] : theme.backgroundSelected,
+                    backgroundColor:
+                      selectedMoodFilter === null ? theme.backgroundSelected : "transparent",
                     opacity: pressed ? 0.85 : 1,
                   },
                 ]}
-                testID={`mood-filter-${mood}`}
+                testID="mood-filter-all"
               >
-                <View style={styles.filterChipContent}>
-                  <View style={[styles.filterChipDot, { backgroundColor: MOOD_COLORS[mood] }]} />
-                  <ThemedText type="small" style={styles.filterChipText}>
-                    {MOOD_LABELS[mood]}
-                  </ThemedText>
-                </View>
+                <ThemedText type="smallBold">All moods</ThemedText>
               </Pressable>
-            );
-          })}
-        </View>
+
+              {MOODS.map((mood) => {
+                const isSelected = selectedMoodFilter === mood;
+
+                return (
+                  <Pressable
+                    key={mood}
+                    accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
+                    accessibilityRole="button"
+                    onPress={() => handleFilterSelect(mood)}
+                    style={({ pressed }) => [
+                      styles.dropdownItem,
+                      {
+                        backgroundColor: isSelected ? theme.backgroundSelected : "transparent",
+                        opacity: pressed ? 0.85 : 1,
+                      },
+                    ]}
+                    testID={`mood-filter-${mood}`}
+                  >
+                    <View style={styles.dropdownItemContent}>
+                      <View style={[styles.dropdownDot, { backgroundColor: MOOD_COLORS[mood] }]} />
+                      <ThemedText type="smallBold">{MOOD_LABELS[mood]}</ThemedText>
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </View>
+        </Modal>
 
         <View style={styles.content} testID={`history-panel-${activeView}`}>
           {activeView === "timeline" ? (
@@ -265,34 +323,64 @@ const styles = StyleSheet.create({
     // Intentionally no flex: the nested timeline/calendar provide their own height
     // so the parent ScrollView can scroll the whole page as one unit.
   },
-  filterRow: {
+  filterDropdownRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     alignItems: "center",
-    gap: Spacing.half,
+    gap: Spacing.two,
     paddingHorizontal: Spacing.four,
   },
-  filterChip: {
+  filterDropdownButton: {
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderRadius: 999,
-    height: 22,
-    paddingHorizontal: Spacing.half,
-    paddingVertical: 0,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+  },
+  filterDropdownButtonContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one,
+  },
+  filterClearButton: {
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+  },
+  modalContainer: {
+    flex: 1,
     justifyContent: "center",
     alignItems: "center",
   },
-  filterChipContent: {
+  dropdownBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  dropdownPanel: {
+    borderWidth: 1,
+    borderRadius: Spacing.three,
+    padding: Spacing.two,
+    gap: Spacing.half,
+    minWidth: 200,
+    maxWidth: 320,
+    maxHeight: "80%",
+  },
+  dropdownItem: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.half,
+    borderRadius: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
-  filterChipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
+  dropdownItemContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.one,
   },
-  filterChipText: {
-    fontSize: 12,
-    lineHeight: 14,
+  dropdownDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });
