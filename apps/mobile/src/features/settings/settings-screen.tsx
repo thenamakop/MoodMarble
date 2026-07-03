@@ -362,7 +362,17 @@ export function SettingsScreen({
                 accessibilityLabel={t("settings.signOutLabel")}
                 accessibilityRole="button"
                 onPress={async () => {
-                  await onSignOut?.();
+                  setErrorMessage(null);
+                  setStatusMessage(null);
+
+                  try {
+                    await onSignOut?.();
+                  } catch (error) {
+                    setStatusMessage(null);
+                    setErrorMessage(
+                      error instanceof Error ? error.message : t("settings.errorMessages.signOut"),
+                    );
+                  }
                 }}
                 style={({ pressed }) => [
                   styles.backButton,

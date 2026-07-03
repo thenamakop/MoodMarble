@@ -76,7 +76,8 @@
       "openDeviceSettings": "Unable to open device settings.",
       "saveReminderTimes": "Unable to save reminder times right now.",
       "onboardingReplay": "Unable to prepare onboarding replay right now.",
-      "clearLocalData": "Unable to clear local data right now."
+      "clearLocalData": "Unable to clear local data right now.",
+      "signOut": "Unable to sign out right now."
     }
   },
   "onboarding": {

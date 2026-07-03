@@ -1,16 +1,11 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import SettingsRoute from "@/app/(tabs)/settings";
-import { clearAnonymousSession } from "@/features/onboarding/session";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 import { requestStoredOnboardingReplay } from "@/features/settings/storage";
 
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(),
-}));
-
-jest.mock("@/features/onboarding/session", () => ({
-  clearAnonymousSession: jest.fn(async () => undefined),
 }));
 
 jest.mock("@/features/settings/local-data", () => ({
@@ -112,12 +107,25 @@ describe("SettingsRoute", () => {
     expect(replace).toHaveBeenCalledWith("/");
   });
 
-  it("signs out: clears the anonymous session and returns to the main app", async () => {
+  it("signs out: clears local device data and returns to the main app", async () => {
     const view = await render(<SettingsRoute />);
 
     fireEvent.press(view.getByTestId("settings-route-sign-out"));
 
-    await waitFor(() => expect(clearAnonymousSession).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith("/");
+  });
+
+  it("navigates away from settings even when sign-out cleanup fails", async () => {
+    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
+    (clearLocalDeviceData as jest.Mock).mockRejectedValueOnce(new Error("Cleanup failed"));
+
+    const view = await render(<SettingsRoute />);
+
+    fireEvent.press(view.getByTestId("settings-route-sign-out"));
+
+    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
+    expect(clearLocalDeviceData).toHaveBeenCalledTimes(1);
+    consoleWarn.mockRestore();
   });
 });

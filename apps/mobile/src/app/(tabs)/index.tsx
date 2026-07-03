@@ -221,8 +221,15 @@ export default function HomeScreen() {
       <SettingsScreen
         onClearLocalData={async () => {
           setIsLoadingSession(true);
-          await clearLocalDeviceData();
-          await refreshNativeHomeState();
+          try {
+            await clearLocalDeviceData();
+            await refreshNativeHomeState();
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`[MoodMarble] Failed to clear local data: ${message}`);
+          } finally {
+            setIsLoadingSession(false);
+          }
         }}
         onRequestOnboardingReplay={async () => {
           setIsLoadingSession(true);
@@ -243,19 +250,32 @@ export default function HomeScreen() {
         }}
         onReturnHome={() => setActiveNativeScreen("marbles")}
         onSignOut={async () => {
-          await clearLocalDeviceData();
-          // Navigate to "/" with empty params to scrub the old
-          // workspace/team/jwt params from the router state.
-          // This prevents restoreAnonymousSession() from re-hydrating
-          // the session from stale URL params on the new mount.
-          router.replace({
-            pathname: "/",
-            params: {
-              workspace_id: "",
-              team_id: "",
-              device_jwt: "",
-            },
-          });
+          setIsLoadingSession(true);
+          try {
+            await clearLocalDeviceData();
+            // Hard-reset the session state so the current screen cannot render
+            // the marble tray while the navigation is in flight.
+            sessionSyncVersionRef.current += 1;
+            setSession(null);
+            setReplaySession(null);
+            // Navigate to "/" with empty params to scrub the old
+            // workspace/team/jwt params from the router state.
+            // This prevents restoreAnonymousSession() from re-hydrating
+            // the session from stale URL params on the new mount.
+            router.replace({
+              pathname: "/",
+              params: {
+                workspace_id: "",
+                team_id: "",
+                device_jwt: "",
+              },
+            });
+          } catch (error) {
+            const message = error instanceof Error ? error.message : String(error);
+            console.warn(`[MoodMarble] Failed to sign out: ${message}`);
+          } finally {
+            setIsLoadingSession(false);
+          }
         }}
       />
     );

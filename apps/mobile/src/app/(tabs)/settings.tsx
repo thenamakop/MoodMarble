@@ -1,7 +1,6 @@
 import { useRouter } from "expo-router";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
-import { clearAnonymousSession } from "@/features/onboarding/session";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 import { requestStoredOnboardingReplay } from "@/features/settings/storage";
 
@@ -22,8 +21,16 @@ export default function SettingsRoute() {
         router.replace("/");
       }}
       onSignOut={async () => {
-        await clearAnonymousSession();
-        router.replace("/");
+        try {
+          await clearLocalDeviceData();
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          console.warn(`[MoodMarble] Sign-out cleanup failed: ${message}`);
+        } finally {
+          // Always navigate away from the settings surface so the user is not
+          // left on a frozen screen if the cleanup step fails or hangs.
+          router.replace("/");
+        }
       }}
     />
   );

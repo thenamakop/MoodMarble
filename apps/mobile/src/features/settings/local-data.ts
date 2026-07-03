@@ -15,10 +15,12 @@ export async function clearLocalDeviceData(
   const reminderRuntimeSupport = getReminderRuntimeSupport();
 
   if (reminderRuntimeSupport.canManageSchedules) {
-    await (
-      options.cancelReminderNotifications ??
-      cancelReminderNotificationsForRuntime
-    )();
+    try {
+      await (options.cancelReminderNotifications ?? cancelReminderNotificationsForRuntime)();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      console.warn(`[MoodMarble] Reminder cancellation failed during local data reset: ${message}`);
+    }
   }
   await clearLocalSettings();
   await clearLocalMoodHistory();

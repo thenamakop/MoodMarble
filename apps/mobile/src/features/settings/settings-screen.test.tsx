@@ -80,6 +80,25 @@ describe("SettingsScreen", () => {
     await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
   });
 
+  it("shows a clear error when clearing local data fails instead of staying in a busy state", async () => {
+    const onClearLocalData = jest.fn().mockRejectedValue(new Error("Storage unavailable"));
+    const view = await renderScreen({ onClearLocalData });
+
+    fireEvent.press(view.getByTestId("settings-open-clear-local-data"));
+    await waitFor(() => expect(view.getByTestId("settings-clear-local-data-prompt")).toBeTruthy());
+    fireEvent.press(view.getByTestId("settings-confirm-clear-local-data"));
+    await waitFor(() => expect(view.getByText("Storage unavailable")).toBeTruthy());
+    expect(view.queryByText("settings.loadingSettings")).toBeNull();
+  });
+
+  it("shows a clear error when sign-out fails", async () => {
+    const onSignOut = jest.fn().mockRejectedValue(new Error("Session reset failed"));
+    const view = await renderScreen({ onSignOut });
+
+    fireEvent.press(view.getByTestId("settings-sign-out"));
+    await waitFor(() => expect(view.getByText("Session reset failed")).toBeTruthy());
+  });
+
   it("toggles reminders on and persists the local opt-in state after permission is granted", async () => {
     const saveSettings = jest.fn(async (settings) => settings);
     const view = await renderScreen({ saveSettings });
