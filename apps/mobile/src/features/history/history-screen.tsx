@@ -44,118 +44,117 @@ export function LocalHistoryScreen({
 
   return (
     <ThemedView style={styles.screen}>
-      <View style={styles.header}>
-        <View style={styles.headerCopy}>
-          <ThemedText type="title" style={styles.title}>
-            Local history
-          </ThemedText>
-          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-            Review your private timeline, streak, and monthly mood pattern on this device only.
-          </ThemedText>
-        </View>
+      <ScrollView style={styles.pageScroll} contentContainerStyle={styles.pageScrollContent}>
+        <View style={styles.header}>
+          <View style={styles.headerCopy}>
+            <ThemedText type="title" style={styles.title}>
+              Local history
+            </ThemedText>
+            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+              Review your private timeline, streak, and monthly mood pattern on this device only.
+            </ThemedText>
+          </View>
 
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.actionRow}
-          style={styles.actionScrollView}
-        >
-          <HistorySwitchButton
-            icon={Clock}
-            isActive={activeView === "timeline"}
-            label="Timeline"
-            onPress={() => setActiveView("timeline")}
-            testID="history-view-timeline"
-            theme={theme}
-          />
-          <HistorySwitchButton
-            icon={Calendar}
-            isActive={activeView === "calendar"}
-            label="Calendar"
-            onPress={() => setActiveView("calendar")}
-            testID="history-view-calendar"
-            theme={theme}
-          />
+          <View style={styles.actionRow}>
+            <HistorySwitchButton
+              icon={Clock}
+              isActive={activeView === "timeline"}
+              label="Timeline"
+              onPress={() => setActiveView("timeline")}
+              testID="history-view-timeline"
+              theme={theme}
+            />
+            <HistorySwitchButton
+              icon={Calendar}
+              isActive={activeView === "calendar"}
+              label="Calendar"
+              onPress={() => setActiveView("calendar")}
+              testID="history-view-calendar"
+              theme={theme}
+            />
 
-          <Pressable
-            accessibilityLabel="Back to marbles"
-            accessibilityRole="button"
-            onPress={handleReturnHome}
-            style={({ pressed }) => [
-              styles.backButton,
-              {
-                backgroundColor: theme.background,
-                borderColor: theme.backgroundSelected,
-                opacity: pressed ? 0.85 : 1,
-              },
-            ]}
-            testID="history-return-home"
-          >
-            <ThemedText type="smallBold">Back to marbles</ThemedText>
-          </Pressable>
-        </ScrollView>
-      </View>
-
-      <View style={styles.filterRow} testID="mood-filter-row">
-        <Pressable
-          accessibilityLabel="Show all moods"
-          accessibilityRole="button"
-          accessibilityState={{ selected: selectedMoodFilter === null }}
-          onPress={() => setSelectedMoodFilter(null)}
-          style={({ pressed }) => [
-            styles.filterChip,
-            {
-              backgroundColor:
-                selectedMoodFilter === null ? theme.backgroundSelected : theme.backgroundElement,
-              borderColor: selectedMoodFilter === null ? theme.text : theme.backgroundSelected,
-              opacity: pressed ? 0.85 : 1,
-            },
-          ]}
-          testID="mood-filter-all"
-        >
-          <ThemedText type="small" style={styles.filterChipText}>
-            All
-          </ThemedText>
-        </Pressable>
-
-        {MOODS.map((mood) => {
-          const isSelected = selectedMoodFilter === mood;
-
-          return (
             <Pressable
-              key={mood}
-              accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
+              accessibilityLabel="Back to marbles"
               accessibilityRole="button"
-              accessibilityState={{ selected: isSelected }}
-              onPress={() => setSelectedMoodFilter(isSelected ? null : mood)}
+              onPress={handleReturnHome}
               style={({ pressed }) => [
-                styles.filterChip,
+                styles.backButton,
                 {
-                  backgroundColor: isSelected ? theme.backgroundSelected : theme.backgroundElement,
-                  borderColor: isSelected ? MOOD_COLORS[mood] : theme.backgroundSelected,
+                  backgroundColor: theme.background,
+                  borderColor: theme.backgroundSelected,
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
-              testID={`mood-filter-${mood}`}
+              testID="history-return-home"
             >
-              <View style={styles.filterChipContent}>
-                <View style={[styles.filterChipDot, { backgroundColor: MOOD_COLORS[mood] }]} />
-                <ThemedText type="small" style={styles.filterChipText}>
-                  {MOOD_LABELS[mood]}
-                </ThemedText>
-              </View>
+              <ThemedText type="smallBold">Back to marbles</ThemedText>
             </Pressable>
-          );
-        })}
-      </View>
+          </View>
+        </View>
 
-      <View style={styles.content} testID={`history-panel-${activeView}`}>
-        {activeView === "timeline" ? (
-          <LocalMoodTimelineScreen moodFilter={selectedMoodFilter} />
-        ) : (
-          <LocalMoodCalendarScreen />
-        )}
-      </View>
+        <View style={styles.filterRow} testID="mood-filter-row">
+          <Pressable
+            accessibilityLabel="Show all moods"
+            accessibilityRole="button"
+            accessibilityState={{ selected: selectedMoodFilter === null }}
+            onPress={() => setSelectedMoodFilter(null)}
+            style={({ pressed }) => [
+              styles.filterChip,
+              {
+                backgroundColor:
+                  selectedMoodFilter === null ? theme.backgroundSelected : theme.backgroundElement,
+                borderColor: selectedMoodFilter === null ? theme.text : theme.backgroundSelected,
+                opacity: pressed ? 0.85 : 1,
+              },
+            ]}
+            testID="mood-filter-all"
+          >
+            <ThemedText type="small" style={styles.filterChipText}>
+              All
+            </ThemedText>
+          </Pressable>
+
+          {MOODS.map((mood) => {
+            const isSelected = selectedMoodFilter === mood;
+
+            return (
+              <Pressable
+                key={mood}
+                accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
+                accessibilityRole="button"
+                accessibilityState={{ selected: isSelected }}
+                onPress={() => setSelectedMoodFilter(isSelected ? null : mood)}
+                style={({ pressed }) => [
+                  styles.filterChip,
+                  {
+                    backgroundColor: isSelected
+                      ? theme.backgroundSelected
+                      : theme.backgroundElement,
+                    borderColor: isSelected ? MOOD_COLORS[mood] : theme.backgroundSelected,
+                    opacity: pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID={`mood-filter-${mood}`}
+              >
+                <View style={styles.filterChipContent}>
+                  <View style={[styles.filterChipDot, { backgroundColor: MOOD_COLORS[mood] }]} />
+                  <ThemedText type="small" style={styles.filterChipText}>
+                    {MOOD_LABELS[mood]}
+                  </ThemedText>
+                </View>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <View style={styles.content} testID={`history-panel-${activeView}`}>
+          {activeView === "timeline" ? (
+            <LocalMoodTimelineScreen moodFilter={selectedMoodFilter} nested />
+          ) : (
+            <LocalMoodCalendarScreen nested />
+          )}
+        </View>
+      </ScrollView>
     </ThemedView>
   );
 }
@@ -231,9 +230,6 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 560,
   },
-  actionScrollView: {
-    height: 44,
-  },
   actionRow: {
     flexDirection: "row",
     flexWrap: "nowrap",
@@ -244,7 +240,7 @@ const styles = StyleSheet.create({
   switchButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
   },
   switchButtonContent: {
@@ -255,11 +251,19 @@ const styles = StyleSheet.create({
   backButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.three,
+    paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.two,
   },
-  content: {
+  pageScroll: {
     flex: 1,
+  },
+  pageScrollContent: {
+    flexGrow: 1,
+    paddingBottom: Spacing.four,
+  },
+  content: {
+    // Intentionally no flex: the nested timeline/calendar provide their own height
+    // so the parent ScrollView can scroll the whole page as one unit.
   },
   filterRow: {
     flexDirection: "row",
