@@ -3,9 +3,7 @@ import { render } from "@testing-library/react-native";
 import RootLayout from "@/app/_layout";
 
 const mockScreen = jest.fn(() => null);
-const mockStack = jest.fn(({ children }: { children: React.ReactNode }) => (
-  <>{children}</>
-));
+const mockStack = jest.fn(({ children }: { children: React.ReactNode }) => <>{children}</>);
 (mockStack as unknown as { Screen: jest.Mock }).Screen = mockScreen;
 
 jest.mock("@react-navigation/native", () => ({
@@ -19,6 +17,10 @@ jest.mock("expo-router", () => ({
     jest.fn(({ children }: { children: React.ReactNode }) => <>{children}</>),
     { Screen: jest.fn(() => null) },
   ),
+}));
+
+jest.mock("expo-status-bar", () => ({
+  StatusBar: () => null,
 }));
 
 jest.mock("@/components/animated-icon", () => ({

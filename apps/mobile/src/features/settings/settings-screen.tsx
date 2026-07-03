@@ -26,6 +26,8 @@ import { setReminderOptIn, setReminderTimes, type LocalSettings } from "@/featur
 import { persistLocalReminderSettings } from "@/features/settings/actions";
 import { loadLocalSettings, requestStoredOnboardingReplay } from "@/features/settings/storage";
 import { useTheme } from "@/hooks/use-theme";
+import { useThemeContext } from "@/features/theme/provider";
+import type { ThemePreference } from "@/features/theme/model";
 
 import { clearLocalDeviceData } from "./local-data";
 
@@ -64,6 +66,7 @@ export function SettingsScreen({
 }: SettingsScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation();
+  const { themePreference, setThemePreference } = useThemeContext();
   const reminderRuntimeSupport = getReminderRuntimeSupport();
   const [settings, setSettings] = useState<LocalSettings | null>(null);
   const [draftReminderTimes, setDraftReminderTimes] = useState<string[]>([]);
@@ -556,6 +559,44 @@ export function SettingsScreen({
           <ThemedView type="backgroundElement" style={styles.panel}>
             <View style={styles.sectionCopy}>
               <ThemedText type="subtitle" style={styles.sectionTitle}>
+                {t("settings.appearanceSection.title")}
+              </ThemedText>
+              <ThemedText themeColor="textSecondary">
+                {t("settings.appearanceSection.subtitle")}
+              </ThemedText>
+            </View>
+
+            <View style={styles.segmentedControl}>
+              {(["light", "dark", "system"] as ThemePreference[]).map((option) => (
+                <Pressable
+                  key={option}
+                  accessibilityRole="button"
+                  accessibilityLabel={t(`settings.appearanceSection.${option}`)}
+                  onPress={() => {
+                    void setThemePreference(option);
+                  }}
+                  style={({ pressed }) => [
+                    styles.segmentButton,
+                    {
+                      backgroundColor:
+                        themePreference === option ? theme.backgroundSelected : theme.background,
+                      borderColor: theme.backgroundSelected,
+                      opacity: pressed ? 0.85 : 1,
+                    },
+                  ]}
+                  testID={`settings-theme-option-${option}`}
+                >
+                  <ThemedText type="smallBold">
+                    {t(`settings.appearanceSection.${option}`)}
+                  </ThemedText>
+                </Pressable>
+              ))}
+            </View>
+          </ThemedView>
+
+          <ThemedView type="backgroundElement" style={styles.panel}>
+            <View style={styles.sectionCopy}>
+              <ThemedText type="subtitle" style={styles.sectionTitle}>
                 {t("settings.onboardingSection.title")}
               </ThemedText>
               <ThemedText themeColor="textSecondary">
@@ -903,5 +944,18 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.two,
+  },
+  segmentedControl: {
+    flexDirection: "row",
+    gap: Spacing.two,
+  },
+  segmentButton: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
+    alignItems: "center",
+    justifyContent: "center",
   },
 });

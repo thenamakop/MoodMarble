@@ -3,6 +3,18 @@ import type { ComponentProps } from "react";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
 
+const mockSetThemePreference = jest.fn(async () => undefined);
+
+jest.mock("@/features/theme/provider", () => ({
+  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
+  useThemeContext: jest.fn(() => ({
+    themePreference: "system",
+    resolvedTheme: "light",
+    setThemePreference: mockSetThemePreference,
+    isLoading: false,
+  })),
+}));
+
 jest.mock("@/features/notifications/platform", () => ({
   getReminderRuntimeSupport: jest.fn(() => ({
     supportsLocalNotifications: true,
@@ -49,6 +61,18 @@ describe("SettingsScreen", () => {
     cleanup();
     jest.clearAllMocks();
   });
+
+  it("renders the appearance section and persists the selected theme", async () => {
+    const view = await renderScreen();
+
+    expect(view.getByText("settings.appearanceSection.title")).toBeTruthy();
+    expect(view.getByTestId("settings-theme-option-light")).toBeTruthy();
+    expect(view.getByTestId("settings-theme-option-dark")).toBeTruthy();
+    expect(view.getByTestId("settings-theme-option-system")).toBeTruthy();
+
+    fireEvent.press(view.getByTestId("settings-theme-option-dark"));
+    await waitFor(() => expect(mockSetThemePreference).toHaveBeenCalledWith("dark"));
+  }, 10000);
 
   it("renders the Week 6 settings controls for local reminders and privacy actions", async () => {
     const view = await renderScreen();

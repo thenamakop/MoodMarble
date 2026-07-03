@@ -1,10 +1,11 @@
 import { usePathname, useRouter } from "expo-router";
-import { Pressable, useColorScheme, View, StyleSheet } from "react-native";
+import { Pressable, View, StyleSheet } from "react-native";
 
 import { ThemedText } from "./themed-text";
 import { ThemedView } from "./themed-view";
 
 import { Colors, MaxContentWidth, Spacing } from "@/constants/theme";
+import { useColorScheme } from "@/hooks/use-color-scheme";
 
 /**
  * Custom web tab bar rendered by the (tabs) Tabs navigator on web.
@@ -77,7 +78,7 @@ export function TabButton({
 
 export function CustomTabList({ children }: { children: React.ReactNode }) {
   const scheme = useColorScheme();
-  const colorPalette = Colors[scheme === "unspecified" ? "light" : scheme];
+  const colorPalette = Colors[scheme];
 
   return (
     <View style={styles.tabListContainer}>

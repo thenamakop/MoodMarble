@@ -51,6 +51,13 @@
       "confirmClearLabel": "Confirm clear this device",
       "confirmClearButton": "Clear this device"
     },
+    "appearanceSection": {
+      "title": "Appearance",
+      "subtitle": "Choose how MoodMarble looks on this device.",
+      "light": "Light",
+      "dark": "Dark",
+      "system": "System default"
+    },
     "permissionStatus": {
       "granted": "Notification permission granted.",
       "denied": "Notifications are blocked. Tap below to open device settings.",

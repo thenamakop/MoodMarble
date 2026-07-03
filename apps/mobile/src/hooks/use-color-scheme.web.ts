@@ -1,5 +1,6 @@
 import { useSyncExternalStore } from "react";
-import { useColorScheme as useRNColorScheme } from "react-native";
+
+import { useThemeContext } from "@/features/theme/provider";
 
 function subscribe() {
   return () => {};
@@ -14,18 +15,18 @@ function getServerSnapshot() {
 }
 
 /**
- * To support static rendering, this value needs to be re-calculated on the client side for web
+ * Returns the resolved color scheme for the current theme preference.
+ *
+ * On web, this rehydrates safely so the value is only finalised after the
+ * client has mounted. If the user has selected "system", this follows the
+ * device appearance; otherwise it returns the explicit preference.
  */
-export function useColorScheme() {
-  const hasHydrated = useSyncExternalStore(
-    subscribe,
-    getClientSnapshot,
-    getServerSnapshot,
-  );
-  const colorScheme = useRNColorScheme();
+export function useColorScheme(): "light" | "dark" {
+  const hasHydrated = useSyncExternalStore(subscribe, getClientSnapshot, getServerSnapshot);
+  const { resolvedTheme } = useThemeContext();
 
   if (hasHydrated) {
-    return colorScheme;
+    return resolvedTheme;
   }
 
   return "light";
