@@ -91,18 +91,12 @@ export function LocalHistoryScreen({
             ]}
             testID="history-return-home"
           >
-            <ThemedText type="small">Back to marbles</ThemedText>
+            <ThemedText type="smallBold">Back to marbles</ThemedText>
           </Pressable>
         </ScrollView>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-        style={styles.filterScrollView}
-        testID="mood-filter-row"
-      >
+      <View style={styles.filterRow} testID="mood-filter-row">
         <Pressable
           accessibilityLabel="Show all moods"
           accessibilityRole="button"
@@ -153,7 +147,7 @@ export function LocalHistoryScreen({
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       <View style={styles.content} testID={`history-panel-${activeView}`}>
         {activeView === "timeline" ? (
@@ -210,8 +204,8 @@ function HistorySwitchButton({
       testID={testID}
     >
       <View style={styles.switchButtonContent}>
-        <Icon size={14} color={iconColor} />
-        <ThemedText type="small">{label}</ThemedText>
+        <Icon size={16} color={iconColor} />
+        <ThemedText type="smallBold">{label}</ThemedText>
       </View>
     </Pressable>
   );
@@ -238,7 +232,7 @@ const styles = StyleSheet.create({
     maxWidth: 560,
   },
   actionScrollView: {
-    height: 40,
+    height: 44,
   },
   actionRow: {
     flexDirection: "row",
@@ -250,29 +244,26 @@ const styles = StyleSheet.create({
   switchButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   switchButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.half,
+    gap: Spacing.one,
   },
   backButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
   content: {
     flex: 1,
   },
-  filterScrollView: {
-    height: 28,
-  },
   filterRow: {
     flexDirection: "row",
-    flexWrap: "nowrap",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: Spacing.half,
     paddingHorizontal: Spacing.four,
