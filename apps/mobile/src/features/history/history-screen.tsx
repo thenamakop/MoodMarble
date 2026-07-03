@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useRouter } from "expo-router";
 import { Calendar, Clock } from "lucide-react-native";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -93,13 +93,7 @@ export function LocalHistoryScreen({
         </View>
       </View>
 
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.filterRow}
-        style={styles.filterScrollView}
-        testID="mood-filter-row"
-      >
+      <View style={styles.filterRow} testID="mood-filter-row">
         <Pressable
           accessibilityLabel="Show all moods"
           accessibilityRole="button"
@@ -150,7 +144,7 @@ export function LocalHistoryScreen({
             </Pressable>
           );
         })}
-      </ScrollView>
+      </View>
 
       <View style={styles.content} testID={`history-panel-${activeView}`}>
         {activeView === "timeline" ? (
@@ -217,10 +211,10 @@ function HistorySwitchButton({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    gap: Spacing.three,
+    gap: Spacing.one,
   },
   header: {
-    gap: Spacing.three,
+    gap: Spacing.one,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
@@ -235,7 +229,7 @@ const styles = StyleSheet.create({
     maxWidth: 560,
   },
   actions: {
-    gap: Spacing.two,
+    gap: Spacing.one,
   },
   switchRow: {
     flexDirection: "row",
@@ -263,20 +257,17 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
-  filterScrollView: {
-    height: 24,
-  },
   filterRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     alignItems: "center",
     gap: Spacing.half,
     paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.half,
   },
   filterChip: {
     borderWidth: 1,
     borderRadius: 999,
-    height: 20,
+    height: 22,
     paddingHorizontal: Spacing.half,
     paddingVertical: 0,
     justifyContent: "center",
