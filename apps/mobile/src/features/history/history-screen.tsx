@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useRouter } from "expo-router";
 import { Calendar, Clock } from "lucide-react-native";
-import { Pressable, StyleSheet, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -54,7 +54,12 @@ export function LocalHistoryScreen({
           </ThemedText>
         </View>
 
-        <View style={styles.actionRow}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.actionRow}
+          style={styles.actionScrollView}
+        >
           <HistorySwitchButton
             icon={Clock}
             isActive={activeView === "timeline"}
@@ -86,12 +91,18 @@ export function LocalHistoryScreen({
             ]}
             testID="history-return-home"
           >
-            <ThemedText type="smallBold">Back to marbles</ThemedText>
+            <ThemedText type="small">Back to marbles</ThemedText>
           </Pressable>
-        </View>
+        </ScrollView>
       </View>
 
-      <View style={styles.filterRow} testID="mood-filter-row">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+        style={styles.filterScrollView}
+        testID="mood-filter-row"
+      >
         <Pressable
           accessibilityLabel="Show all moods"
           accessibilityRole="button"
@@ -142,7 +153,7 @@ export function LocalHistoryScreen({
             </Pressable>
           );
         })}
-      </View>
+      </ScrollView>
 
       <View style={styles.content} testID={`history-panel-${activeView}`}>
         {activeView === "timeline" ? (
@@ -199,8 +210,8 @@ function HistorySwitchButton({
       testID={testID}
     >
       <View style={styles.switchButtonContent}>
-        <Icon size={16} color={iconColor} />
-        <ThemedText type="smallBold">{label}</ThemedText>
+        <Icon size={14} color={iconColor} />
+        <ThemedText type="small">{label}</ThemedText>
       </View>
     </Pressable>
   );
@@ -226,35 +237,42 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 560,
   },
+  actionScrollView: {
+    height: 40,
+  },
   actionRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     alignItems: "center",
     gap: Spacing.two,
+    paddingHorizontal: Spacing.four,
   },
   switchButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
   switchButtonContent: {
     flexDirection: "row",
     alignItems: "center",
-    gap: Spacing.one,
+    gap: Spacing.half,
   },
   backButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
   },
   content: {
     flex: 1,
   },
+  filterScrollView: {
+    height: 28,
+  },
   filterRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
+    flexWrap: "nowrap",
     alignItems: "center",
     gap: Spacing.half,
     paddingHorizontal: Spacing.four,
