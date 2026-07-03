@@ -243,17 +243,19 @@ export default function HomeScreen() {
         }}
         onReturnHome={() => setActiveNativeScreen("marbles")}
         onSignOut={async () => {
-          setIsLoadingSession(true);
           await clearLocalDeviceData();
-          // Hard-reset all session state without re-reading stale URL params.
-          // Setting session to null causes resolveAnonymousHomeState to return
-          // "onboarding", which renders <OnboardingScreen> with no replaySession,
-          // showing the join code entry screen.
-          sessionSyncVersionRef.current += 1;
-          setReplaySession(null);
-          setSession(null);
-          setActiveNativeScreen("marbles");
-          setIsLoadingSession(false);
+          // Navigate to "/" with empty params to scrub the old
+          // workspace/team/jwt params from the router state.
+          // This prevents restoreAnonymousSession() from re-hydrating
+          // the session from stale URL params on the new mount.
+          router.replace({
+            pathname: "/",
+            params: {
+              workspace_id: "",
+              team_id: "",
+              device_jwt: "",
+            },
+          });
         }}
       />
     );

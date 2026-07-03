@@ -1,11 +1,7 @@
-import { loadNativeModule } from "./native-module";
+import { loadNativeModuleAsync } from "./native-module";
 import { getReminderRuntimeSupport } from "./platform";
 
-export type NotificationPermissionStatus =
-  | "granted"
-  | "denied"
-  | "undetermined"
-  | "unsupported";
+export type NotificationPermissionStatus = "granted" | "denied" | "undetermined" | "unsupported";
 
 export interface NotificationPermissionState {
   status: NotificationPermissionStatus;
@@ -50,20 +46,14 @@ export async function getNotificationPermissionStatus(
     appOwnership: options.appOwnership,
   });
 
-  if (
-    !runtimeSupport.supportsLocalNotifications ||
-    !runtimeSupport.canManageSchedules
-  ) {
+  if (!runtimeSupport.supportsLocalNotifications || !runtimeSupport.canManageSchedules) {
     return "unsupported";
   }
 
-  const notificationsModule = await resolveNotificationsModule(
-    options.loadNotificationsModule,
-  );
+  const notificationsModule = await resolveNotificationsModule(options.loadNotificationsModule);
   const permissions = await notificationsModule.getPermissionsAsync();
 
-  return normalizePermissionStatus(permissions.status, permissions.canAskAgain)
-    .status;
+  return normalizePermissionStatus(permissions.status, permissions.canAskAgain).status;
 }
 
 export async function requestNotificationPermission(
@@ -75,20 +65,14 @@ export async function requestNotificationPermission(
     appOwnership: options.appOwnership,
   });
 
-  if (
-    !runtimeSupport.supportsLocalNotifications ||
-    !runtimeSupport.canManageSchedules
-  ) {
+  if (!runtimeSupport.supportsLocalNotifications || !runtimeSupport.canManageSchedules) {
     return "unsupported";
   }
 
-  const notificationsModule = await resolveNotificationsModule(
-    options.loadNotificationsModule,
-  );
+  const notificationsModule = await resolveNotificationsModule(options.loadNotificationsModule);
   const permissions = await notificationsModule.requestPermissionsAsync();
 
-  return normalizePermissionStatus(permissions.status, permissions.canAskAgain)
-    .status;
+  return normalizePermissionStatus(permissions.status, permissions.canAskAgain).status;
 }
 
 async function resolveNotificationsModule(
@@ -98,5 +82,5 @@ async function resolveNotificationsModule(
     return loadNotificationsModule();
   }
 
-  return loadNativeModule<NotificationPermissionModule>("expo-notifications");
+  return await loadNativeModuleAsync<NotificationPermissionModule>("expo-notifications");
 }

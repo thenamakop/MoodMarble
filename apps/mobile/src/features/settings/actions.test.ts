@@ -1,3 +1,18 @@
+import { clearLocalMoodHistory } from "@/features/history/storage";
+import { submitMoodSubmission } from "@/features/mood-submission/api";
+import { joinWorkspace } from "@/features/onboarding/api";
+import { clearAnonymousSession } from "@/features/onboarding/session";
+import { loadNativeModuleAsync } from "@/features/notifications/native-module";
+import { buildReminderScheduleIdentifier } from "@/features/notifications/scheduler";
+import { persistLocalReminderSettings } from "@/features/settings/actions";
+import { createDefaultLocalSettings } from "@/features/settings/model";
+import { clearLocalDeviceData } from "@/features/settings/local-data";
+import {
+  clearLocalSettings,
+  loadLocalSettings,
+  requestStoredOnboardingReplay,
+} from "@/features/settings/storage";
+
 jest.mock("react-native", () => ({
   Platform: {
     OS: "web",
@@ -20,27 +35,22 @@ const mockSetNotificationChannelAsync = jest.fn(async () => undefined);
 const mockGetAllScheduledNotificationsAsync = jest.fn(async () =>
   Array.from(scheduledRequestsStore.values()),
 );
-const mockScheduleNotificationAsync = jest.fn(
-  async (request: ScheduledRequestInput) => {
-    const identifier =
-      request.identifier ?? `generated-${scheduledRequestsStore.size + 1}`;
+const mockScheduleNotificationAsync = jest.fn(async (request: ScheduledRequestInput) => {
+  const identifier = request.identifier ?? `generated-${scheduledRequestsStore.size + 1}`;
 
-    scheduledRequestsStore.set(identifier, {
-      identifier,
-      content: {
-        data: request.content.data ?? {},
-      },
-      trigger: request.trigger,
-    });
+  scheduledRequestsStore.set(identifier, {
+    identifier,
+    content: {
+      data: request.content.data ?? {},
+    },
+    trigger: request.trigger,
+  });
 
-    return identifier;
-  },
-);
-const mockCancelScheduledNotificationAsync = jest.fn(
-  async (identifier: string) => {
-    scheduledRequestsStore.delete(identifier);
-  },
-);
+  return identifier;
+});
+const mockCancelScheduledNotificationAsync = jest.fn(async (identifier: string) => {
+  scheduledRequestsStore.delete(identifier);
+});
 const mockNotificationSchedulerModule = {
   cancelScheduledNotificationAsync: mockCancelScheduledNotificationAsync,
   getAllScheduledNotificationsAsync: mockGetAllScheduledNotificationsAsync,
@@ -69,6 +79,10 @@ jest.mock("expo-notifications", () => ({
   setNotificationChannelAsync: mockSetNotificationChannelAsync,
 }));
 
+jest.mock("@/features/notifications/native-module", () => ({
+  loadNativeModuleAsync: jest.fn(),
+}));
+
 jest.mock("@/features/history/storage", () => ({
   clearLocalMoodHistory: jest.fn(async () => undefined),
 }));
@@ -79,33 +93,15 @@ jest.mock("@/features/onboarding/session", () => ({
 
 jest.mock("@/features/onboarding/api", () => ({
   joinWorkspace: jest.fn(async () => {
-    throw new Error(
-      "joinWorkspace should not be called by local settings actions",
-    );
+    throw new Error("joinWorkspace should not be called by local settings actions");
   }),
 }));
 
 jest.mock("@/features/mood-submission/api", () => ({
   submitMoodSubmission: jest.fn(async () => {
-    throw new Error(
-      "submitMoodSubmission should not be called by local settings actions",
-    );
+    throw new Error("submitMoodSubmission should not be called by local settings actions");
   }),
 }));
-
-import { clearLocalMoodHistory } from "@/features/history/storage";
-import { submitMoodSubmission } from "@/features/mood-submission/api";
-import { joinWorkspace } from "@/features/onboarding/api";
-import { clearAnonymousSession } from "@/features/onboarding/session";
-import { buildReminderScheduleIdentifier } from "@/features/notifications/scheduler";
-import { persistLocalReminderSettings } from "@/features/settings/actions";
-import { createDefaultLocalSettings } from "@/features/settings/model";
-import { clearLocalDeviceData } from "@/features/settings/local-data";
-import {
-  clearLocalSettings,
-  loadLocalSettings,
-  requestStoredOnboardingReplay,
-} from "@/features/settings/storage";
 
 const { Platform } = jest.requireMock("react-native") as {
   Platform: { OS: string };
@@ -124,6 +120,10 @@ describe("settings local actions", () => {
     Platform.OS = "web";
     expoConstants.executionEnvironment = null;
     expoConstants.appOwnership = null;
+    (loadNativeModuleAsync as jest.Mock).mockResolvedValue({
+      ...mockNotificationSchedulerModule,
+      ...mockPlatformModule,
+    });
   });
 
   afterEach(async () => {
@@ -276,9 +276,7 @@ describe("settings local actions", () => {
 
     await clearLocalDeviceData();
 
-    await expect(loadLocalSettings()).resolves.toEqual(
-      createDefaultLocalSettings(),
-    );
+    await expect(loadLocalSettings()).resolves.toEqual(createDefaultLocalSettings());
     expect(scheduledRequestsStore.size).toBe(0);
     expect(clearLocalMoodHistory).toHaveBeenCalledTimes(1);
     expect(clearAnonymousSession).toHaveBeenCalledTimes(1);

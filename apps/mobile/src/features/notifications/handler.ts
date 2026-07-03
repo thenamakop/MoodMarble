@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useRouter } from "expo-router";
 
-import { loadNativeModule } from "./native-module";
+import { loadNativeModuleAsync } from "./native-module";
 import { getReminderRuntimeSupport } from "./platform";
 
 export interface NotificationResponse {
@@ -35,18 +35,13 @@ export interface UseNotificationHandlerOptions {
   loadNotificationsModule?: () => NotificationHandlerModule;
 }
 
-export function useNotificationHandler(
-  options: UseNotificationHandlerOptions = {},
-) {
+export function useNotificationHandler(options: UseNotificationHandlerOptions = {}) {
   const router = useRouter();
 
   useEffect(() => {
     const runtimeSupport = getReminderRuntimeSupport();
 
-    if (
-      !runtimeSupport.supportsLocalNotifications ||
-      !runtimeSupport.canManageSchedules
-    ) {
+    if (!runtimeSupport.supportsLocalNotifications || !runtimeSupport.canManageSchedules) {
       return;
     }
 
@@ -57,7 +52,7 @@ export function useNotificationHandler(
       try {
         const notificationsModule =
           options.loadNotificationsModule?.() ??
-          loadNativeModule<NotificationHandlerModule>("expo-notifications");
+          (await loadNativeModuleAsync<NotificationHandlerModule>("expo-notifications"));
 
         handlerSubscription = notificationsModule.setNotificationHandler({
           handleNotification: async () => ({
@@ -67,17 +62,15 @@ export function useNotificationHandler(
           }),
         });
 
-        responseSubscription =
-          notificationsModule.addNotificationResponseReceivedListener(
-            (response) => {
-              const source =
-                response?.notification?.request?.content?.data?.source;
+        responseSubscription = notificationsModule.addNotificationResponseReceivedListener(
+          (response) => {
+            const source = response?.notification?.request?.content?.data?.source;
 
-              if (source === "moodmarble-local-reminder") {
-                router.replace("/");
-              }
-            },
-          );
+            if (source === "moodmarble-local-reminder") {
+              router.replace("/");
+            }
+          },
+        );
       } catch {
         // Ignore setup failures in unsupported runtimes.
       }

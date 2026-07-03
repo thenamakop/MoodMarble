@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import type { LocalSettings, ReminderTime } from "@/features/settings/model";
 import { loadLocalSettings } from "@/features/settings/storage";
 
-import { loadNativeModule } from "./native-module";
+import { loadNativeModuleAsync } from "./native-module";
 import {
   getReminderRuntimeSupport,
   prepareReminderNotificationPlatformAsync,
@@ -283,5 +283,5 @@ function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
 
 async function loadNotificationsModule(): Promise<ReminderNotificationsModule> {
   // Avoid a static Metro dependency on expo-notifications during Expo Go startup.
-  return loadNativeModule<ReminderNotificationsModule>("expo-notifications");
+  return await loadNativeModuleAsync<ReminderNotificationsModule>("expo-notifications");
 }
