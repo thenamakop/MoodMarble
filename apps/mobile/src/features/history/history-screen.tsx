@@ -97,6 +97,7 @@ export function LocalHistoryScreen({
         horizontal
         showsHorizontalScrollIndicator={false}
         contentContainerStyle={styles.filterRow}
+        style={styles.filterScrollView}
         testID="mood-filter-row"
       >
         <Pressable
@@ -115,7 +116,9 @@ export function LocalHistoryScreen({
           ]}
           testID="mood-filter-all"
         >
-          <ThemedText type="smallBold">All</ThemedText>
+          <ThemedText type="small" style={styles.filterChipText}>
+            All
+          </ThemedText>
         </Pressable>
 
         {MOODS.map((mood) => {
@@ -140,7 +143,9 @@ export function LocalHistoryScreen({
             >
               <View style={styles.filterChipContent}>
                 <View style={[styles.filterChipDot, { backgroundColor: MOOD_COLORS[mood] }]} />
-                <ThemedText type="smallBold">{MOOD_LABELS[mood]}</ThemedText>
+                <ThemedText type="small" style={styles.filterChipText}>
+                  {MOOD_LABELS[mood]}
+                </ThemedText>
               </View>
             </Pressable>
           );
@@ -258,17 +263,22 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
   },
+  filterScrollView: {
+    height: 24,
+  },
   filterRow: {
     flexDirection: "row",
-    gap: Spacing.one,
+    alignItems: "center",
+    gap: Spacing.half,
     paddingHorizontal: Spacing.four,
-    paddingBottom: Spacing.one,
+    paddingBottom: Spacing.half,
   },
   filterChip: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+    height: 20,
+    paddingHorizontal: Spacing.half,
+    paddingVertical: 0,
     justifyContent: "center",
     alignItems: "center",
   },
@@ -278,8 +288,12 @@ const styles = StyleSheet.create({
     gap: Spacing.half,
   },
   filterChipDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  filterChipText: {
+    fontSize: 12,
+    lineHeight: 14,
   },
 });
