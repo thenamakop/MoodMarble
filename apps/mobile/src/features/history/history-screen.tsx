@@ -54,25 +54,23 @@ export function LocalHistoryScreen({
           </ThemedText>
         </View>
 
-        <View style={styles.actions}>
-          <View style={styles.switchRow}>
-            <HistorySwitchButton
-              icon={Clock}
-              isActive={activeView === "timeline"}
-              label="Timeline"
-              onPress={() => setActiveView("timeline")}
-              testID="history-view-timeline"
-              theme={theme}
-            />
-            <HistorySwitchButton
-              icon={Calendar}
-              isActive={activeView === "calendar"}
-              label="Calendar"
-              onPress={() => setActiveView("calendar")}
-              testID="history-view-calendar"
-              theme={theme}
-            />
-          </View>
+        <View style={styles.actionRow}>
+          <HistorySwitchButton
+            icon={Clock}
+            isActive={activeView === "timeline"}
+            label="Timeline"
+            onPress={() => setActiveView("timeline")}
+            testID="history-view-timeline"
+            theme={theme}
+          />
+          <HistorySwitchButton
+            icon={Calendar}
+            isActive={activeView === "calendar"}
+            label="Calendar"
+            onPress={() => setActiveView("calendar")}
+            testID="history-view-calendar"
+            theme={theme}
+          />
 
           <Pressable
             accessibilityLabel="Back to marbles"
@@ -228,12 +226,10 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 560,
   },
-  actions: {
-    gap: Spacing.one,
-  },
-  switchRow: {
+  actionRow: {
     flexDirection: "row",
     flexWrap: "wrap",
+    alignItems: "center",
     gap: Spacing.two,
   },
   switchButton: {
@@ -248,7 +244,6 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   backButton: {
-    alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 999,
     paddingHorizontal: Spacing.three,
