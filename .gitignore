@@ -35,3 +35,6 @@ apps/mobile/.env.local
 
 # npm lockfile — project uses pnpm
 package-lock.json
+
+# Playwright MCP server runtime state (browser profiles, cache, etc.)
+.playwright-mcp/
