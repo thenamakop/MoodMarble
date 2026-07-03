@@ -4,6 +4,7 @@ import { joinWorkspace } from "@/features/onboarding/api";
 import { clearAnonymousSession } from "@/features/onboarding/session";
 import { loadNativeModuleAsync } from "@/features/notifications/native-module";
 import { buildReminderScheduleIdentifier } from "@/features/notifications/scheduler";
+import * as schedulerModule from "@/features/notifications/scheduler";
 import { persistLocalReminderSettings } from "@/features/settings/actions";
 import { createDefaultLocalSettings } from "@/features/settings/model";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
@@ -111,6 +112,8 @@ const expoConstants = jest.requireMock("expo-constants") as {
   appOwnership: string | null;
 };
 
+const loadSchedulerModule = async () => schedulerModule;
+
 describe("settings local actions", () => {
   const originalWindow = globalThis.window;
 
@@ -156,6 +159,7 @@ describe("settings local actions", () => {
         notificationsModule: mockNotificationSchedulerModule,
         platformModule: mockPlatformModule,
         platformOs: "android",
+        loadSchedulerModule,
       },
     );
 
@@ -184,6 +188,7 @@ describe("settings local actions", () => {
         notificationsModule: mockNotificationSchedulerModule,
         platformModule: mockPlatformModule,
         platformOs: "android",
+        loadSchedulerModule,
       },
     );
 
@@ -198,6 +203,7 @@ describe("settings local actions", () => {
         notificationsModule: mockNotificationSchedulerModule,
         platformModule: mockPlatformModule,
         platformOs: "android",
+        loadSchedulerModule,
       },
     );
 
@@ -271,10 +277,19 @@ describe("settings local actions", () => {
         notificationsModule: mockNotificationSchedulerModule,
         platformModule: mockPlatformModule,
         platformOs: "android",
+        loadSchedulerModule,
       },
     );
 
-    await clearLocalDeviceData();
+    await clearLocalDeviceData({
+      cancelReminderNotifications: async () => {
+        await schedulerModule.cancelScheduledReminderNotifications({
+          platformOs: "android",
+          notificationsModule: mockNotificationSchedulerModule,
+          platformModule: mockPlatformModule,
+        });
+      },
+    });
 
     await expect(loadLocalSettings()).resolves.toEqual(createDefaultLocalSettings());
     expect(scheduledRequestsStore.size).toBe(0);
