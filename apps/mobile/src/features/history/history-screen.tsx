@@ -131,16 +131,17 @@ export function LocalHistoryScreen({
               style={({ pressed }) => [
                 styles.filterChip,
                 {
-                  backgroundColor: MOOD_COLORS[mood],
-                  borderColor: isSelected ? theme.text : "transparent",
+                  backgroundColor: isSelected ? theme.backgroundSelected : theme.backgroundElement,
+                  borderColor: isSelected ? MOOD_COLORS[mood] : theme.backgroundSelected,
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
               testID={`mood-filter-${mood}`}
             >
-              <ThemedText type="smallBold" style={styles.filterChipLabel}>
-                {MOOD_LABELS[mood]}
-              </ThemedText>
+              <View style={styles.filterChipContent}>
+                <View style={[styles.filterChipDot, { backgroundColor: MOOD_COLORS[mood] }]} />
+                <ThemedText type="smallBold">{MOOD_LABELS[mood]}</ThemedText>
+              </View>
             </Pressable>
           );
         })}
@@ -259,17 +260,26 @@ const styles = StyleSheet.create({
   },
   filterRow: {
     flexDirection: "row",
-    gap: Spacing.two,
+    gap: Spacing.one,
     paddingHorizontal: Spacing.four,
     paddingBottom: Spacing.one,
   },
   filterChip: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.two,
+    paddingVertical: Spacing.half,
+    justifyContent: "center",
+    alignItems: "center",
   },
-  filterChipLabel: {
-    color: "#ffffff",
+  filterChipContent: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.half,
+  },
+  filterChipDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
   },
 });
