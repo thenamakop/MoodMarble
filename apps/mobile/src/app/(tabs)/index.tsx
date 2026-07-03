@@ -7,7 +7,7 @@ import { LocalHistoryScreen } from "@/features/history/history-screen";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
-import { saveAnonymousSession, clearAnonymousSession } from "@/features/onboarding/session";
+import { saveAnonymousSession } from "@/features/onboarding/session";
 import {
   getAnonymousSessionFromParams,
   restoreAnonymousSession,
@@ -226,13 +226,34 @@ export default function HomeScreen() {
         }}
         onRequestOnboardingReplay={async () => {
           setIsLoadingSession(true);
+          // Capture the current session before any state changes.
+          // This is the session we will replay onboarding for —
+          // the user keeps their workspace/team membership; only the
+          // slides are shown again. No join code is required.
+          const currentSession = session;
           await requestStoredOnboardingReplay();
-          await refreshNativeHomeState();
+          await clearStoredOnboardingReplayRequest();
+          // session = null → resolveAnonymousHomeState returns "onboarding"
+          // replaySession = currentSession → OnboardingScreen skips join code
+          sessionSyncVersionRef.current += 1;
+          setSession(null);
+          setReplaySession(currentSession);
+          setActiveNativeScreen("marbles");
+          setIsLoadingSession(false);
         }}
         onReturnHome={() => setActiveNativeScreen("marbles")}
         onSignOut={async () => {
-          await clearAnonymousSession();
-          router.replace("/");
+          setIsLoadingSession(true);
+          await clearLocalDeviceData();
+          // Hard-reset all session state without re-reading stale URL params.
+          // Setting session to null causes resolveAnonymousHomeState to return
+          // "onboarding", which renders <OnboardingScreen> with no replaySession,
+          // showing the join code entry screen.
+          sessionSyncVersionRef.current += 1;
+          setReplaySession(null);
+          setSession(null);
+          setActiveNativeScreen("marbles");
+          setIsLoadingSession(false);
         }}
       />
     );
