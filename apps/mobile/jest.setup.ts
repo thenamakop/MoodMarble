@@ -1,13 +1,5 @@
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-// AsyncStorage mock — the native module is not available in the Jest jsdom
-// environment. It must be mocked before any module imports it.
-jest.mock("@react-native-async-storage/async-storage", () => ({
-  setItem: jest.fn(async () => undefined),
-  getItem: jest.fn(async () => null),
-  removeItem: jest.fn(async () => undefined),
-}));
-
 // Sentry mock — the native module is not available in the Jest jsdom
 // environment. It must be mocked before any module imports it.
 jest.mock("@sentry/react-native", () => ({
