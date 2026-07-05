@@ -1,18 +1,10 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import HomeScreen from "@/app/(tabs)/index";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
 import { saveAnonymousSession } from "@/features/onboarding/session";
 import { restoreAnonymousSession } from "@/features/onboarding/session-boundary";
-import {
-  clearStoredOnboardingReplayRequest,
-  loadLocalSettings,
-} from "@/features/settings/storage";
+import { clearStoredOnboardingReplayRequest, loadLocalSettings } from "@/features/settings/storage";
 import { syncStoredReminderScheduleForRuntime } from "@/features/notifications/scheduler-bridge";
 
 jest.mock("expo-router", () => ({
@@ -28,9 +20,7 @@ jest.mock("@/hooks/use-theme", () => ({
 }));
 
 jest.mock("@/features/onboarding/route-boundary", () => ({
-  resolveAnonymousHomeState: jest.fn((session) =>
-    session ? "member-home" : "onboarding",
-  ),
+  resolveAnonymousHomeState: jest.fn((session) => (session ? "member-home" : "onboarding")),
 }));
 
 jest.mock("@/features/onboarding/session", () => ({
@@ -88,9 +78,7 @@ jest.mock("@/features/onboarding/onboarding-screen", () => {
       };
     }) => (
       <>
-        <Text>
-          {replaySession ? "onboarding-replay-screen" : "onboarding-screen"}
-        </Text>
+        <Text>{replaySession ? "onboarding-replay-screen" : "onboarding-screen"}</Text>
         <Pressable
           onPress={() =>
             onSessionReady(
@@ -103,9 +91,7 @@ jest.mock("@/features/onboarding/onboarding-screen", () => {
           }
           testID={replaySession ? "complete-replay" : "complete-onboarding"}
         >
-          <Text>
-            {replaySession ? "complete-replay" : "complete-onboarding"}
-          </Text>
+          <Text>{replaySession ? "complete-replay" : "complete-onboarding"}</Text>
         </Pressable>
       </>
     ),
@@ -182,16 +168,10 @@ jest.mock("@/features/settings/settings-screen", () => {
         <Pressable onPress={onReturnHome} testID="settings-return-home">
           <Text>settings-return-home</Text>
         </Pressable>
-        <Pressable
-          onPress={onRequestOnboardingReplay}
-          testID="settings-replay-onboarding"
-        >
+        <Pressable onPress={onRequestOnboardingReplay} testID="settings-replay-onboarding">
           <Text>settings-replay-onboarding</Text>
         </Pressable>
-        <Pressable
-          onPress={onClearLocalData}
-          testID="settings-clear-local-data"
-        >
+        <Pressable onPress={onClearLocalData} testID="settings-clear-local-data">
           <Text>settings-clear-local-data</Text>
         </Pressable>
       </View>
@@ -213,9 +193,7 @@ describe("HomeScreen", () => {
     jest.mocked(saveAnonymousSession).mockResolvedValue(undefined);
     jest
       .mocked(resolveAnonymousHomeState)
-      .mockImplementation((session) =>
-        session ? "member-home" : "onboarding",
-      );
+      .mockImplementation((session) => (session ? "member-home" : "onboarding"));
     jest.mocked(loadLocalSettings).mockResolvedValue({
       version: 1,
       remindersEnabled: false,
@@ -239,9 +217,7 @@ describe("HomeScreen", () => {
     fireEvent.press(await view.findByTestId("complete-onboarding"));
 
     await waitFor(() =>
-      expect(
-        view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt"),
-      ).toBeTruthy(),
+      expect(view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt")).toBeTruthy(),
     );
     expect(syncStoredReminderScheduleForRuntime).toHaveBeenCalledTimes(1);
 
@@ -265,15 +241,11 @@ describe("HomeScreen", () => {
 
     await waitFor(() =>
       expect(
-        view.getByText(
-          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-        ),
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
       ).toBeTruthy(),
     );
 
-    await waitFor(() =>
-      expect(restoreAnonymousSession).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(restoreAnonymousSession).toHaveBeenCalledTimes(1));
     expect(syncStoredReminderScheduleForRuntime).toHaveBeenCalledTimes(1);
   });
 
@@ -294,24 +266,18 @@ describe("HomeScreen", () => {
     currentParams = { workspace_id: "refresh-trigger" };
     view.rerender(<HomeScreen />);
 
-    await waitFor(() =>
-      expect(restoreAnonymousSession).toHaveBeenCalledTimes(2),
-    );
+    await waitFor(() => expect(restoreAnonymousSession).toHaveBeenCalledTimes(2));
 
     fireEvent.press(await view.findByTestId("complete-onboarding"));
 
     await waitFor(() =>
-      expect(
-        view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt"),
-      ).toBeTruthy(),
+      expect(view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt")).toBeTruthy(),
     );
 
     pendingRestore.resolve(null);
 
     await waitFor(() =>
-      expect(
-        view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt"),
-      ).toBeTruthy(),
+      expect(view.getByText("marble-tray:ws_joined:tm_product:joined-device-jwt")).toBeTruthy(),
     );
     expect(view.queryByText("onboarding-screen")).toBeNull();
   });
@@ -327,25 +293,19 @@ describe("HomeScreen", () => {
 
     await waitFor(() =>
       expect(
-        view.getByText(
-          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-        ),
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
       ).toBeTruthy(),
     );
 
     fireEvent.press(view.getByTestId("open-history"));
 
-    await waitFor(() =>
-      expect(view.getByText("local-history-screen")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByText("local-history-screen")).toBeTruthy());
 
     fireEvent.press(view.getByTestId("return-home"));
 
     await waitFor(() =>
       expect(
-        view.getByText(
-          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-        ),
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
       ).toBeTruthy(),
     );
   });
@@ -361,25 +321,19 @@ describe("HomeScreen", () => {
 
     await waitFor(() =>
       expect(
-        view.getByText(
-          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-        ),
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
       ).toBeTruthy(),
     );
 
     fireEvent.press(view.getByTestId("open-settings"));
 
-    await waitFor(() =>
-      expect(view.getByText("native-settings-screen")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByText("native-settings-screen")).toBeTruthy());
 
     fireEvent.press(view.getByTestId("settings-return-home"));
 
     await waitFor(() =>
       expect(
-        view.getByText(
-          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-        ),
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
       ).toBeTruthy(),
     );
   });
@@ -399,18 +353,14 @@ describe("HomeScreen", () => {
 
     const view = await render(<HomeScreen />);
 
-    await waitFor(() =>
-      expect(view.getByText("onboarding-replay-screen")).toBeTruthy(),
-    );
+    await waitFor(() => expect(view.getByText("onboarding-replay-screen")).toBeTruthy());
     expect(clearStoredOnboardingReplayRequest).toHaveBeenCalledTimes(1);
 
     fireEvent.press(await view.findByTestId("complete-replay"));
 
     await waitFor(() =>
       expect(
-        view.getByText(
-          "marble-tray:ws_localdemo:tm_engineering:active-device-jwt",
-        ),
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
       ).toBeTruthy(),
     );
     expect(saveAnonymousSession).toHaveBeenCalledWith({
@@ -418,6 +368,40 @@ describe("HomeScreen", () => {
       teamId: "tm_engineering",
       deviceJwt: "active-device-jwt",
     });
+  });
+
+  it("does not stay stuck on the restoring screen after local data reset fails", async () => {
+    jest.mocked(restoreAnonymousSession).mockResolvedValue({
+      workspaceId: "ws_localdemo",
+      teamId: "tm_engineering",
+      deviceJwt: "active-device-jwt",
+    });
+
+    const view = await render(<HomeScreen />);
+
+    await waitFor(() =>
+      expect(
+        view.getByText("marble-tray:ws_localdemo:tm_engineering:active-device-jwt"),
+      ).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("open-settings"));
+    await waitFor(() => expect(view.getByText("native-settings-screen")).toBeTruthy());
+
+    jest.mocked(restoreAnonymousSession).mockRejectedValue(new Error("SecureStore unavailable"));
+    fireEvent.press(view.getByTestId("settings-clear-local-data"));
+
+    await waitFor(() => expect(view.queryByText("Restoring anonymous session...")).toBeNull());
+    await waitFor(() => expect(view.getByText("onboarding-screen")).toBeTruthy());
+  });
+
+  it("does not stay stuck on the restoring screen when session restore fails on startup", async () => {
+    jest.mocked(restoreAnonymousSession).mockRejectedValue(new Error("SecureStore unavailable"));
+
+    const view = await render(<HomeScreen />);
+
+    await waitFor(() => expect(view.queryByText("Restoring anonymous session...")).toBeNull());
+    await waitFor(() => expect(view.getByText("onboarding-screen")).toBeTruthy());
   });
 });
 

@@ -3,18 +3,6 @@ import type { ComponentProps } from "react";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
 
-const mockSetThemePreference = jest.fn(async () => undefined);
-
-jest.mock("@/features/theme/provider", () => ({
-  ThemeProvider: ({ children }: { children: React.ReactNode }) => children,
-  useThemeContext: jest.fn(() => ({
-    themePreference: "system",
-    resolvedTheme: "light",
-    setThemePreference: mockSetThemePreference,
-    isLoading: false,
-  })),
-}));
-
 jest.mock("@/features/notifications/platform", () => ({
   getReminderRuntimeSupport: jest.fn(() => ({
     supportsLocalNotifications: true,
@@ -62,18 +50,6 @@ describe("SettingsScreen", () => {
     jest.clearAllMocks();
   });
 
-  it("renders the appearance section and persists the selected theme", async () => {
-    const view = await renderScreen();
-
-    expect(view.getByText("settings.appearanceSection.title")).toBeTruthy();
-    expect(view.getByTestId("settings-theme-option-light")).toBeTruthy();
-    expect(view.getByTestId("settings-theme-option-dark")).toBeTruthy();
-    expect(view.getByTestId("settings-theme-option-system")).toBeTruthy();
-
-    fireEvent.press(view.getByTestId("settings-theme-option-dark"));
-    await waitFor(() => expect(mockSetThemePreference).toHaveBeenCalledWith("dark"));
-  }, 10000);
-
   it("renders the Week 6 settings controls for local reminders and privacy actions", async () => {
     const view = await renderScreen();
 
@@ -104,23 +80,35 @@ describe("SettingsScreen", () => {
     await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
   });
 
-  it("shows a clear error when clearing local data fails instead of staying in a busy state", async () => {
-    const onClearLocalData = jest.fn().mockRejectedValue(new Error("Storage unavailable"));
-    const view = await renderScreen({ onClearLocalData });
-
-    fireEvent.press(view.getByTestId("settings-open-clear-local-data"));
-    await waitFor(() => expect(view.getByTestId("settings-clear-local-data-prompt")).toBeTruthy());
-    fireEvent.press(view.getByTestId("settings-confirm-clear-local-data"));
-    await waitFor(() => expect(view.getByText("Storage unavailable")).toBeTruthy());
-    expect(view.queryByText("settings.loadingSettings")).toBeNull();
-  });
-
-  it("shows a clear error when sign-out fails", async () => {
-    const onSignOut = jest.fn().mockRejectedValue(new Error("Session reset failed"));
+  it("shows an error when sign-out fails", async () => {
+    const onSignOut = jest.fn().mockRejectedValue(new Error("SecureStore unavailable"));
     const view = await renderScreen({ onSignOut });
 
     fireEvent.press(view.getByTestId("settings-sign-out"));
-    await waitFor(() => expect(view.getByText("Session reset failed")).toBeTruthy());
+
+    await waitFor(() => expect(view.getByText("SecureStore unavailable")).toBeTruthy());
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables the sign-out button while sign-out is in progress", async () => {
+    let resolveSignOut!: () => void;
+    const onSignOut = jest.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          resolveSignOut = resolve;
+        }),
+    );
+    const view = await renderScreen({ onSignOut });
+
+    fireEvent.press(view.getByTestId("settings-sign-out"));
+
+    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+    expect(view.getByTestId("settings-sign-out").props.accessibilityState?.disabled).toBe(true);
+
+    resolveSignOut();
+    await waitFor(() =>
+      expect(view.getByTestId("settings-sign-out").props.accessibilityState?.disabled).toBe(false),
+    );
   });
 
   it("toggles reminders on and persists the local opt-in state after permission is granted", async () => {

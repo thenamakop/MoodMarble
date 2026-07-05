@@ -1,37 +1,34 @@
 import { useRouter } from "expo-router";
 
 import { SettingsScreen } from "@/features/settings/settings-screen";
+import { clearAnonymousSession } from "@/features/onboarding/session";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 import { requestStoredOnboardingReplay } from "@/features/settings/storage";
 
 export default function SettingsRoute() {
   const router = useRouter();
 
+  async function navigateHomeAfter(action: () => Promise<void>) {
+    try {
+      await action();
+    } catch (error) {
+      console.warn(
+        "[MoodMarble] Settings action failed on settings route:",
+        error instanceof Error ? error.message : error,
+      );
+    }
+
+    router.replace("/");
+  }
+
   return (
     <SettingsScreen
-      onClearLocalData={async () => {
-        await clearLocalDeviceData();
-        router.replace("/");
-      }}
-      onRequestOnboardingReplay={async () => {
-        await requestStoredOnboardingReplay();
-        router.replace("/");
-      }}
+      onClearLocalData={async () => navigateHomeAfter(clearLocalDeviceData)}
+      onRequestOnboardingReplay={async () => navigateHomeAfter(requestStoredOnboardingReplay)}
       onReturnHome={() => {
         router.replace("/");
       }}
-      onSignOut={async () => {
-        try {
-          await clearLocalDeviceData();
-        } catch (error) {
-          const message = error instanceof Error ? error.message : String(error);
-          console.warn(`[MoodMarble] Sign-out cleanup failed: ${message}`);
-        } finally {
-          // Always navigate away from the settings surface so the user is not
-          // left on a frozen screen if the cleanup step fails or hangs.
-          router.replace("/");
-        }
-      }}
+      onSignOut={async () => navigateHomeAfter(clearAnonymousSession)}
     />
   );
 }

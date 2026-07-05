@@ -95,4 +95,14 @@ describe("clearLocalDeviceData", () => {
     expect(mockClearLocalMoodHistory).toHaveBeenCalledTimes(1);
     expect(mockClearAnonymousSession).toHaveBeenCalledTimes(1);
   });
+
+  it("continues clearing remaining data when a storage clear step throws", async () => {
+    mockClearLocalMoodHistory.mockRejectedValueOnce(new Error("SecureStore failed"));
+
+    await clearLocalDeviceData();
+
+    expect(mockClearLocalSettings).toHaveBeenCalledTimes(1);
+    expect(mockClearLocalMoodHistory).toHaveBeenCalledTimes(1);
+    expect(mockClearAnonymousSession).toHaveBeenCalledTimes(1);
+  });
 });

@@ -7,7 +7,7 @@ import { LocalHistoryScreen } from "@/features/history/history-screen";
 import { MarbleTrayScreen } from "@/features/mood-submission/marble-tray-screen";
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
 import { resolveAnonymousHomeState } from "@/features/onboarding/route-boundary";
-import { saveAnonymousSession } from "@/features/onboarding/session";
+import { saveAnonymousSession, clearAnonymousSession } from "@/features/onboarding/session";
 import {
   getAnonymousSessionFromParams,
   restoreAnonymousSession,
@@ -57,49 +57,64 @@ export default function HomeScreen() {
     const syncVersion = ++sessionSyncVersionRef.current;
 
     async function syncSession() {
-      // Check admin session first
-      const adminSession = await loadAdminSession();
-      if (adminSession && !cancelled && sessionSyncVersionRef.current === syncVersion) {
-        router.replace({
-          pathname: "/admin",
-          params: buildAdminRouteParams(adminSession),
-        });
-        return;
-      }
-
-      const nextContext = getAnonymousSessionFromParams(params);
-      const nextSession = await restoreAnonymousSession(params);
-      const localSettings = await loadLocalSettings();
-      const shouldReplayOnboarding = !nextContext && nextSession && localSettings.replayOnboarding;
-
-      if (shouldReplayOnboarding) {
-        await clearStoredOnboardingReplayRequest();
-
-        if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
-          setReplaySession(nextSession);
-          setSession(null);
-          setIsLoadingSession(false);
-          setActiveNativeScreen("marbles");
+      try {
+        // Check admin session first
+        const adminSession = await loadAdminSession();
+        if (adminSession && !cancelled && sessionSyncVersionRef.current === syncVersion) {
+          router.replace({
+            pathname: "/admin",
+            params: buildAdminRouteParams(adminSession),
+          });
+          return;
         }
 
-        return;
-      }
+        const nextContext = getAnonymousSessionFromParams(params);
+        const nextSession = await restoreAnonymousSession(params);
+        const localSettings = await loadLocalSettings();
+        const shouldReplayOnboarding =
+          !nextContext && nextSession && localSettings.replayOnboarding;
 
-      if (nextContext) {
+        if (shouldReplayOnboarding) {
+          await clearStoredOnboardingReplayRequest();
+
+          if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+            setReplaySession(nextSession);
+            setSession(null);
+            setIsLoadingSession(false);
+            setActiveNativeScreen("marbles");
+          }
+
+          return;
+        }
+
+        if (nextContext) {
+          if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+            setReplaySession(null);
+            setSession(nextSession);
+            setIsLoadingSession(false);
+          }
+
+          scrubUrl(router);
+          return;
+        }
+
         if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
           setReplaySession(null);
           setSession(nextSession);
           setIsLoadingSession(false);
         }
+      } catch (error) {
+        console.warn(
+          "[MoodMarble] Session restore failed during startup:",
+          error instanceof Error ? error.message : error,
+        );
 
-        scrubUrl(router);
-        return;
-      }
-
-      if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
-        setReplaySession(null);
-        setSession(nextSession);
-        setIsLoadingSession(false);
+        if (!cancelled && sessionSyncVersionRef.current === syncVersion) {
+          setReplaySession(null);
+          setSession(null);
+          setIsLoadingSession(false);
+          setActiveNativeScreen("marbles");
+        }
       }
     }
 
@@ -158,24 +173,51 @@ export default function HomeScreen() {
   }, []);
 
   async function refreshNativeHomeState() {
-    const nextContext = getAnonymousSessionFromParams(params);
-    const nextSession = await restoreAnonymousSession(params);
-    const localSettings = await loadLocalSettings();
-    const shouldReplayOnboarding = !nextContext && nextSession && localSettings.replayOnboarding;
+    try {
+      const nextContext = getAnonymousSessionFromParams(params);
+      const nextSession = await restoreAnonymousSession(params);
+      const localSettings = await loadLocalSettings();
+      const shouldReplayOnboarding = !nextContext && nextSession && localSettings.replayOnboarding;
 
-    if (shouldReplayOnboarding) {
-      await clearStoredOnboardingReplayRequest();
-      setReplaySession(nextSession);
+      if (shouldReplayOnboarding) {
+        await clearStoredOnboardingReplayRequest();
+        setReplaySession(nextSession);
+        setSession(null);
+        setIsLoadingSession(false);
+        setActiveNativeScreen("marbles");
+        return;
+      }
+
+      setReplaySession(null);
+      setSession(nextSession);
+      setIsLoadingSession(false);
+      setActiveNativeScreen("marbles");
+    } catch (error) {
+      console.warn(
+        "[MoodMarble] Failed to refresh home state after settings action:",
+        error instanceof Error ? error.message : error,
+      );
+
+      setReplaySession(null);
       setSession(null);
       setIsLoadingSession(false);
       setActiveNativeScreen("marbles");
-      return;
+    }
+  }
+
+  async function runSettingsAction(action: () => Promise<void>) {
+    setIsLoadingSession(true);
+
+    try {
+      await action();
+    } catch (error) {
+      console.warn(
+        "[MoodMarble] Settings action failed:",
+        error instanceof Error ? error.message : error,
+      );
     }
 
-    setReplaySession(null);
-    setSession(nextSession);
-    setIsLoadingSession(false);
-    setActiveNativeScreen("marbles");
+    await refreshNativeHomeState();
   }
 
   async function handleSessionReady(nextSession: AnonymousSession) {
@@ -219,64 +261,15 @@ export default function HomeScreen() {
   if (Platform.OS !== "web" && activeNativeScreen === "settings") {
     return (
       <SettingsScreen
-        onClearLocalData={async () => {
-          setIsLoadingSession(true);
-          try {
-            await clearLocalDeviceData();
-            await refreshNativeHomeState();
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.warn(`[MoodMarble] Failed to clear local data: ${message}`);
-          } finally {
-            setIsLoadingSession(false);
-          }
-        }}
-        onRequestOnboardingReplay={async () => {
-          setIsLoadingSession(true);
-          // Capture the current session before any state changes.
-          // This is the session we will replay onboarding for —
-          // the user keeps their workspace/team membership; only the
-          // slides are shown again. No join code is required.
-          const currentSession = session;
-          await requestStoredOnboardingReplay();
-          await clearStoredOnboardingReplayRequest();
-          // session = null → resolveAnonymousHomeState returns "onboarding"
-          // replaySession = currentSession → OnboardingScreen skips join code
-          sessionSyncVersionRef.current += 1;
-          setSession(null);
-          setReplaySession(currentSession);
-          setActiveNativeScreen("marbles");
-          setIsLoadingSession(false);
-        }}
+        onClearLocalData={async () => runSettingsAction(clearLocalDeviceData)}
+        onRequestOnboardingReplay={async () => runSettingsAction(requestStoredOnboardingReplay)}
         onReturnHome={() => setActiveNativeScreen("marbles")}
-        onSignOut={async () => {
-          setIsLoadingSession(true);
-          try {
-            await clearLocalDeviceData();
-            // Hard-reset the session state so the current screen cannot render
-            // the marble tray while the navigation is in flight.
-            sessionSyncVersionRef.current += 1;
-            setSession(null);
-            setReplaySession(null);
-            // Navigate to "/" with empty params to scrub the old
-            // workspace/team/jwt params from the router state.
-            // This prevents restoreAnonymousSession() from re-hydrating
-            // the session from stale URL params on the new mount.
-            router.replace({
-              pathname: "/",
-              params: {
-                workspace_id: "",
-                team_id: "",
-                device_jwt: "",
-              },
-            });
-          } catch (error) {
-            const message = error instanceof Error ? error.message : String(error);
-            console.warn(`[MoodMarble] Failed to sign out: ${message}`);
-          } finally {
-            setIsLoadingSession(false);
-          }
-        }}
+        onSignOut={async () =>
+          runSettingsAction(async () => {
+            await clearAnonymousSession();
+            router.replace("/");
+          })
+        }
       />
     );
   }
