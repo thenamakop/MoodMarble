@@ -3,6 +3,7 @@ import {
   VictoryAxis,
   VictoryBar,
   VictoryChart,
+  VictoryLabel,
   VictoryLine,
   VictoryScatter,
   VictoryTheme,
@@ -99,9 +100,10 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
           <ResponsiveVictoryChart height={200}>
             {(width) => (
               <VictoryChart
+                domain={{ y: [0, 10] }}
                 domainPadding={{ x: 12, y: 12 }}
                 height={200}
-                padding={{ bottom: 44, left: 36, right: 16, top: 16 }}
+                padding={{ bottom: 44, left: 36, right: 28, top: 16 }}
                 theme={chartTheme}
                 width={width}
               >
@@ -112,12 +114,23 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                 <VictoryAxis dependentAxis style={axisStyle} tickValues={[0, 2, 4, 6, 8, 10]} />
                 <View testID="manager-dashboard-weekly-series">
                   <VictoryLine
-                    data={viewModel.weeklyTrend.data.map((point) => ({
+                    data={viewModel.weeklyTrend.data.map((point, index) => ({
                       x: point.label,
                       y: point.scoreValue,
-                      label: point.scoreLabel,
+                      // Only the last point carries a label — showing a label on
+                      // every point caused overlapping numbers to spill past the
+                      // chart's right edge when points were close together.
+                      label:
+                        index === viewModel.weeklyTrend.data.length - 1 ? point.scoreLabel : "",
                     }))}
                     interpolation="monotoneX"
+                    labelComponent={
+                      <VictoryLabel
+                        dx={-6}
+                        dy={-10}
+                        style={{ fill: axisColor, fontSize: 11, fontWeight: "600" }}
+                      />
+                    }
                     style={{
                       data: {
                         stroke: "#4f46e5",
@@ -198,37 +211,54 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
       >
         <View testID="manager-dashboard-tags-chart">
           <ResponsiveVictoryChart height={200}>
-            {(width) => (
-              <VictoryChart
-                domainPadding={{ x: 14, y: 8 }}
-                height={200}
-                horizontal
-                padding={{ bottom: 28, left: 88, right: 16, top: 16 }}
-                theme={chartTheme}
-                width={width}
-              >
-                <VictoryAxis style={axisStyle} />
-                <VictoryAxis
-                  dependentAxis
-                  style={axisStyle}
-                  tickValues={viewModel.tagFrequency.data.map((bar) => bar.tag)}
-                />
-                <View testID="manager-dashboard-tags-series">
-                  <VictoryBar
-                    data={viewModel.tagFrequency.data.map((bar) => ({
-                      x: bar.tag,
-                      y: bar.value,
-                      label: bar.valueLabel,
-                    }))}
-                    style={{
-                      data: {
-                        fill: "#f97316",
-                      },
-                    }}
+            {(width) => {
+              const longestTagLength = viewModel.tagFrequency.data.reduce(
+                (max, bar) => Math.max(max, bar.tag.length),
+                0,
+              );
+              // Roughly 6.5px per character at fontSize 10, clamped between a
+              // sensible minimum (readable short tags) and 45% of the available
+              // chart width (never let the label column crowd out the bars).
+              const tagAxisPadding = Math.min(
+                Math.round(width * 0.45),
+                Math.max(64, Math.round(longestTagLength * 6.5) + 12),
+              );
+
+              return (
+                <VictoryChart
+                  domainPadding={{ x: 14, y: 8 }}
+                  height={200}
+                  horizontal
+                  padding={{ bottom: 28, left: tagAxisPadding, right: 16, top: 16 }}
+                  theme={chartTheme}
+                  width={width}
+                >
+                  <VictoryAxis style={axisStyle} />
+                  <VictoryAxis
+                    dependentAxis
+                    style={axisStyle}
+                    tickFormat={(tick: string) =>
+                      tick.length > 14 ? `${tick.slice(0, 13)}…` : tick
+                    }
+                    tickValues={viewModel.tagFrequency.data.map((bar) => bar.tag)}
                   />
-                </View>
-              </VictoryChart>
-            )}
+                  <View testID="manager-dashboard-tags-series">
+                    <VictoryBar
+                      data={viewModel.tagFrequency.data.map((bar) => ({
+                        x: bar.tag,
+                        y: bar.value,
+                        label: bar.valueLabel,
+                      }))}
+                      style={{
+                        data: {
+                          fill: "#f97316",
+                        },
+                      }}
+                    />
+                  </View>
+                </VictoryChart>
+              );
+            }}
           </ResponsiveVictoryChart>
         </View>
       </ChartCard>
@@ -418,6 +448,7 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.four,
     padding: Spacing.four,
     gap: Spacing.two,
+    overflow: "hidden",
   },
   cardTitle: {
     fontSize: 24,
