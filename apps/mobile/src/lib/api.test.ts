@@ -236,6 +236,18 @@ describe("logResolvedApiBaseUrl", () => {
     );
   });
 
+  it("logs the runtime default source when no override is set", () => {
+    console.info = jest.fn();
+    delete process.env.EXPO_PUBLIC_API_BASE_URL;
+
+    logResolvedApiBaseUrl();
+
+    expect(console.info).toHaveBeenCalledWith(
+      expect.stringContaining("[MoodMarble] API base URL:"),
+    );
+    expect(console.info).toHaveBeenCalledWith(expect.stringContaining("[source: runtime default"));
+  });
+
   it("does not log in production", () => {
     console.info = jest.fn();
     (process.env as Record<string, string | undefined>).NODE_ENV = "production";
