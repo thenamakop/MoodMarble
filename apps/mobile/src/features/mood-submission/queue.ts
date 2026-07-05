@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 import { z } from "zod";
 
 import { MoodSubmissionSchema, type MoodSubmission } from "@/contracts/mood-submission";
+import { isAbortError } from "@/lib/api";
 
 import { submitMoodSubmission } from "./api";
 
@@ -238,18 +239,12 @@ function isTransientNetworkError(error: unknown): boolean {
     return false;
   }
 
-  // AbortError wraps a DOMException; its name is "AbortError".
-  // When fetch is aborted (e.g. our timeout fires), the thrown error is
-  // a TypeError whose cause is a DOMException with name "AbortError".
-  const { cause } = error as { cause?: unknown };
-
-  if (cause instanceof DOMException && cause.name === "AbortError") {
-    return false;
-  }
-
-  // Also check the error itself in environments where AbortError surfaces
-  // directly as a DOMException rather than as the TypeError's cause.
-  if (error instanceof DOMException && error.name === "AbortError") {
+  // Abort/timeout errors indicate a configuration problem (e.g. wrong host,
+  // server not running) rather than a transient connectivity issue. They must
+  // surface immediately so the user can fix the real cause, not be silently
+  // queued as offline retries. This check avoids referencing the global
+  // DOMException class, which is not defined in React Native.
+  if (isAbortError(error)) {
     return false;
   }
 

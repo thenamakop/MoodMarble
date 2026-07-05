@@ -1,4 +1,4 @@
-import { getApiRequestErrorMessage, logResolvedApiBaseUrl } from "./api";
+import { getApiRequestErrorMessage, isAbortError, logResolvedApiBaseUrl } from "./api";
 
 describe("resolveApiBaseUrl", () => {
   const originalApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL;
@@ -181,6 +181,22 @@ describe("getApiRequestErrorMessage", () => {
     ).toBe(
       "Unable to join workspace right now. Dev details: Request timed out — check that the backend is reachable at http://10.0.2.2:3000/workspace/join",
     );
+  });
+
+  it("detects an AbortError without referencing DOMException at runtime", () => {
+    const originalDOMException = globalThis.DOMException;
+    // Simulate React Native where DOMException is not defined globally.
+    (globalThis as unknown as Record<string, unknown>).DOMException = undefined;
+
+    try {
+      const abortLike = Object.assign(new Error("The operation was aborted."), {
+        name: "AbortError",
+      });
+
+      expect(isAbortError(abortLike)).toBe(true);
+    } finally {
+      (globalThis as unknown as Record<string, unknown>).DOMException = originalDOMException;
+    }
   });
 });
 

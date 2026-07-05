@@ -27,6 +27,10 @@ jest.mock("react-native", () => ({
   Platform: { OS: "ios" },
 }));
 
+jest.mock("expo-device", () => ({
+  isDevice: false,
+}));
+
 jest.mock("@/features/mood-submission/api", () => ({
   submitMoodSubmission: jest.fn(),
 }));
@@ -168,6 +172,28 @@ describe("submitMoodSubmissionWithQueue", () => {
 
     // Nothing should have been queued.
     expect(await loadQueue()).toHaveLength(0);
+  });
+
+  it("rethrows on abort even when DOMException is not defined", async () => {
+    // Simulate React Native where the global DOMException class is not
+    // available. The abort detection must not reference DOMException at runtime.
+    const originalDOMException = globalThis.DOMException;
+
+    (globalThis as any).DOMException = undefined;
+
+    try {
+      const abortLike = Object.assign(new Error("The operation was aborted."), {
+        name: "AbortError",
+      });
+      const wrappedTypeError = new TypeError("fetch failed");
+      Object.defineProperty(wrappedTypeError, "cause", { value: abortLike });
+      mockSubmit.mockRejectedValueOnce(wrappedTypeError);
+
+      await expect(submitMoodSubmissionWithQueue(PAYLOAD, JWT)).rejects.toThrow("fetch failed");
+      expect(await loadQueue()).toHaveLength(0);
+    } finally {
+      (globalThis as any).DOMException = originalDOMException;
+    }
   });
 
   it("rethrows on daily limit error", async () => {

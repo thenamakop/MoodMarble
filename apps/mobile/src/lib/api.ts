@@ -138,20 +138,39 @@ export function getApiRequestErrorMessage(
     : `${stableMessage} Dev details: ${details}`;
 }
 
-function isAbortError(error: unknown): boolean {
-  if (error instanceof DOMException && error.name === "AbortError") {
+export function isAbortError(error: unknown): boolean {
+  if (hasErrorName(error, "AbortError")) {
     return true;
   }
 
-  if (error instanceof Error && error.name === "AbortError") {
+  if (hasErrorMessage(error, /aborted|abort/i)) {
     return true;
   }
 
-  if (error instanceof Error && /aborted|abort/i.test(error.message)) {
-    return true;
+  const cause = hasErrorCause(error) ? (error as { cause?: unknown }).cause : undefined;
+  if (cause) {
+    return isAbortError(cause);
   }
 
   return false;
+}
+
+function hasErrorName(error: unknown, name: string): boolean {
+  return typeof error === "object" && error !== null && "name" in error && error.name === name;
+}
+
+function hasErrorMessage(error: unknown, pattern: RegExp): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    pattern.test(error.message)
+  );
+}
+
+function hasErrorCause(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "cause" in error;
 }
 
 /**
