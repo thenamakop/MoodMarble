@@ -1,3 +1,4 @@
+import type { SchedulerModule } from "@/features/notifications/scheduler-bridge";
 import {
   cancelReminderNotificationsForRuntime,
   syncReminderScheduleForRuntime,
@@ -5,17 +6,16 @@ import {
 } from "@/features/notifications/scheduler-bridge";
 import { createDefaultLocalSettings } from "@/features/settings/model";
 
-const mockSyncReminderSchedule =
-  jest.fn<(settings: unknown, options: unknown) => Promise<unknown>>();
-const mockSyncStoredReminderSchedule = jest.fn<(options: unknown) => Promise<unknown>>();
-const mockCancelScheduledReminderNotifications = jest.fn<(options: unknown) => Promise<unknown>>();
+const mockSyncReminderSchedule = jest.fn();
+const mockSyncStoredReminderSchedule = jest.fn();
+const mockCancelScheduledReminderNotifications = jest.fn();
 
 const mockSchedulerModule = {
   syncReminderSchedule: (...args: unknown[]) => mockSyncReminderSchedule(...args),
   syncStoredReminderSchedule: (...args: unknown[]) => mockSyncStoredReminderSchedule(...args),
   cancelScheduledReminderNotifications: (...args: unknown[]) =>
     mockCancelScheduledReminderNotifications(...args),
-};
+} as unknown as SchedulerModule;
 
 jest.mock("@/features/notifications/scheduler", () => ({
   syncReminderSchedule: (...args: unknown[]) => mockSyncReminderSchedule(...args),

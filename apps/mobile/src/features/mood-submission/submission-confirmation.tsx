@@ -149,15 +149,17 @@ export function SubmissionConfirmation({
   );
 }
 
+const absoluteFill = StyleSheet.flatten(StyleSheet.absoluteFill);
+
 const styles = StyleSheet.create({
   overlay: {
-    ...StyleSheet.absoluteFill,
+    ...absoluteFill,
     alignItems: "center",
     justifyContent: "center",
     zIndex: 10,
   },
   backdrop: {
-    ...StyleSheet.absoluteFill,
+    ...absoluteFill,
     backgroundColor: "rgba(0, 0, 0, 0.18)",
   },
   cardWrapper: {

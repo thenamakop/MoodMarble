@@ -180,6 +180,7 @@ export async function syncReminderSchedule(
 export async function cancelScheduledReminderNotifications(
   options: {
     notificationsModule?: NotificationSchedulerModule;
+    platformModule?: ReminderNotificationPlatformModule;
     platformOs?: string;
     executionEnvironment?: string | null;
     appOwnership?: string | null;
