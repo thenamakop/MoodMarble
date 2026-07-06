@@ -6,10 +6,16 @@ const sentryRequire = createRequire(process.cwd() + "/package.json");
 
 let initialised = false;
 
-function getProfilingIntegration(): unknown | undefined {
+// Derived from Sentry.init's own parameter type rather than imported from a
+// @sentry/* package directly, since transitive dependencies can resolve to a
+// different (incompatible) version of the Integration type at the type level.
+type SentryInitOptions = NonNullable<Parameters<typeof Sentry.init>[0]>;
+type SentryIntegration = Extract<SentryInitOptions["integrations"], unknown[]>[number];
+
+function getProfilingIntegration(): SentryIntegration | undefined {
   try {
     const profiling = sentryRequire("@sentry/profiling-node") as {
-      nodeProfilingIntegration?: () => unknown;
+      nodeProfilingIntegration?: () => SentryIntegration;
     };
 
     return profiling.nodeProfilingIntegration?.();
@@ -30,7 +36,7 @@ export function initialiseSentry(dsn: string | undefined): void {
     return;
   }
 
-  const integrations: Array<unknown> = [];
+  const integrations: SentryIntegration[] = [];
   const profilingIntegration = getProfilingIntegration();
 
   if (profilingIntegration) {
