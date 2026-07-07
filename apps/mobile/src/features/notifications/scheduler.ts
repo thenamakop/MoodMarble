@@ -3,7 +3,7 @@ import { Platform } from "react-native";
 import type { LocalSettings, ReminderTime } from "@/features/settings/model";
 import { loadLocalSettings } from "@/features/settings/storage";
 
-import { loadNativeModuleAsync } from "./native-module";
+import { loadNativeModule } from "./native-module";
 import {
   getReminderRuntimeSupport,
   prepareReminderNotificationPlatformAsync,
@@ -62,28 +62,12 @@ export interface NotificationSchedulerModule {
 
 type ReminderNotificationsModule = NotificationSchedulerModule & ReminderNotificationPlatformModule;
 
-/**
- * Syncs the stored reminder schedule with local notification state.
- *
- * @param options - Optional notification scheduling and runtime overrides
- * @returns The reminder schedule sync result
- */
 export async function syncStoredReminderSchedule(
   options: ReminderSchedulerOptions = {},
 ): Promise<ReminderScheduleSyncResult> {
   return syncReminderSchedule(await loadLocalSettings(), options);
 }
 
-/**
- * Synchronizes stored reminder notifications with the current reminder settings.
- *
- * Updates the scheduled reminders to match the enabled times, cancels reminders that are no longer desired,
- * and reports whether reminders were scheduled, disabled, or unsupported on the current runtime.
- *
- * @param settings - The persisted reminder settings to apply.
- * @param options - Optional runtime and dependency overrides.
- * @returns A sync result containing the status, scheduled times, active identifiers, and any created or cancelled identifiers.
- */
 export async function syncReminderSchedule(
   settings: LocalSettings,
   options: ReminderSchedulerOptions = {},
@@ -172,15 +156,9 @@ export async function syncReminderSchedule(
   };
 }
 
-/**
- * Cancels all scheduled reminder notifications for the current runtime.
- *
- * @returns The identifiers of the notifications that were cancelled, sorted lexicographically.
- */
 export async function cancelScheduledReminderNotifications(
   options: {
     notificationsModule?: NotificationSchedulerModule;
-    platformModule?: ReminderNotificationPlatformModule;
     platformOs?: string;
     executionEnvironment?: string | null;
     appOwnership?: string | null;
@@ -216,26 +194,14 @@ export async function cancelScheduledReminderNotifications(
   return cancelledIdentifiers.sort();
 }
 
-/**
- * Builds the identifier used for a reminder schedule.
- *
- * @param reminderTime - The reminder time in `HH:MM` format
- * @returns The reminder notification identifier for `reminderTime`
- */
 export function buildReminderScheduleIdentifier(reminderTime: ReminderTime): string {
   return `${REMINDER_NOTIFICATION_NAMESPACE}.${reminderTime.replace(":", "")}`;
 }
 
-/**
- * Builds the notification content for a reminder time.
- *
- * @param reminderTime - The reminder time to include in the notification metadata
- * @returns The notification content for the reminder, including its title, body, and metadata
- */
 function buildReminderNotificationContent(reminderTime: ReminderTime) {
   return {
-    title: "How's your marble rolling? 🪨",
-    body: "Take a moment to check in — it's anonymous and takes 5 seconds.",
+    title: "Mood check-in",
+    body: "Take a quiet moment to drop today's marble.",
     sound: false,
     data: {
       reminderTime,
@@ -264,12 +230,6 @@ function buildReminderTrigger(reminderTime: ReminderTime, platformOs: string) {
   };
 }
 
-/**
- * Determines whether a notification request belongs to the reminder schedule.
- *
- * @param request - The scheduled notification request to inspect
- * @returns `true` if the request uses the reminder namespace or carries the reminder source marker, `false` otherwise
- */
 function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
   if (request.identifier.startsWith(`${REMINDER_NOTIFICATION_NAMESPACE}.`)) {
     return true;
@@ -284,5 +244,5 @@ function isMoodMarbleReminderRequest(request: NotificationRequest): boolean {
 
 async function loadNotificationsModule(): Promise<ReminderNotificationsModule> {
   // Avoid a static Metro dependency on expo-notifications during Expo Go startup.
-  return await loadNativeModuleAsync<ReminderNotificationsModule>("expo-notifications");
+  return loadNativeModule<ReminderNotificationsModule>("expo-notifications");
 }

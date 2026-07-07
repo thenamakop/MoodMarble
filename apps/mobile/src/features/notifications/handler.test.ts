@@ -44,8 +44,7 @@ describe("useNotificationHandler", () => {
   function createMockNotificationsModule(): NotificationHandlerModule {
     return {
       setNotificationHandler: mockSetNotificationHandler,
-      addNotificationResponseReceivedListener:
-        mockAddNotificationResponseReceivedListener,
+      addNotificationResponseReceivedListener: mockAddNotificationResponseReceivedListener,
     };
   }
 
@@ -64,9 +63,7 @@ describe("useNotificationHandler", () => {
         handleNotification: expect.any(Function),
       }),
     );
-    expect(mockAddNotificationResponseReceivedListener).toHaveBeenCalledTimes(
-      1,
-    );
+    expect(mockAddNotificationResponseReceivedListener).toHaveBeenCalledTimes(1);
   });
 
   it("does not set up notifications on unsupported runtimes", async () => {
@@ -95,14 +92,11 @@ describe("useNotificationHandler", () => {
       replace: routerReplace,
     } as unknown as ReturnType<typeof useRouter>);
 
-    let responseCallback: ((response: NotificationResponse) => void) | null =
-      null;
-    mockAddNotificationResponseReceivedListener.mockImplementation(
-      (callback) => {
-        responseCallback = callback;
-        return { remove: jest.fn() };
-      },
-    );
+    let responseCallback: ((response: NotificationResponse) => void) | null = null;
+    mockAddNotificationResponseReceivedListener.mockImplementation((callback) => {
+      responseCallback = callback;
+      return { remove: jest.fn() };
+    });
 
     renderHook(() =>
       useNotificationHandler({
@@ -132,14 +126,11 @@ describe("useNotificationHandler", () => {
       replace: routerReplace,
     } as unknown as ReturnType<typeof useRouter>);
 
-    let responseCallback: ((response: NotificationResponse) => void) | null =
-      null;
-    mockAddNotificationResponseReceivedListener.mockImplementation(
-      (callback) => {
-        responseCallback = callback;
-        return { remove: jest.fn() };
-      },
-    );
+    let responseCallback: ((response: NotificationResponse) => void) | null = null;
+    mockAddNotificationResponseReceivedListener.mockImplementation((callback) => {
+      responseCallback = callback;
+      return { remove: jest.fn() };
+    });
 
     renderHook(() =>
       useNotificationHandler({
