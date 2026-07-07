@@ -38,3 +38,7 @@ package-lock.json
 
 # Playwright MCP server runtime state (browser profiles, cache, etc.)
 .playwright-mcp/
+
+# Temporary issue notes and PR drafts
+.issue-*.md
+.pr-body*.txt
