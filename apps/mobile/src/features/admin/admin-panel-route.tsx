@@ -29,11 +29,6 @@ interface AdminPanelRouteProps {
   sectionFocus?: AdminSectionFocus;
 }
 
-/**
- * Renders the admin panel route and manages admin panel loading and actions.
- *
- * @param sectionFocus - The section to focus in the panel.
- */
 export function AdminPanelRoute({ sectionFocus = "overview" }: AdminPanelRouteProps) {
   const router = useRouter();
   const params = useLocalSearchParams<{

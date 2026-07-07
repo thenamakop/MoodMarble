@@ -1,12 +1,7 @@
 import type { AdminSession } from "./session";
 
 type AdminSectionFocus =
-  | "overview"
-  | "workspace"
-  | "team"
-  | "join-code"
-  | "manager-codes"
-  | "export";
+  "overview" | "workspace" | "team" | "join-code" | "manager-codes" | "export";
 
 interface AdminTeamOption {
   teamId: string;
@@ -29,16 +24,11 @@ function parseAdminTeams(encodedAdminTeams: string | null): string[] {
     .filter((entry) => entry.length > 0);
 }
 
-function hasAdminAccess(
-  adminJwt: string | null,
-  workspaceId: string | null,
-): boolean {
+function hasAdminAccess(adminJwt: string | null, workspaceId: string | null): boolean {
   return Boolean(adminJwt && workspaceId);
 }
 
-function parseAdminTeamOptions(
-  encodedAdminTeams: string | null,
-): AdminTeamOption[] {
+function parseAdminTeamOptions(encodedAdminTeams: string | null): AdminTeamOption[] {
   if (!encodedAdminTeams) {
     return [];
   }
@@ -80,9 +70,7 @@ function parseAdminRouteParams(
   };
 }
 
-function normalizeSearchParam(
-  value: string | string[] | undefined,
-): string | null {
+function normalizeSearchParam(value: string | string[] | undefined): string | null {
   if (typeof value === "string" && value.trim()) {
     return value;
   }

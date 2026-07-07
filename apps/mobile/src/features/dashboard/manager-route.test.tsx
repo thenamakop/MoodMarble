@@ -1,9 +1,4 @@
-import {
-  cleanup,
-  fireEvent,
-  render,
-  waitFor,
-} from "@testing-library/react-native";
+import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import ManagerDashboardRoute from "@/app/manager";
 import { buildManagerDashboardViewModel } from "@/features/dashboard/chart-model";
@@ -210,9 +205,7 @@ describe("ManagerDashboardRoute", () => {
 
     const view = await render(<ManagerDashboardRoute />);
 
-    await waitFor(() =>
-      expect(loadManagerDashboardBundle).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(loadManagerDashboardBundle).toHaveBeenCalledTimes(1));
 
     fireEvent.press(view.getByTestId("manager-route-select-date"));
 

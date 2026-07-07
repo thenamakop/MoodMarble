@@ -8,8 +8,7 @@ import {
 } from "@/contracts/dashboard";
 import { createApiUrl, getApiRequestErrorMessage } from "@/lib/api";
 
-const MANAGER_DASHBOARD_ERROR_MESSAGE =
-  "Unable to load manager dashboard right now.";
+const MANAGER_DASHBOARD_ERROR_MESSAGE = "Unable to load manager dashboard right now.";
 const MANAGER_ACCESS_MISSING_MESSAGE =
   "Manager access missing. Please use your manager code to sign in.";
 
@@ -66,13 +65,7 @@ async function fetchDashboardDaily(
 
     return DashboardDailySchema.parse(responseJson);
   } catch (error) {
-    throw new Error(
-      getApiRequestErrorMessage(
-        MANAGER_DASHBOARD_ERROR_MESSAGE,
-        error,
-        requestUrl,
-      ),
-    );
+    throw new Error(getApiRequestErrorMessage(MANAGER_DASHBOARD_ERROR_MESSAGE, error, requestUrl));
   }
 }
 
@@ -82,11 +75,7 @@ async function fetchDashboardWeekly(
   startDate?: string,
 ): Promise<DashboardWeekly> {
   const requestUrl = createApiUrl(
-    appendOptionalQuery(
-      `/dashboard/team/${teamId}/weekly`,
-      "start_date",
-      startDate,
-    ),
+    appendOptionalQuery(`/dashboard/team/${teamId}/weekly`, "start_date", startDate),
   );
 
   try {
@@ -104,13 +93,7 @@ async function fetchDashboardWeekly(
 
     return DashboardWeeklySchema.parse(responseJson);
   } catch (error) {
-    throw new Error(
-      getApiRequestErrorMessage(
-        MANAGER_DASHBOARD_ERROR_MESSAGE,
-        error,
-        requestUrl,
-      ),
-    );
+    throw new Error(getApiRequestErrorMessage(MANAGER_DASHBOARD_ERROR_MESSAGE, error, requestUrl));
   }
 }
 
@@ -120,11 +103,7 @@ async function fetchDashboardTags(
   startDate?: string,
 ): Promise<DashboardTags> {
   const requestUrl = createApiUrl(
-    appendOptionalQuery(
-      `/dashboard/team/${teamId}/tags`,
-      "start_date",
-      startDate,
-    ),
+    appendOptionalQuery(`/dashboard/team/${teamId}/tags`, "start_date", startDate),
   );
 
   try {
@@ -142,21 +121,11 @@ async function fetchDashboardTags(
 
     return DashboardTagsSchema.parse(responseJson);
   } catch (error) {
-    throw new Error(
-      getApiRequestErrorMessage(
-        MANAGER_DASHBOARD_ERROR_MESSAGE,
-        error,
-        requestUrl,
-      ),
-    );
+    throw new Error(getApiRequestErrorMessage(MANAGER_DASHBOARD_ERROR_MESSAGE, error, requestUrl));
   }
 }
 
-function appendOptionalQuery(
-  pathname: string,
-  queryKey: string,
-  queryValue?: string,
-): string {
+function appendOptionalQuery(pathname: string, queryKey: string, queryValue?: string): string {
   if (!queryValue?.trim()) {
     return pathname;
   }
