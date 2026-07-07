@@ -39,24 +39,15 @@ describe("admin panel journey", () => {
   });
 
   it("tapping Workspace chip scrolls to the workspace section", async () => {
-    await tapNavChipAndVerifySection(
-      "admin-panel-nav-workspace",
-      "admin-panel-workspace-section",
-    );
+    await tapNavChipAndVerifySection("admin-panel-nav-workspace", "admin-panel-workspace-section");
   });
 
   it("tapping Teams chip scrolls to the team management section", async () => {
-    await tapNavChipAndVerifySection(
-      "admin-panel-nav-team",
-      "admin-panel-team-section",
-    );
+    await tapNavChipAndVerifySection("admin-panel-nav-team", "admin-panel-team-section");
   });
 
   it("tapping Join code chip scrolls to the join code section", async () => {
-    await tapNavChipAndVerifySection(
-      "admin-panel-nav-join-code",
-      "admin-panel-join-code-section",
-    );
+    await tapNavChipAndVerifySection("admin-panel-nav-join-code", "admin-panel-join-code-section");
   });
 
   it("tapping Manager codes chip scrolls to the manager codes section", async () => {
@@ -67,10 +58,7 @@ describe("admin panel journey", () => {
   });
 
   it("tapping Export chip scrolls to the export section and renders date inputs", async () => {
-    await tapNavChipAndVerifySection(
-      "admin-panel-nav-export",
-      "admin-panel-export-section",
-    );
+    await tapNavChipAndVerifySection("admin-panel-nav-export", "admin-panel-export-section");
 
     // Confirm all three export controls are visible — start date, end date,
     // and the run button. These verify the section is fully rendered, not just
@@ -86,10 +74,7 @@ describe("admin panel journey", () => {
   it("tapping Overview chip scrolls back to the top workspace section", async () => {
     // Overview resets focus to the top — workspace section is active for
     // both 'overview' and 'workspace' so it is the expected visible section.
-    await tapNavChipAndVerifySection(
-      "admin-panel-nav-overview",
-      "admin-panel-workspace-section",
-    );
+    await tapNavChipAndVerifySection("admin-panel-nav-overview", "admin-panel-workspace-section");
   });
 
   it("signs out and lands back on the join-code step", async () => {
