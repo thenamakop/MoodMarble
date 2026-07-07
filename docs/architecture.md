@@ -270,6 +270,8 @@ Key fields:
 
 - `tags[]`
 
+- `note_hash`
+
 - `hour_of_day`
 
 - `submission_date`
@@ -672,9 +674,9 @@ moodmarble/
 
 - performance audit
 
-- Expo EAS build _(planned — not yet configured; no eas.json or EAS project ID)_
+- Expo EAS build
 
-- Render / Railway deploy _(planned — no deploy config yet)_
+- Render / Railway deploy
 
 ---
 
@@ -738,7 +740,7 @@ The MVP is complete only when all of the following are true:
 
 - backend unit coverage is at least 60%
 
-- Expo EAS builds succeed for both platforms _(not yet configured — see Upcoming in README)_
+- Expo EAS builds succeed for both platforms
 
 - README includes setup, environment variables, and deployment steps
 
