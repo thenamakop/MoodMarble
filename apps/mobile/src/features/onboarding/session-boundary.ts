@@ -1,12 +1,6 @@
-import {
-  loadAnonymousSession,
-  saveAnonymousSession,
-} from "@/features/onboarding/session";
+import { loadAnonymousSession, saveAnonymousSession } from "@/features/onboarding/session";
 import { isDeviceJwtActive } from "@/features/onboarding/device-jwt";
-import {
-  AnonymousSessionSchema,
-  type AnonymousSession,
-} from "@/features/onboarding/types";
+import { AnonymousSessionSchema, type AnonymousSession } from "@/features/onboarding/types";
 
 export interface AnonymousSessionBootstrapParams {
   workspace_id?: string | string[];
@@ -46,11 +40,9 @@ export function getAnonymousSessionFromParams(
   params: AnonymousSessionBootstrapParams,
 ): AnonymousSession | null {
   const parsedSession = AnonymousSessionSchema.safeParse({
-    workspaceId:
-      typeof params.workspace_id === "string" ? params.workspace_id : undefined,
+    workspaceId: typeof params.workspace_id === "string" ? params.workspace_id : undefined,
     teamId: typeof params.team_id === "string" ? params.team_id : undefined,
-    deviceJwt:
-      typeof params.device_jwt === "string" ? params.device_jwt : undefined,
+    deviceJwt: typeof params.device_jwt === "string" ? params.device_jwt : undefined,
   });
 
   if (!parsedSession.success) {

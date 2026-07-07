@@ -1,16 +1,11 @@
 import { fireEvent, render, waitFor } from "@testing-library/react-native";
 
 import SettingsRoute from "@/app/(tabs)/settings";
-import { clearAnonymousSession } from "@/features/onboarding/session";
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 import { requestStoredOnboardingReplay } from "@/features/settings/storage";
 
 jest.mock("expo-router", () => ({
   useRouter: jest.fn(),
-}));
-
-jest.mock("@/features/onboarding/session", () => ({
-  clearAnonymousSession: jest.fn(async () => undefined),
 }));
 
 jest.mock("@/features/settings/local-data", () => ({
@@ -27,11 +22,7 @@ jest.mock("@/features/settings/storage", () => ({
 }));
 
 jest.mock("@/features/settings/settings-screen", () => {
-  // require() is necessary here: jest.mock factories are hoisted before
-  // import statements, so ES imports are not yet bound at this point.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable, Text, View } = require("react-native");
 
   return {
@@ -39,12 +30,10 @@ jest.mock("@/features/settings/settings-screen", () => {
       onClearLocalData,
       onRequestOnboardingReplay,
       onReturnHome,
-      onSignOut,
     }: {
       onClearLocalData?: () => Promise<void> | void;
       onRequestOnboardingReplay?: () => Promise<void> | void;
       onReturnHome?: () => void;
-      onSignOut?: () => Promise<void> | void;
     }) => (
       <View>
         <Text>settings-screen-route</Text>
@@ -56,9 +45,6 @@ jest.mock("@/features/settings/settings-screen", () => {
         </Pressable>
         <Pressable onPress={onClearLocalData} testID="settings-route-clear-local-data">
           <Text>clear-local-data</Text>
-        </Pressable>
-        <Pressable onPress={onSignOut} testID="settings-route-sign-out">
-          <Text>sign-out</Text>
         </Pressable>
       </View>
     ),
@@ -109,25 +95,6 @@ describe("SettingsRoute", () => {
     fireEvent.press(view.getByTestId("settings-route-clear-local-data"));
 
     await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
-    expect(replace).toHaveBeenCalledWith("/");
-  });
-
-  it("signs out: clears the anonymous session and returns to the main app", async () => {
-    const view = await render(<SettingsRoute />);
-
-    fireEvent.press(view.getByTestId("settings-route-sign-out"));
-
-    await waitFor(() => expect(clearAnonymousSession).toHaveBeenCalledTimes(1));
-    expect(replace).toHaveBeenCalledWith("/");
-  });
-
-  it("signs out: still navigates home even if clearing the session throws", async () => {
-    jest.mocked(clearAnonymousSession).mockRejectedValueOnce(new Error("SecureStore unavailable"));
-    const view = await render(<SettingsRoute />);
-
-    fireEvent.press(view.getByTestId("settings-route-sign-out"));
-
-    await waitFor(() => expect(clearAnonymousSession).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith("/");
   });
 });

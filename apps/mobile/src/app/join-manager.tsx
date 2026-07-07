@@ -2,10 +2,7 @@ import { useRouter } from "expo-router";
 
 import { ManagerJoinScreen } from "@/features/dashboard/manager-join-screen";
 import { redeemManagerCode } from "@/features/dashboard/manager-join-api";
-import {
-  buildManagerRouteParams,
-  buildDateSelection,
-} from "@/features/dashboard/route-state";
+import { buildManagerRouteParams, buildDateSelection } from "@/features/dashboard/route-state";
 
 export default function ManagerJoinRoute() {
   const router = useRouter();

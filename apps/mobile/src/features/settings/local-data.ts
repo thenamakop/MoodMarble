@@ -22,17 +22,7 @@ export async function clearLocalDeviceData(
       console.warn(`[MoodMarble] Reminder cancellation failed during local data reset: ${message}`);
     }
   }
-
-  await clearWithBestEffort(clearLocalSettings, "local settings");
-  await clearWithBestEffort(clearLocalMoodHistory, "local mood history");
-  await clearWithBestEffort(clearAnonymousSession, "anonymous session");
-}
-
-async function clearWithBestEffort(clear: () => Promise<void>, label: string): Promise<void> {
-  try {
-    await clear();
-  } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
-    console.warn(`[MoodMarble] Failed to clear ${label} during local data reset: ${message}`);
-  }
+  await clearLocalSettings();
+  await clearLocalMoodHistory();
+  await clearAnonymousSession();
 }

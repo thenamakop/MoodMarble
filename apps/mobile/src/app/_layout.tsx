@@ -1,35 +1,21 @@
 import "@/i18n";
 import { initialiseSentry } from "@/config/sentry";
 import { logResolvedApiBaseUrl } from "@/lib/api";
-import {
-  DarkTheme,
-  DefaultTheme,
-  ThemeProvider as NavigationThemeProvider,
-} from "@react-navigation/native";
+import { DarkTheme, DefaultTheme, ThemeProvider } from "@react-navigation/native";
 import { Stack } from "expo-router";
-import { StatusBar } from "expo-status-bar";
+import { useColorScheme } from "react-native";
 
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { useNotificationHandler } from "@/features/notifications/handler";
-import { ThemeProvider, useThemeContext } from "@/features/theme/provider";
 initialiseSentry();
 logResolvedApiBaseUrl();
 
 export default function RootLayout() {
-  return (
-    <ThemeProvider>
-      <RootLayoutContent />
-    </ThemeProvider>
-  );
-}
-
-function RootLayoutContent() {
-  const { resolvedTheme } = useThemeContext();
+  const colorScheme = useColorScheme();
   useNotificationHandler();
 
   return (
-    <NavigationThemeProvider value={resolvedTheme === "dark" ? DarkTheme : DefaultTheme}>
-      <StatusBar style={resolvedTheme === "dark" ? "light" : "dark"} />
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <AnimatedSplashOverlay />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(tabs)" />
@@ -38,6 +24,6 @@ function RootLayoutContent() {
         <Stack.Screen name="join-manager" />
         <Stack.Screen name="manager" />
       </Stack>
-    </NavigationThemeProvider>
+    </ThemeProvider>
   );
 }
