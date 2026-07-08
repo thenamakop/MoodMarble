@@ -74,18 +74,14 @@ describe("InMemoryAdminApiService", () => {
       },
     });
 
-    await expect(
-      adminApiService.rotateJoinCode("ws_localdemo"),
-    ).resolves.toEqual({
+    await expect(adminApiService.rotateJoinCode("ws_localdemo")).resolves.toEqual({
       workspace: {
         id: "ws_localdemo",
         join_code: "N3W456",
       },
     });
 
-    await expect(
-      workspaceDirectory.findByJoinCode("ABC123"),
-    ).resolves.toBeNull();
+    await expect(workspaceDirectory.findByJoinCode("ABC123")).resolves.toBeNull();
     await expect(workspaceDirectory.findByJoinCode("N3W456")).resolves.toEqual({
       id: "ws_localdemo",
       name: "MoodMarble Local Workspace",

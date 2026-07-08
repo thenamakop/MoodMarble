@@ -6,10 +6,7 @@ import { createAdminJwt } from "../auth/admin-jwt";
 import type { DatabaseClient } from "../db/client";
 import { moodSubmissions, teams, workspaces } from "../db/schema";
 import type { InMemoryMoodSubmissionStore } from "./mood-submissions";
-import type {
-  InMemoryWorkspaceDirectory,
-  WorkspaceDirectoryEntry,
-} from "./workspace-directory";
+import type { InMemoryWorkspaceDirectory, WorkspaceDirectoryEntry } from "./workspace-directory";
 
 import type {
   AdminExportQuery,
@@ -26,9 +23,7 @@ import type {
 } from "../../../../packages/shared";
 
 export interface AdminApiService {
-  createWorkspace(
-    payload: AdminWorkspaceCreateRequest,
-  ): Promise<AdminWorkspaceCreateResponse>;
+  createWorkspace(payload: AdminWorkspaceCreateRequest): Promise<AdminWorkspaceCreateResponse>;
   createTeam(input: {
     workspaceId: WorkspaceId;
     payload: AdminTeamCreateRequest;
@@ -117,8 +112,7 @@ export class InMemoryAdminApiService implements AdminApiService {
   private readonly joinCodeFactory: JoinCodeFactory;
 
   constructor(private readonly options: InMemoryAdminApiServiceOptions) {
-    this.workspaceIdFactory =
-      options.workspaceIdFactory ?? defaultWorkspaceIdFactory;
+    this.workspaceIdFactory = options.workspaceIdFactory ?? defaultWorkspaceIdFactory;
     this.teamIdFactory = options.teamIdFactory ?? defaultTeamIdFactory;
     this.joinCodeFactory = options.joinCodeFactory ?? defaultJoinCodeFactory;
   }
@@ -135,32 +129,24 @@ export class InMemoryAdminApiService implements AdminApiService {
       teams: [],
     });
 
-    return buildWorkspaceCreateResponse(
-      this.options.jwtSecret,
-      storedWorkspace,
-    );
+    return buildWorkspaceCreateResponse(this.options.jwtSecret, storedWorkspace);
   }
 
   async createTeam(input: {
     workspaceId: WorkspaceId;
     payload: AdminTeamCreateRequest;
   }): Promise<AdminTeamResponse> {
-    const workspace = await this.options.workspaceDirectory.findById(
-      input.workspaceId,
-    );
+    const workspace = await this.options.workspaceDirectory.findById(input.workspaceId);
 
     if (!workspace) {
       throw new AdminWorkspaceNotFoundError();
     }
 
     const teamId = await this.createUniqueTeamId(input.workspaceId);
-    const storedTeam = await this.options.workspaceDirectory.addTeam(
-      input.workspaceId,
-      {
-        id: teamId as TeamId,
-        name: input.payload.name,
-      },
-    );
+    const storedTeam = await this.options.workspaceDirectory.addTeam(input.workspaceId, {
+      id: teamId as TeamId,
+      name: input.payload.name,
+    });
 
     if (!storedTeam) {
       throw new AdminWorkspaceNotFoundError();
@@ -216,8 +202,7 @@ export class InMemoryAdminApiService implements AdminApiService {
   }
 
   async getJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse> {
-    const workspace =
-      await this.options.workspaceDirectory.findById(workspaceId);
+    const workspace = await this.options.workspaceDirectory.findById(workspaceId);
 
     if (!workspace) {
       throw new AdminWorkspaceNotFoundError();
@@ -231,9 +216,7 @@ export class InMemoryAdminApiService implements AdminApiService {
     };
   }
 
-  async rotateJoinCode(
-    workspaceId: WorkspaceId,
-  ): Promise<AdminJoinCodeResponse> {
+  async rotateJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse> {
     const nextJoinCode = await this.createUniqueJoinCode();
     const workspace = await this.options.workspaceDirectory.updateJoinCode(
       workspaceId,
@@ -256,9 +239,7 @@ export class InMemoryAdminApiService implements AdminApiService {
     workspaceId: WorkspaceId;
     query: AdminExportQuery;
   }): Promise<AdminExportRecord[]> {
-    const teams = await this.options.workspaceDirectory.listTeams(
-      input.workspaceId,
-    );
+    const teams = await this.options.workspaceDirectory.listTeams(input.workspaceId);
 
     if (!teams) {
       throw new AdminWorkspaceNotFoundError();
@@ -299,15 +280,13 @@ export class InMemoryAdminApiService implements AdminApiService {
   private async createUniqueWorkspaceId(): Promise<string> {
     return createUniqueValue(
       this.workspaceIdFactory,
-      async (candidate) =>
-        (await this.options.workspaceDirectory.findById(candidate)) !== null,
+      async (candidate) => (await this.options.workspaceDirectory.findById(candidate)) !== null,
     );
   }
 
   private async createUniqueTeamId(workspaceId: WorkspaceId): Promise<string> {
     return createUniqueValue(this.teamIdFactory, async (candidate) => {
-      const teams =
-        await this.options.workspaceDirectory.listTeams(workspaceId);
+      const teams = await this.options.workspaceDirectory.listTeams(workspaceId);
 
       if (!teams) {
         return false;
@@ -321,8 +300,7 @@ export class InMemoryAdminApiService implements AdminApiService {
     return createUniqueValue(
       this.joinCodeFactory,
       async (candidate) =>
-        (await this.options.workspaceDirectory.findByJoinCode(candidate)) !==
-        null,
+        (await this.options.workspaceDirectory.findByJoinCode(candidate)) !== null,
     );
   }
 }
@@ -337,8 +315,7 @@ export class PostgresAdminApiService implements AdminApiService {
   private readonly joinCodeFactory: JoinCodeFactory;
 
   constructor(private readonly options: PostgresAdminApiServiceOptions) {
-    this.workspaceIdFactory =
-      options.workspaceIdFactory ?? defaultWorkspaceIdFactory;
+    this.workspaceIdFactory = options.workspaceIdFactory ?? defaultWorkspaceIdFactory;
     this.teamIdFactory = options.teamIdFactory ?? defaultTeamIdFactory;
     this.joinCodeFactory = options.joinCodeFactory ?? defaultJoinCodeFactory;
   }
@@ -367,10 +344,9 @@ export class PostgresAdminApiService implements AdminApiService {
     workspaceId: WorkspaceId;
     payload: AdminTeamCreateRequest;
   }): Promise<AdminTeamResponse> {
-    const workspaceRecord =
-      await this.options.databaseClient.db.query.workspaces.findFirst({
-        where: eq(workspaces.id, input.workspaceId),
-      });
+    const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, input.workspaceId),
+    });
 
     if (!workspaceRecord) {
       throw new AdminWorkspaceNotFoundError();
@@ -398,10 +374,9 @@ export class PostgresAdminApiService implements AdminApiService {
     teamId: string;
     payload: AdminTeamUpdateRequest;
   }): Promise<AdminTeamResponse> {
-    const teamRecord =
-      await this.options.databaseClient.db.query.teams.findFirst({
-        where: eq(teams.id, input.teamId),
-      });
+    const teamRecord = await this.options.databaseClient.db.query.teams.findFirst({
+      where: eq(teams.id, input.teamId),
+    });
 
     if (!teamRecord || teamRecord.workspaceId !== input.workspaceId) {
       throw new AdminTeamNotFoundError();
@@ -424,20 +399,18 @@ export class PostgresAdminApiService implements AdminApiService {
   }
 
   async listTeams(workspaceId: WorkspaceId): Promise<AdminTeamListResponse> {
-    const workspaceRecord =
-      await this.options.databaseClient.db.query.workspaces.findFirst({
-        where: eq(workspaces.id, workspaceId),
-      });
+    const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, workspaceId),
+    });
 
     if (!workspaceRecord) {
       throw new AdminWorkspaceNotFoundError();
     }
 
-    const teamRecords =
-      await this.options.databaseClient.db.query.teams.findMany({
-        where: eq(teams.workspaceId, workspaceId),
-        orderBy: (teamTable, { asc }) => [asc(teamTable.name)],
-      });
+    const teamRecords = await this.options.databaseClient.db.query.teams.findMany({
+      where: eq(teams.workspaceId, workspaceId),
+      orderBy: (teamTable, { asc }) => [asc(teamTable.name)],
+    });
 
     return {
       teams: teamRecords.map((team) => ({
@@ -449,10 +422,9 @@ export class PostgresAdminApiService implements AdminApiService {
   }
 
   async getJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse> {
-    const workspaceRecord =
-      await this.options.databaseClient.db.query.workspaces.findFirst({
-        where: eq(workspaces.id, workspaceId),
-      });
+    const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, workspaceId),
+    });
 
     if (!workspaceRecord) {
       throw new AdminWorkspaceNotFoundError();
@@ -466,13 +438,10 @@ export class PostgresAdminApiService implements AdminApiService {
     };
   }
 
-  async rotateJoinCode(
-    workspaceId: WorkspaceId,
-  ): Promise<AdminJoinCodeResponse> {
-    const workspaceRecord =
-      await this.options.databaseClient.db.query.workspaces.findFirst({
-        where: eq(workspaces.id, workspaceId),
-      });
+  async rotateJoinCode(workspaceId: WorkspaceId): Promise<AdminJoinCodeResponse> {
+    const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, workspaceId),
+    });
 
     if (!workspaceRecord) {
       throw new AdminWorkspaceNotFoundError();
@@ -499,44 +468,39 @@ export class PostgresAdminApiService implements AdminApiService {
     workspaceId: WorkspaceId;
     query: AdminExportQuery;
   }): Promise<AdminExportRecord[]> {
-    const workspaceRecord =
-      await this.options.databaseClient.db.query.workspaces.findFirst({
-        where: eq(workspaces.id, input.workspaceId),
-      });
+    const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+      where: eq(workspaces.id, input.workspaceId),
+    });
 
     if (!workspaceRecord) {
       throw new AdminWorkspaceNotFoundError();
     }
 
-    const teamRecords =
-      await this.options.databaseClient.db.query.teams.findMany({
-        where: eq(teams.workspaceId, input.workspaceId),
-        orderBy: (teamTable, { asc }) => [asc(teamTable.name)],
-      });
+    const teamRecords = await this.options.databaseClient.db.query.teams.findMany({
+      where: eq(teams.workspaceId, input.workspaceId),
+      orderBy: (teamTable, { asc }) => [asc(teamTable.name)],
+    });
 
     if (teamRecords.length === 0) {
       return [];
     }
 
-    const teamNameById = new Map(
-      teamRecords.map((teamRecord) => [teamRecord.id, teamRecord.name]),
-    );
-    const submissionRecords =
-      await this.options.databaseClient.db.query.moodSubmissions.findMany({
-        where: and(
-          inArray(
-            moodSubmissions.teamId,
-            teamRecords.map((teamRecord) => teamRecord.id),
-          ),
-          gte(moodSubmissions.submissionDate, input.query.start_date),
-          lte(moodSubmissions.submissionDate, input.query.end_date),
+    const teamNameById = new Map(teamRecords.map((teamRecord) => [teamRecord.id, teamRecord.name]));
+    const submissionRecords = await this.options.databaseClient.db.query.moodSubmissions.findMany({
+      where: and(
+        inArray(
+          moodSubmissions.teamId,
+          teamRecords.map((teamRecord) => teamRecord.id),
         ),
-        orderBy: (submissionTable, { asc }) => [
-          asc(submissionTable.submissionDate),
-          asc(submissionTable.hourOfDay),
-          asc(submissionTable.id),
-        ],
-      });
+        gte(moodSubmissions.submissionDate, input.query.start_date),
+        lte(moodSubmissions.submissionDate, input.query.end_date),
+      ),
+      orderBy: (submissionTable, { asc }) => [
+        asc(submissionTable.submissionDate),
+        asc(submissionTable.hourOfDay),
+        asc(submissionTable.id),
+      ],
+    });
 
     return submissionRecords.map((submissionRecord) => ({
       team_id: submissionRecord.teamId,
@@ -550,10 +514,9 @@ export class PostgresAdminApiService implements AdminApiService {
 
   private async createUniqueWorkspaceId(): Promise<string> {
     return createUniqueValue(this.workspaceIdFactory, async (candidate) => {
-      const workspaceRecord =
-        await this.options.databaseClient.db.query.workspaces.findFirst({
-          where: eq(workspaces.id, candidate),
-        });
+      const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+        where: eq(workspaces.id, candidate),
+      });
 
       return workspaceRecord !== null && workspaceRecord !== undefined;
     });
@@ -561,25 +524,21 @@ export class PostgresAdminApiService implements AdminApiService {
 
   private async createUniqueTeamId(workspaceId: WorkspaceId): Promise<string> {
     return createUniqueValue(this.teamIdFactory, async (candidate) => {
-      const teamRecord =
-        await this.options.databaseClient.db.query.teams.findFirst({
-          where: eq(teams.id, candidate),
-        });
+      const teamRecord = await this.options.databaseClient.db.query.teams.findFirst({
+        where: eq(teams.id, candidate),
+      });
 
       return (
-        teamRecord !== null &&
-        teamRecord !== undefined &&
-        teamRecord.workspaceId === workspaceId
+        teamRecord !== null && teamRecord !== undefined && teamRecord.workspaceId === workspaceId
       );
     });
   }
 
   private async createUniqueJoinCode(): Promise<string> {
     return createUniqueValue(this.joinCodeFactory, async (candidate) => {
-      const workspaceRecord =
-        await this.options.databaseClient.db.query.workspaces.findFirst({
-          where: eq(workspaces.joinCode, candidate),
-        });
+      const workspaceRecord = await this.options.databaseClient.db.query.workspaces.findFirst({
+        where: eq(workspaces.joinCode, candidate),
+      });
 
       return workspaceRecord !== null && workspaceRecord !== undefined;
     });

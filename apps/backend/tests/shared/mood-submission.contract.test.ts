@@ -1,4 +1,3 @@
-
 import { MOODS, MoodSubmissionSchema, TAGS } from "../../../../packages/shared";
 
 describe("MoodSubmissionSchema", () => {

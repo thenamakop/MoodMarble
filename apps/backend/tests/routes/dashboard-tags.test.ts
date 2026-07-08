@@ -374,10 +374,7 @@ async function createTestApp(
       return null;
     },
     async hasTeamInWorkspace(workspaceId, teamId) {
-      return (
-        workspaceId === TEST_WORKSPACE_ID &&
-        [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId)
-      );
+      return workspaceId === TEST_WORKSPACE_ID && [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId);
     },
   };
   const moodSubmissionStore: MoodSubmissionStore = {
@@ -425,14 +422,7 @@ function createSubmission(
       | "sad"
       | "unheard";
     hourOfDay: number;
-    tags: (
-      | "#meetings"
-      | "#workload"
-      | "#management"
-      | "#team"
-      | "#deadlines"
-      | "#recognition"
-    )[];
+    tags: ("#meetings" | "#workload" | "#management" | "#team" | "#deadlines" | "#recognition")[];
   }> = {},
 ) {
   return {
@@ -455,8 +445,7 @@ function createDashboardAnalyticsSource({
     async listDailySubmissions(teamId, submissionDate) {
       return submissions.filter(
         (submission) =>
-          submission.teamId === teamId &&
-          submission.submissionDate === submissionDate,
+          submission.teamId === teamId && submission.submissionDate === submissionDate,
       );
     },
     async listSubmissionsInDateRange(teamId, startDate, endDate) {

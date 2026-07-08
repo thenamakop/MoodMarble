@@ -5,14 +5,8 @@ import {
   type Tag,
 } from "../../../../packages/shared";
 
-import {
-  buildMoodDistribution,
-  type DashboardAnalyticsSource,
-} from "./dashboard-daily";
-import {
-  getDashboardWindowPrivacy,
-  toDashboardCountValue,
-} from "./dashboard-privacy";
+import { buildMoodDistribution, type DashboardAnalyticsSource } from "./dashboard-daily";
+import { getDashboardWindowPrivacy, toDashboardCountValue } from "./dashboard-privacy";
 import { getWeekWindow } from "./dashboard-weekly";
 
 interface TagsDashboardServiceOptions {
@@ -29,18 +23,13 @@ export class TagsDashboardService {
   constructor(private readonly options: TagsDashboardServiceOptions) {}
 
   async getTagsDashboard(input: GetTagsDashboardInput): Promise<DashboardTags> {
-    const window = getWeekWindow(
-      input.startDate,
-      this.options.now?.() ?? new Date(),
+    const window = getWeekWindow(input.startDate, this.options.now?.() ?? new Date());
+    const submissions = await this.options.analyticsSource.listSubmissionsInDateRange(
+      input.teamId,
+      window.startDate,
+      window.endDate,
     );
-    const submissions =
-      await this.options.analyticsSource.listSubmissionsInDateRange(
-        input.teamId,
-        window.startDate,
-        window.endDate,
-      );
-    const teamMemberCount =
-      await this.options.analyticsSource.getTeamMemberCount(input.teamId);
+    const teamMemberCount = await this.options.analyticsSource.getTeamMemberCount(input.teamId);
     const topLevelPrivacy = getDashboardWindowPrivacy({
       totalSubmissions: submissions.length,
       teamMemberCount,
@@ -59,10 +48,7 @@ export class TagsDashboardService {
       },
       privacy: topLevelPrivacy,
       summary: {
-        total_submissions: toDashboardCountValue(
-          submissions.length,
-          topLevelPrivacy,
-        ),
+        total_submissions: toDashboardCountValue(submissions.length, topLevelPrivacy),
         mood_distribution: buildMoodDistribution(submissions, topLevelPrivacy),
         alert_state:
           topLevelPrivacy.visibility === "hidden"
@@ -81,9 +67,7 @@ export class TagsDashboardService {
 }
 
 function buildTagCounts(
-  submissions: Awaited<
-    ReturnType<DashboardAnalyticsSource["listSubmissionsInDateRange"]>
-  >,
+  submissions: Awaited<ReturnType<DashboardAnalyticsSource["listSubmissionsInDateRange"]>>,
 ) {
   const counts = submissions.reduce<Record<Tag, number>>((acc, submission) => {
     for (const tag of submission.tags) {

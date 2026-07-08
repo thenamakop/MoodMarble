@@ -22,9 +22,7 @@ export class WorkspaceJoinService {
 
   async joinWorkspace(payload: unknown): Promise<WorkspaceJoinResponse> {
     const parsedPayload = WorkspaceJoinRequestSchema.parse(payload);
-    const workspace = await this.options.workspaceDirectory.findByJoinCode(
-      parsedPayload.join_code,
-    );
+    const workspace = await this.options.workspaceDirectory.findByJoinCode(parsedPayload.join_code);
 
     if (!workspace) {
       throw new WorkspaceJoinNotFoundError();

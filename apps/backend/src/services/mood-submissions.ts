@@ -28,9 +28,7 @@ export class PostgresMoodSubmissionStore implements MoodSubmissionStore {
   }
 }
 
-export function buildMoodSubmissionRecord(
-  submission: MoodSubmission,
-): NewMoodSubmission {
+export function buildMoodSubmissionRecord(submission: MoodSubmission): NewMoodSubmission {
   return {
     id: createMarbleId(),
     teamId: submission.team_id,

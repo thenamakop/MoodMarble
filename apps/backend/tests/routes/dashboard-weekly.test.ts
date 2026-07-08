@@ -79,9 +79,7 @@ describe("GET /dashboard/team/:teamId/weekly", () => {
       value: 6,
     });
     expect(body.daily_points).toHaveLength(7);
-    expect(
-      body.daily_points.map((point: { date: string }) => point.date),
-    ).toEqual([
+    expect(body.daily_points.map((point: { date: string }) => point.date)).toEqual([
       "2026-06-15",
       "2026-06-16",
       "2026-06-17",
@@ -341,10 +339,7 @@ async function createTestApp(
       return null;
     },
     async hasTeamInWorkspace(workspaceId, teamId) {
-      return (
-        workspaceId === TEST_WORKSPACE_ID &&
-        [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId)
-      );
+      return workspaceId === TEST_WORKSPACE_ID && [TEST_TEAM_ID, OTHER_TEAM_ID].includes(teamId);
     },
   };
   const moodSubmissionStore: MoodSubmissionStore = {
@@ -392,14 +387,7 @@ function createSubmission(
       | "sad"
       | "unheard";
     hourOfDay: number;
-    tags: (
-      | "#meetings"
-      | "#workload"
-      | "#management"
-      | "#team"
-      | "#deadlines"
-      | "#recognition"
-    )[];
+    tags: ("#meetings" | "#workload" | "#management" | "#team" | "#deadlines" | "#recognition")[];
   }> = {},
 ) {
   return {
@@ -422,8 +410,7 @@ function createDashboardAnalyticsSource({
     async listDailySubmissions(teamId, submissionDate) {
       return submissions.filter(
         (submission) =>
-          submission.teamId === teamId &&
-          submission.submissionDate === submissionDate,
+          submission.teamId === teamId && submission.submissionDate === submissionDate,
       );
     },
     async listSubmissionsInDateRange(teamId, startDate, endDate) {

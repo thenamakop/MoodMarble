@@ -88,9 +88,7 @@ describe("backend foundation routes", () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(() =>
-      WorkspaceJoinResponseSchema.parse(response.json()),
-    ).not.toThrow();
+    expect(() => WorkspaceJoinResponseSchema.parse(response.json())).not.toThrow();
   });
 
   it("returns not found for an unknown join code", async () => {
@@ -207,9 +205,7 @@ describe("backend foundation routes", () => {
     });
 
     expect(response.statusCode).toBe(204);
-    expect(response.headers["access-control-allow-origin"]).toBe(
-      "http://localhost:8081",
-    );
+    expect(response.headers["access-control-allow-origin"]).toBe("http://localhost:8081");
     expect(response.headers["access-control-allow-methods"]).toContain("POST");
   });
 

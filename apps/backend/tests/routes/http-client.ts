@@ -37,11 +37,7 @@ export async function inject(app: FastifyInstance, options: InjectOptions) {
   };
 }
 
-function createRequest(
-  app: FastifyInstance,
-  method: InjectOptions["method"],
-  url: string,
-) {
+function createRequest(app: FastifyInstance, method: InjectOptions["method"], url: string) {
   const agent = request(app.server);
 
   switch (method) {

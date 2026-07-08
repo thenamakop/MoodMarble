@@ -1,4 +1,3 @@
-
 import {
   DashboardDailySchema,
   DashboardTagsSchema,
@@ -197,10 +196,7 @@ describe("dashboard contract schemas", () => {
         hour_of_day: hourOfDay,
         privacy: {
           visibility: "hidden",
-          reasons:
-            hourOfDay === 10
-              ? ["minimum_hourly_submissions"]
-              : ["minimum_submissions"],
+          reasons: hourOfDay === 10 ? ["minimum_hourly_submissions"] : ["minimum_submissions"],
           thresholds: DASHBOARD_THRESHOLDS,
         },
         total_submissions: {
@@ -214,9 +210,7 @@ describe("dashboard contract schemas", () => {
     });
 
     expect(result.summary.alert_state.status).toBe("hidden");
-    expect(result.hourly_buckets[10]?.privacy.reasons).toContain(
-      "minimum_hourly_submissions",
-    );
+    expect(result.hourly_buckets[10]?.privacy.reasons).toContain("minimum_hourly_submissions");
   });
 
   it("rejects invalid alert payloads that expose a message without an active state", () => {

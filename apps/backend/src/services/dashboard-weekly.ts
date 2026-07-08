@@ -1,7 +1,4 @@
-import {
-  DashboardWeeklySchema,
-  type DashboardWeekly,
-} from "../../../../packages/shared";
+import { DashboardWeeklySchema, type DashboardWeekly } from "../../../../packages/shared";
 
 import {
   buildMoodDistribution,
@@ -28,21 +25,14 @@ interface GetWeeklyDashboardInput {
 export class WeeklyDashboardService {
   constructor(private readonly options: WeeklyDashboardServiceOptions) {}
 
-  async getWeeklyDashboard(
-    input: GetWeeklyDashboardInput,
-  ): Promise<DashboardWeekly> {
-    const window = getWeekWindow(
-      input.startDate,
-      this.options.now?.() ?? new Date(),
+  async getWeeklyDashboard(input: GetWeeklyDashboardInput): Promise<DashboardWeekly> {
+    const window = getWeekWindow(input.startDate, this.options.now?.() ?? new Date());
+    const submissions = await this.options.analyticsSource.listSubmissionsInDateRange(
+      input.teamId,
+      window.startDate,
+      window.endDate,
     );
-    const submissions =
-      await this.options.analyticsSource.listSubmissionsInDateRange(
-        input.teamId,
-        window.startDate,
-        window.endDate,
-      );
-    const teamMemberCount =
-      await this.options.analyticsSource.getTeamMemberCount(input.teamId);
+    const teamMemberCount = await this.options.analyticsSource.getTeamMemberCount(input.teamId);
     const topLevelPrivacy = getDashboardWindowPrivacy({
       totalSubmissions: submissions.length,
       teamMemberCount,
@@ -56,10 +46,7 @@ export class WeeklyDashboardService {
       },
       privacy: topLevelPrivacy,
       summary: {
-        total_submissions: toDashboardCountValue(
-          submissions.length,
-          topLevelPrivacy,
-        ),
+        total_submissions: toDashboardCountValue(submissions.length, topLevelPrivacy),
         mood_distribution: buildMoodDistribution(submissions, topLevelPrivacy),
         alert_state:
           topLevelPrivacy.visibility === "hidden"
@@ -80,10 +67,7 @@ export class WeeklyDashboardService {
         return {
           date: dayKey,
           privacy: topLevelPrivacy,
-          total_submissions: toDashboardCountValue(
-            daySubmissions.length,
-            topLevelPrivacy,
-          ),
+          total_submissions: toDashboardCountValue(daySubmissions.length, topLevelPrivacy),
           average_mood_score: toDashboardScoreValue(
             calculateAverageMoodScore(daySubmissions),
             topLevelPrivacy,

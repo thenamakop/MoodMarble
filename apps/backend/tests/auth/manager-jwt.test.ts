@@ -53,9 +53,9 @@ describe("manager jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyManagerJwt(`Bearer ${invalidManagerJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyManagerJwt(`Bearer ${invalidManagerJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
   });
 
   it("rejects an expired manager jwt", () => {
@@ -71,9 +71,8 @@ describe("manager jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyManagerJwt(`Bearer ${expiredManagerJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyManagerJwt(`Bearer ${expiredManagerJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
   });
 });
-

@@ -33,13 +33,9 @@ describe("admin workspace creation integration", () => {
     expect(() =>
       AdminWorkspaceCreateResponseSchema.parse(createWorkspaceResponse.json()),
     ).not.toThrow();
-    expect(createWorkspaceResponse.json().workspace.join_code).toMatch(
-      /^[A-Z0-9]{6}$/u,
-    );
+    expect(createWorkspaceResponse.json().workspace.join_code).toMatch(/^[A-Z0-9]{6}$/u);
     expect(createWorkspaceResponse.json()).not.toHaveProperty("email");
-    expect(createWorkspaceResponse.json().workspace).not.toHaveProperty(
-      "created_at",
-    );
+    expect(createWorkspaceResponse.json().workspace).not.toHaveProperty("created_at");
 
     const joinWorkspaceResponse = await inject(app, {
       method: "POST",
@@ -51,9 +47,7 @@ describe("admin workspace creation integration", () => {
     });
 
     expect(joinWorkspaceResponse.statusCode).toBe(200);
-    expect(() =>
-      WorkspaceJoinResponseSchema.parse(joinWorkspaceResponse.json()),
-    ).not.toThrow();
+    expect(() => WorkspaceJoinResponseSchema.parse(joinWorkspaceResponse.json())).not.toThrow();
     expect(joinWorkspaceResponse.json()).toEqual({
       workspace: {
         id: createWorkspaceResponse.json().workspace.id,
@@ -131,9 +125,7 @@ describe("admin workspace creation integration", () => {
     });
 
     expect(listTeamsResponse.statusCode).toBe(200);
-    expect(() =>
-      AdminTeamListResponseSchema.parse(listTeamsResponse.json()),
-    ).not.toThrow();
+    expect(() => AdminTeamListResponseSchema.parse(listTeamsResponse.json())).not.toThrow();
     expect(listTeamsResponse.json()).toEqual({
       teams: [
         {
@@ -154,9 +146,7 @@ describe("admin workspace creation integration", () => {
     });
 
     expect(joinWorkspaceResponse.statusCode).toBe(200);
-    expect(() =>
-      WorkspaceJoinResponseSchema.parse(joinWorkspaceResponse.json()),
-    ).not.toThrow();
+    expect(() => WorkspaceJoinResponseSchema.parse(joinWorkspaceResponse.json())).not.toThrow();
     expect(joinWorkspaceResponse.json()).toEqual({
       workspace: {
         id: createWorkspaceResponse.json().workspace.id,
@@ -263,23 +253,15 @@ describe("admin workspace creation integration", () => {
     );
     const [headerRow, firstDataRow] = exportResponse.body.trim().split("\n");
 
-    expect(headerRow).toBe(
-      "team_id,team_name,mood_type,tags,hour_of_day,submission_date",
-    );
+    expect(headerRow).toBe("team_id,team_name,mood_type,tags,hour_of_day,submission_date");
     expect(firstDataRow).toBeTruthy();
     expect(exportResponse.body).toContain(
       `"${createTeamResponse.json().team.id}","Product","focused","[""#workload"",""#deadlines""]",`,
     );
     expect(exportResponse.body).toContain('"14","2026-06-12"');
-    expect(exportResponse.body).not.toContain(
-      "Need some breathing room today.",
-    );
-    expect(exportResponse.body).not.toContain(
-      "Feeling steadier this afternoon.",
-    );
-    expect(exportResponse.body).not.toContain(
-      "550e8400-e29b-41d4-a716-446655440010",
-    );
+    expect(exportResponse.body).not.toContain("Need some breathing room today.");
+    expect(exportResponse.body).not.toContain("Feeling steadier this afternoon.");
+    expect(exportResponse.body).not.toContain("550e8400-e29b-41d4-a716-446655440010");
     expect(exportResponse.body).not.toContain("mr_001");
     expect(exportResponse.body).not.toContain("device_jwt");
     expect(exportResponse.body).not.toContain("device_token");
@@ -299,9 +281,7 @@ describe("admin workspace creation integration", () => {
     });
 
     expect(rejoinResponse.statusCode).toBe(200);
-    expect(() =>
-      WorkspaceJoinResponseSchema.parse(rejoinResponse.json()),
-    ).not.toThrow();
+    expect(() => WorkspaceJoinResponseSchema.parse(rejoinResponse.json())).not.toThrow();
     expect(rejoinResponse.json().teams).toEqual([
       {
         id: createTeamResponse.json().team.id,

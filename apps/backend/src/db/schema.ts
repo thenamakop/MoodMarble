@@ -42,14 +42,10 @@ export const workspaces = pgTable(
     id: text("id").primaryKey(),
     name: text("name").notNull(),
     joinCode: text("join_code").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    joinCodeUnique: uniqueIndex("workspaces_join_code_unique").on(
-      table.joinCode,
-    ),
+    joinCodeUnique: uniqueIndex("workspaces_join_code_unique").on(table.joinCode),
   }),
 );
 
@@ -65,9 +61,7 @@ export const teams = pgTable(
       .notNull()
       .references(() => workspaces.id, { onDelete: "cascade" }),
     name: text("name").notNull(),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     workspaceIdx: index("teams_workspace_id_idx").on(table.workspaceId),
@@ -88,14 +82,10 @@ export const teamMembers = pgTable(
       .references(() => teams.id, { onDelete: "cascade" }),
     deviceToken: uuid("device_token").notNull(),
     role: teamRoleEnum("role").notNull().default("member"),
-    joinedAt: timestamp("joined_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
-    deviceTokenUnique: uniqueIndex("team_members_device_token_unique").on(
-      table.deviceToken,
-    ),
+    deviceTokenUnique: uniqueIndex("team_members_device_token_unique").on(table.deviceToken),
     teamIdx: index("team_members_team_id_idx").on(table.teamId),
   }),
 );
@@ -123,9 +113,7 @@ export const moodSubmissions = pgTable(
   },
   (table) => ({
     teamIdx: index("mood_submissions_team_id_idx").on(table.teamId),
-    submissionDateIdx: index("mood_submissions_submission_date_idx").on(
-      table.submissionDate,
-    ),
+    submissionDateIdx: index("mood_submissions_submission_date_idx").on(table.submissionDate),
     hourOfDayIdx: index("mood_submissions_hour_of_day_idx").on(table.hourOfDay),
     moodTypeIdx: index("mood_submissions_mood_type_idx").on(table.moodType),
   }),
@@ -149,9 +137,7 @@ export const managerCodes = pgTable(
     expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
     usedAt: timestamp("used_at", { withTimezone: true }),
     isRevoked: smallint("is_revoked").notNull().default(0),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     codeUnique: uniqueIndex("manager_codes_code_unique").on(table.code),
@@ -174,9 +160,7 @@ export const adminCredentials = pgTable(
     email: text("email").notNull(),
     passwordHash: text("password_hash").notNull(),
     active: smallint("active").notNull().default(1),
-    createdAt: timestamp("created_at", { withTimezone: true })
-      .notNull()
-      .defaultNow(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => ({
     emailUnique: uniqueIndex("admin_credentials_email_unique").on(table.email),
@@ -207,15 +191,12 @@ export const teamMembersRelations = relations(teamMembers, ({ one }) => ({
   }),
 }));
 
-export const moodSubmissionsRelations = relations(
-  moodSubmissions,
-  ({ one }) => ({
-    team: one(teams, {
-      fields: [moodSubmissions.teamId],
-      references: [teams.id],
-    }),
+export const moodSubmissionsRelations = relations(moodSubmissions, ({ one }) => ({
+  team: one(teams, {
+    fields: [moodSubmissions.teamId],
+    references: [teams.id],
   }),
-);
+}));
 
 export const managerCodesRelations = relations(managerCodes, ({ one }) => ({
   team: one(teams, {

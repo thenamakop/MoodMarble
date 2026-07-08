@@ -1,10 +1,6 @@
 import jwt from "jsonwebtoken";
 
-import {
-  ADMIN_JWT_EXPIRES_IN,
-  createAdminJwt,
-  verifyAdminJwt,
-} from "../../src/auth/admin-jwt";
+import { ADMIN_JWT_EXPIRES_IN, createAdminJwt, verifyAdminJwt } from "../../src/auth/admin-jwt";
 import { createManagerJwt, verifyManagerJwt } from "../../src/auth/manager-jwt";
 import { UnauthorizedError } from "../../src/auth/device-jwt";
 
@@ -45,9 +41,9 @@ describe("admin jwt auth", () => {
       role: "manager",
     });
 
-    expect(() =>
-      verifyAdminJwt(`Bearer ${managerJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyAdminJwt(`Bearer ${managerJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
     expect(verifyManagerJwt(`Bearer ${managerJwt}`, JWT_SECRET)).toEqual({
       workspace_id: WORKSPACE_ID,
       team_id: TEAM_ID,
@@ -67,9 +63,9 @@ describe("admin jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyAdminJwt(`Bearer ${invalidAdminJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyAdminJwt(`Bearer ${invalidAdminJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
   });
 
   it("rejects an expired admin jwt", () => {
@@ -84,9 +80,9 @@ describe("admin jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyAdminJwt(`Bearer ${expiredAdminJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyAdminJwt(`Bearer ${expiredAdminJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
   });
 
   it("rejects a device jwt at the admin boundary", () => {
@@ -101,9 +97,7 @@ describe("admin jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyAdminJwt(`Bearer ${deviceJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyAdminJwt(`Bearer ${deviceJwt}`, JWT_SECRET)).toThrowError(UnauthorizedError);
   });
 
   it("rejects a jwt signed with a different secret", () => {
@@ -118,8 +112,8 @@ describe("admin jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyAdminJwt(`Bearer ${wrongSecretJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyAdminJwt(`Bearer ${wrongSecretJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
   });
 });

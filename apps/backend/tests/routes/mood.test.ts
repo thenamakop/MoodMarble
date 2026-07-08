@@ -318,11 +318,7 @@ describe("POST /mood", () => {
   });
 
   it("allows 5 submissions per day per device", async () => {
-    for (
-      let submissionNumber = 0;
-      submissionNumber < 5;
-      submissionNumber += 1
-    ) {
+    for (let submissionNumber = 0; submissionNumber < 5; submissionNumber += 1) {
       const response = await inject(app, {
         method: "POST",
         url: "/mood",
@@ -342,11 +338,7 @@ describe("POST /mood", () => {
   });
 
   it("blocks the 6th submission on the same day", async () => {
-    for (
-      let submissionNumber = 0;
-      submissionNumber < 5;
-      submissionNumber += 1
-    ) {
+    for (let submissionNumber = 0; submissionNumber < 5; submissionNumber += 1) {
       const response = await inject(app, {
         method: "POST",
         url: "/mood",
@@ -382,11 +374,7 @@ describe("POST /mood", () => {
   });
 
   it("resets the daily limit on the next day", async () => {
-    for (
-      let submissionNumber = 0;
-      submissionNumber < 5;
-      submissionNumber += 1
-    ) {
+    for (let submissionNumber = 0; submissionNumber < 5; submissionNumber += 1) {
       const response = await inject(app, {
         method: "POST",
         url: "/mood",
@@ -425,11 +413,7 @@ describe("POST /mood", () => {
   });
 
   it("returns a privacy-safe rate-limit error response", async () => {
-    for (
-      let submissionNumber = 0;
-      submissionNumber < 5;
-      submissionNumber += 1
-    ) {
+    for (let submissionNumber = 0; submissionNumber < 5; submissionNumber += 1) {
       await inject(app, {
         method: "POST",
         url: "/mood",
@@ -462,9 +446,7 @@ describe("POST /mood", () => {
       message: "Daily mood submission limit reached.",
     });
     expect(blockedResponse.body).not.toContain("device_token");
-    expect(blockedResponse.body).not.toContain(
-      "550e8400-e29b-41d4-a716-446655440000",
-    );
+    expect(blockedResponse.body).not.toContain("550e8400-e29b-41d4-a716-446655440000");
     expect(blockedResponse.body).not.toContain("Need a break.");
   });
 });
@@ -482,9 +464,7 @@ function createAuthorizationHeader(workspaceId = TEST_WORKSPACE_ID): string {
   )}`;
 }
 
-function createMoodPayload(
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function createMoodPayload(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     workspace_id: TEST_WORKSPACE_ID,
     team_id: TEST_TEAM_ID,

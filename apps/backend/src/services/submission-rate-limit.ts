@@ -8,19 +8,13 @@ export interface SubmissionRateLimitResult {
 }
 
 export interface SubmissionRateLimiter {
-  consume(
-    deviceToken: string,
-    submissionDate: string,
-  ): Promise<SubmissionRateLimitResult>;
+  consume(deviceToken: string, submissionDate: string): Promise<SubmissionRateLimitResult>;
 }
 
 export class InMemorySubmissionRateLimiter implements SubmissionRateLimiter {
   private readonly counters = new Map<string, number>();
 
-  async consume(
-    deviceToken: string,
-    submissionDate: string,
-  ): Promise<SubmissionRateLimitResult> {
+  async consume(deviceToken: string, submissionDate: string): Promise<SubmissionRateLimitResult> {
     const key = `${deviceToken}:${submissionDate}`;
     const currentCount = this.counters.get(key) ?? 0;
 
@@ -36,10 +30,7 @@ export class InMemorySubmissionRateLimiter implements SubmissionRateLimiter {
 export class RedisSubmissionRateLimiter implements SubmissionRateLimiter {
   constructor(private readonly redis: Redis) {}
 
-  async consume(
-    deviceToken: string,
-    submissionDate: string,
-  ): Promise<SubmissionRateLimitResult> {
+  async consume(deviceToken: string, submissionDate: string): Promise<SubmissionRateLimitResult> {
     const key = `moodmarble:submission-limit:${deviceToken}:${submissionDate}`;
     const currentCount = await this.redis.incr(key);
 
