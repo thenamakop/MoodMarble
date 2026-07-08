@@ -1,27 +1,22 @@
-jest.mock("expo-constants", () => ({
-  executionEnvironment: null,
-  appOwnership: null,
-}));
-
-jest.mock("expo-notifications", () => ({
-  AndroidImportance: {
-    DEFAULT: "default",
-  },
-  AndroidNotificationVisibility: {
-    PUBLIC: "public",
-  },
-  setNotificationChannelAsync: jest.fn(async () => undefined),
-}));
-
-import * as Notifications from "expo-notifications";
-
 import {
   EXPO_GO_ANDROID_REMINDER_NOTICE,
   getReminderRuntimeSupport,
   prepareReminderNotificationPlatformAsync,
   REMINDER_NOTIFICATION_CHANNEL_ID,
   supportsLocalNotifications,
+  type ReminderNotificationPlatformModule,
 } from "@/features/notifications/platform";
+
+jest.mock("expo-constants", () => ({
+  executionEnvironment: null,
+  appOwnership: null,
+}));
+
+const mockPlatformModule: ReminderNotificationPlatformModule = {
+  AndroidImportance: { DEFAULT: "default" },
+  AndroidNotificationVisibility: { PUBLIC: "public" },
+  setNotificationChannelAsync: jest.fn(async () => undefined),
+};
 
 describe("notification platform setup", () => {
   afterEach(() => {
@@ -65,19 +60,18 @@ describe("notification platform setup", () => {
   });
 
   it("creates the Android reminder channel with low-friction defaults", async () => {
-    await prepareReminderNotificationPlatformAsync(Notifications, "android");
+    await prepareReminderNotificationPlatformAsync(mockPlatformModule, "android");
 
-    expect(Notifications.setNotificationChannelAsync).toHaveBeenCalledWith(
+    expect(mockPlatformModule.setNotificationChannelAsync).toHaveBeenCalledWith(
       REMINDER_NOTIFICATION_CHANNEL_ID,
       {
         name: "Daily mood reminders",
         description: "Friendly daily prompts to check in with your mood.",
-        importance: Notifications.AndroidImportance.DEFAULT,
+        importance: mockPlatformModule.AndroidImportance.DEFAULT,
         enableLights: true,
         enableVibrate: false,
         lightColor: "#208AEF",
-        lockscreenVisibility:
-          Notifications.AndroidNotificationVisibility.PUBLIC,
+        lockscreenVisibility: mockPlatformModule.AndroidNotificationVisibility.PUBLIC,
         showBadge: false,
         sound: null,
       },
@@ -85,9 +79,9 @@ describe("notification platform setup", () => {
   });
 
   it("skips Android channel setup on unsupported platforms", async () => {
-    await prepareReminderNotificationPlatformAsync(Notifications, "ios");
-    await prepareReminderNotificationPlatformAsync(Notifications, "web");
+    await prepareReminderNotificationPlatformAsync(mockPlatformModule, "ios");
+    await prepareReminderNotificationPlatformAsync(mockPlatformModule, "web");
 
-    expect(Notifications.setNotificationChannelAsync).not.toHaveBeenCalled();
+    expect(mockPlatformModule.setNotificationChannelAsync).not.toHaveBeenCalled();
   });
 });
