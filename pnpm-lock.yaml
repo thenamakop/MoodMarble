@@ -249,8 +249,8 @@ importers:
         specifier: ^9.0.3
         version: 9.0.3
       react-test-renderer:
-        specifier: ^19.2.3
-        version: 19.2.7(react@19.1.0)
+        specifier: 19.1.0
+        version: 19.1.0(react@19.1.0)
       typescript:
         specifier: ~5.9.3
         version: 5.9.3
@@ -6758,11 +6758,6 @@ packages:
     resolution: {integrity: sha512-jXkSl3CpvPYEF+p/eGDLB4sPoDX8pKkYvRl9+rR8HxLY0X04vW7hCm1/0zHoUSjPZ3bDa+wXWNTDVIw/R8aDVw==}
     peerDependencies:
       react: ^19.1.0
-
-  react-test-renderer@19.2.7:
-    resolution: {integrity: sha512-U4TyPDJ9MsC8rFimXuJum8w40aPc9kbOZYO8Pc2/4A884i8hwJsMNA/JNyuOc/f2/37wHvk7HjpVl1V4re7Dig==}
-    peerDependencies:
-      react: ^19.2.7
 
   react@19.1.0:
     resolution: {integrity: sha512-FS+XFBNvn3GTAWq26joslQgWNoFu08F4kl0J4CgdNKADkdSGXQyTCnKteIAJy96Br6YbpEU1LSzV5dYtjMkMDg==}
@@ -16331,12 +16326,6 @@ snapshots:
       react: 19.1.0
       react-is: 19.2.7
       scheduler: 0.26.0
-
-  react-test-renderer@19.2.7(react@19.1.0):
-    dependencies:
-      react: 19.1.0
-      react-is: 19.2.7
-      scheduler: 0.27.0
 
   react@19.1.0: {}
 

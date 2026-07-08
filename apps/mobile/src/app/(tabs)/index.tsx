@@ -262,7 +262,11 @@ export default function HomeScreen() {
     return (
       <SettingsScreen
         onClearLocalData={async () => runSettingsAction(clearLocalDeviceData)}
-        onRequestOnboardingReplay={async () => runSettingsAction(requestStoredOnboardingReplay)}
+        onRequestOnboardingReplay={async () =>
+          runSettingsAction(async () => {
+            await requestStoredOnboardingReplay();
+          })
+        }
         onReturnHome={() => setActiveNativeScreen("marbles")}
         onSignOut={async () =>
           runSettingsAction(async () => {

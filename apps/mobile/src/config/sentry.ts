@@ -15,9 +15,6 @@ export function initialiseSentry(): void {
 
   Sentry.init({
     dsn,
-    // In development, show a red overlay for JS errors instead of
-    // reporting to Sentry. In production, report silently.
-    enableInExpoDevelopment: false,
     environment: __DEV__ ? "development" : "production",
     // Do not trace performance in development (too noisy).
     tracesSampleRate: __DEV__ ? 0 : 0.1,

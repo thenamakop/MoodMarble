@@ -1,3 +1,5 @@
+import type { Href } from "expo-router";
+
 import type { AnonymousSession } from "@/features/onboarding/types";
 
 export const ANONYMOUS_MEMBER_HOME_ROUTE = "/";
@@ -27,7 +29,7 @@ export function isAllowedAnonymousMemberRoute(pathname: string): boolean {
   return ALLOWED_ANONYMOUS_MEMBER_ROUTES.has(normalizePathname(pathname));
 }
 
-export function getProtectedRouteRedirect(pathname: string): string | null {
+export function getProtectedRouteRedirect(pathname: string): Href | null {
   if (isAllowedAnonymousMemberRoute(pathname)) {
     return null;
   }
