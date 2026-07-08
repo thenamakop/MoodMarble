@@ -286,7 +286,6 @@ describe("settings local actions", () => {
         await schedulerModule.cancelScheduledReminderNotifications({
           platformOs: "android",
           notificationsModule: mockNotificationSchedulerModule,
-          platformModule: mockPlatformModule,
         });
       },
     });
