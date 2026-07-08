@@ -1,5 +1,6 @@
-import { createContext, ReactNode, useContext, useState, type LayoutChangeEvent } from "react";
+import { createContext, ReactNode, useContext, useState } from "react";
 import { View } from "react-native";
+import type { LayoutChangeEvent } from "react-native";
 
 const ChartWidthContext = createContext<number | null>(null);
 
