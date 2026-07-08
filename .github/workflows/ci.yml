@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master, graph-betterment]
+
+jobs:
+  shared:
+    name: Shared package typecheck
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck shared package
+        run: cd packages/shared && npx tsc --noEmit
+
+  backend:
+    name: Backend typecheck, format, and coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck backend
+        run: cd apps/backend && npx tsc --noEmit
+
+      - name: Check backend formatting
+        run: cd apps/backend && npx prettier --check "src/**/*.ts" "tests/**/*.ts"
+
+      - name: Run backend tests with coverage
+        run: pnpm --dir apps/backend run test:coverage
+
+  mobile:
+    name: Mobile typecheck, lint, and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "pnpm"
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Typecheck mobile
+        run: cd apps/mobile && npx tsc --noEmit
+
+      - name: Lint mobile
+        run: pnpm --dir apps/mobile run lint
+
+      - name: Test mobile
+        run: pnpm run test:mobile
