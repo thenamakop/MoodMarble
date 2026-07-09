@@ -1,4 +1,35 @@
+import { createStorageMock } from "@/test-utils/web-storage-mock";
+
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+
+// jest-expo creates a minimal window = global in the Node test environment, and
+// jsdom may leave localStorage/sessionStorage undefined depending on load order.
+// Coverage instrumentation can change module load order so a test file may run
+// before its own beforeEach has installed per-test mocks. Provide baseline mocks
+// that individual tests can still override via Object.defineProperty with
+// configurable: true.
+function installWebStorageMock(key: "localStorage" | "sessionStorage"): void {
+  const existing = (window as unknown as Record<string, unknown>)[key];
+  if (
+    typeof existing === "object" &&
+    existing !== null &&
+    typeof (existing as Storage).getItem === "function" &&
+    typeof (existing as Storage).setItem === "function" &&
+    typeof (existing as Storage).clear === "function"
+  ) {
+    return;
+  }
+
+  Object.defineProperty(window, key, {
+    configurable: true,
+    value: createStorageMock(),
+  });
+}
+
+if (typeof window !== "undefined") {
+  installWebStorageMock("localStorage");
+  installWebStorageMock("sessionStorage");
+}
 
 // Sentry mock — the native module is not available in the Jest jsdom
 // environment. It must be mocked before any module imports it.

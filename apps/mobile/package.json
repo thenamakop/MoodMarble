@@ -81,6 +81,14 @@
       "^@/global\\.css$": "<rootDir>/test/__mocks__/styleMock.ts",
       "\\.css$": "<rootDir>/test/__mocks__/styleMock.ts",
       "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "coverageThreshold": {
+      "global": {
+        "branches": 40,
+        "functions": 40,
+        "lines": 40,
+        "statements": 40
+      }
     }
   },
   "private": true
