@@ -173,6 +173,7 @@ moodmarble/
 │
 ├── docs/
 │   ├── architecture.md
+│   ├── e2e-android.md
 │   ├── week-4-handoff.md
 │   ├── week-5-handoff.md
 │   └── week-6-handoff.md
@@ -730,6 +731,8 @@ pnpm e2e:android:test
 pnpm e2e:android:test:headless
 ```
 
+See [`docs/e2e-android.md`](docs/e2e-android.md) for the full setup, single-file test commands, and detailed troubleshooting.
+
 #### Notes
 
 - The debug app automatically rewrites `localhost` network requests to `10.0.2.2`, so Android emulator traffic successfully targets `http://10.0.2.2:3000`.
@@ -737,6 +740,7 @@ pnpm e2e:android:test:headless
 - The manager dashboard E2E window (`start_date=2026-06-16`, `date=2026-06-22`) is now seeded with visible data, so the dashboard renders charts instead of hidden placeholders.
 - The member journey E2E has been hardened against onboarding skip issues, keyboard overlay, history navigation, settings scroll position, and the submission confirmation overlay.
 - These basic Detox tests do not cover iOS. Adding iOS E2E would require an iOS native project/runtime path and is intentionally out of scope for this basic MVP.
+- If Detox fails with `TypeError: this._sendMonitoredAction is not a function` during `waitUntilReady`, the instrumentation bridge did not initialize. See [`docs/e2e-android.md`](docs/e2e-android.md) for the troubleshooting checklist.
 
 ### Android And Windows Notes
 
@@ -847,6 +851,7 @@ pnpm e2e:android:test:headless
 | -------------------------------- | ------------------------------------------------------ |
 | `docs/SECURITY.md`               | Authentication model and security properties           |
 | `docs/architecture.md`           | System architecture and implementation blueprint       |
+| `docs/e2e-android.md`            | Android Detox E2E setup and troubleshooting            |
 | `docs/week-3-workspace-audit.md` | Week 3 audit and scope alignment notes                 |
 | `docs/week-4-handoff.md`         | Week 4 local-history boundary and verification notes   |
 | `docs/week-5-handoff.md`         | Week 5 manager dashboard boundary and verification     |
