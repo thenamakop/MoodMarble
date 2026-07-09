@@ -233,15 +233,14 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                   theme={chartTheme}
                   width={width}
                 >
-                  <VictoryAxis style={axisStyle} />
                   <VictoryAxis
-                    dependentAxis
                     style={axisStyle}
                     tickFormat={(tick: string) =>
                       tick.length > 14 ? `${tick.slice(0, 13)}…` : tick
                     }
                     tickValues={viewModel.tagFrequency.data.map((bar) => bar.tag)}
                   />
+                  <VictoryAxis dependentAxis style={axisStyle} />
                   <View testID="manager-dashboard-tags-series">
                     <VictoryBar
                       data={viewModel.tagFrequency.data.map((bar) => ({
