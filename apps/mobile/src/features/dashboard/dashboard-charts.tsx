@@ -1,4 +1,5 @@
-import { StyleSheet, View } from "react-native";
+import { useState } from "react";
+import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import {
   VictoryAxis,
   VictoryBar,
@@ -8,6 +9,7 @@ import {
   VictoryScatter,
   VictoryTheme,
 } from "victory-native";
+import { Maximize2, X } from "lucide-react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -365,38 +367,85 @@ function ChartCard({
 }) {
   const theme = useTheme();
 
-  return (
-    <ThemedView style={styles.card} testID={testID} type="backgroundElement">
-      <ThemedText type="subtitle" style={styles.cardTitle}>
-        {title}
-      </ThemedText>
-      <ThemedText themeColor="textSecondary">{description}</ThemedText>
+  const [isExpanded, setIsExpanded] = useState(false);
+  const isExpandable = visibility === "visible";
 
-      {visibility === "hidden" ? (
-        <ThemedView style={styles.fallbackPanel} testID={`${testID}-hidden`} type="background">
-          <ThemedText type="smallBold">Hidden by privacy threshold</ThemedText>
-          <ThemedText themeColor="textSecondary">{hiddenMessage}</ThemedText>
+  return (
+    <>
+      <Pressable
+        disabled={!isExpandable}
+        onPress={() => setIsExpanded(true)}
+        style={({ pressed }) => [
+          styles.cardPressable,
+          { opacity: pressed && isExpandable ? 0.85 : 1 },
+        ]}
+        testID={`${testID}-expand-trigger`}
+      >
+        <ThemedView style={styles.card} testID={testID} type="backgroundElement">
+          <View style={styles.cardHeader}>
+            <ThemedText type="subtitle" style={styles.cardTitle}>
+              {title}
+            </ThemedText>
+            {isExpandable ? (
+              <View style={styles.expandIcon} testID={`${testID}-expand-icon`}>
+                <Maximize2 color={theme.textSecondary} size={18} />
+              </View>
+            ) : null}
+          </View>
+          <ThemedText themeColor="textSecondary">{description}</ThemedText>
+
+          {visibility === "hidden" ? (
+            <ThemedView style={styles.fallbackPanel} testID={`${testID}-hidden`} type="background">
+              <ThemedText type="smallBold">Hidden by privacy threshold</ThemedText>
+              <ThemedText themeColor="textSecondary">{hiddenMessage}</ThemedText>
+            </ThemedView>
+          ) : (
+            <ChartWidthProvider testID={`${testID}-width-provider`}>
+              {visibility === "blurred" && thresholdMessage ? (
+                <View
+                  style={[
+                    styles.thresholdBadge,
+                    {
+                      backgroundColor: theme.backgroundSelected,
+                    },
+                  ]}
+                  testID={`${testID}-blurred`}
+                >
+                  <ThemedText type="smallBold">Blurred values</ThemedText>
+                  <ThemedText themeColor="textSecondary">{thresholdMessage}</ThemedText>
+                </View>
+              ) : null}
+              {children}
+            </ChartWidthProvider>
+          )}
         </ThemedView>
-      ) : (
-        <ChartWidthProvider testID={`${testID}-width-provider`}>
-          {visibility === "blurred" && thresholdMessage ? (
-            <View
-              style={[
-                styles.thresholdBadge,
-                {
-                  backgroundColor: theme.backgroundSelected,
-                },
-              ]}
-              testID={`${testID}-blurred`}
+      </Pressable>
+
+      <Modal
+        animationType="slide"
+        onRequestClose={() => setIsExpanded(false)}
+        presentationStyle="pageSheet"
+        visible={isExpanded}
+      >
+        <ThemedView style={styles.modalContainer} type="background">
+          <View style={styles.modalHeader}>
+            <ThemedText type="subtitle">{title}</ThemedText>
+            <Pressable
+              onPress={() => setIsExpanded(false)}
+              style={({ pressed }) => [styles.modalCloseButton, { opacity: pressed ? 0.7 : 1 }]}
+              testID={`${testID}-expand-close`}
             >
-              <ThemedText type="smallBold">Blurred values</ThemedText>
-              <ThemedText themeColor="textSecondary">{thresholdMessage}</ThemedText>
-            </View>
-          ) : null}
-          {children}
-        </ChartWidthProvider>
-      )}
-    </ThemedView>
+              <X color={theme.text} size={24} />
+            </Pressable>
+          </View>
+          <ScrollView contentContainerStyle={styles.modalScrollContent}>
+            <ChartWidthProvider testID={`${testID}-expanded-width-provider`}>
+              {children}
+            </ChartWidthProvider>
+          </ScrollView>
+        </ThemedView>
+      </Modal>
+    </>
   );
 }
 
@@ -446,17 +495,27 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: Spacing.three,
   },
-  card: {
+  cardPressable: {
     flexGrow: 1,
     flexBasis: 280,
+  },
+  card: {
     borderRadius: Spacing.four,
     padding: Spacing.four,
     gap: Spacing.two,
     overflow: "hidden",
   },
+  cardHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
   cardTitle: {
     fontSize: 24,
     lineHeight: 30,
+  },
+  expandIcon: {
+    padding: Spacing.one,
   },
   fallbackPanel: {
     minHeight: 160,
@@ -502,5 +561,23 @@ const styles = StyleSheet.create({
   distributionValue: {
     width: 48,
     alignItems: "flex-end",
+  },
+  modalContainer: {
+    flex: 1,
+    paddingTop: Spacing.six,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.two,
+  },
+  modalCloseButton: {
+    padding: Spacing.two,
+  },
+  modalScrollContent: {
+    padding: Spacing.four,
+    gap: Spacing.four,
   },
 });

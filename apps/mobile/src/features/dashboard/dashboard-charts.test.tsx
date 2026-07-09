@@ -69,6 +69,11 @@ jest.mock("@/hooks/use-theme", () => ({
   }),
 }));
 
+jest.mock("lucide-react-native", () => ({
+  Maximize2: () => null,
+  X: () => null,
+}));
+
 describe("ManagerDashboardCharts (mobile)", () => {
   afterEach(() => {
     cleanup();
@@ -120,6 +125,51 @@ describe("ManagerDashboardCharts (mobile)", () => {
     expect(view.getByTestId("manager-dashboard-distribution-neutral-percentage")).toHaveTextContent(
       "33%",
     );
+  });
+
+  it("renders an expand trigger on each visible chart card", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-daily-card-expand-trigger")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-weekly-card-expand-trigger")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-volume-card-expand-trigger")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-tags-card-expand-trigger")).toBeTruthy();
+  });
+
+  it("opens and closes the expanded modal when the expand trigger is tapped", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    fireEvent.press(view.getByTestId("manager-dashboard-daily-card-expand-trigger"));
+
+    await waitFor(() =>
+      expect(view.getByTestId("manager-dashboard-daily-card-expand-close")).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("manager-dashboard-daily-card-expand-close"));
+
+    await waitFor(() =>
+      expect(view.queryByTestId("manager-dashboard-daily-card-expand-close")).toBeNull(),
+    );
+  });
+
+  it("does not render an expand trigger on a hidden privacy fallback card", async () => {
+    const base = createViewModel();
+    const hiddenViewModel = {
+      ...base,
+      dailyHeatmap: {
+        ...base.dailyHeatmap,
+        visibility: "hidden" as const,
+        hiddenMessage: "The daily heatmap is hidden until privacy thresholds are met.",
+      },
+    };
+
+    const view = await render(<ManagerDashboardCharts viewModel={hiddenViewModel} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-daily-card-hidden")).toBeTruthy();
+    expect(view.queryByTestId("manager-dashboard-daily-card-expand-icon")).toBeNull();
   });
 
   it("renders the hidden privacy fallback when a chart is below threshold", async () => {
