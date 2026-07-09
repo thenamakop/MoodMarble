@@ -104,7 +104,7 @@ describe("ManagerDashboardCharts (mobile)", () => {
     const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
     await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
 
-    fireEvent(view.getByTestId("manager-dashboard-daily-card-width-provider"), "layout", {
+    fireEvent(view.getByTestId("manager-dashboard-weekly-card-width-provider"), "layout", {
       nativeEvent: { layout: { width: 360 } },
     });
 
@@ -170,6 +170,29 @@ describe("ManagerDashboardCharts (mobile)", () => {
 
     expect(view.getByTestId("manager-dashboard-daily-card-hidden")).toBeTruthy();
     expect(view.queryByTestId("manager-dashboard-daily-card-expand-icon")).toBeNull();
+  });
+
+  it("renders the redesigned daily heatmap as a 2x12 grid with AM and PM rows", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-daily-grid")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-daily-cell-0-0")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-daily-cell-1-11")).toBeTruthy();
+    expect(view.getByText("AM")).toBeTruthy();
+    expect(view.getByText("PM")).toBeTruthy();
+  });
+
+  it("colors hidden daily heatmap cells with the neutral gray", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    // Hour 13 is in the PM row (index 13 - 12 = 1) and is hidden in the fixture.
+    const cell = view.getByTestId("manager-dashboard-daily-cell-1-1");
+    const backgroundColor = cell.props.style.find(
+      (s: Record<string, unknown>) => s?.backgroundColor !== undefined,
+    )?.backgroundColor;
+    expect(backgroundColor).toBe("#9ca3af");
   });
 
   it("renders the hidden privacy fallback when a chart is below threshold", async () => {

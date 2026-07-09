@@ -5,7 +5,6 @@ import {
   VictoryChart,
   VictoryLine,
   VictoryPie,
-  VictoryScatter,
   VictoryTheme,
 } from "victory";
 
@@ -13,6 +12,7 @@ import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import type { DashboardMetricVisibility } from "@/contracts/dashboard";
 import { Spacing } from "@/constants/theme";
+import { DailyHeatmap } from "@/features/dashboard/daily-heatmap";
 import type { ManagerDashboardViewModel } from "@/features/dashboard/chart-model";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -33,42 +33,9 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         title="Daily heatmap"
         visibility={viewModel.dailyHeatmap.visibility}
       >
-        <VictoryChart
-          domainPadding={12}
-          height={220}
-          padding={{ bottom: 48, left: 36, right: 24, top: 24 }}
-          theme={chartTheme}
-          width={320}
-        >
-          <VictoryAxis
-            fixLabelOverlap
-            style={{
-              axis: { stroke: "transparent" },
-              tickLabels: {
-                fill: "#6b7280",
-                fontSize: 10,
-              },
-              ticks: { stroke: "transparent" },
-            }}
-            tickValues={viewModel.dailyHeatmap.data.map((cell) => cell.hourLabel)}
-          />
-          <VictoryScatter
-            data={viewModel.dailyHeatmap.data.map((cell) => ({
-              x: cell.hourLabel,
-              y: 1,
-              size: 16,
-              fill: getHeatmapFill(cell.scoreValue, cell.visibility),
-            }))}
-            labels={() => null}
-            style={{
-              data: {
-                fill: ({ datum }) => datum.fill,
-                stroke: ({ datum }) => datum.fill,
-              },
-            }}
-            symbol="square"
-          />
-        </VictoryChart>
+        <View testID="manager-dashboard-daily-chart">
+          <DailyHeatmap data={viewModel.dailyHeatmap.data} />
+        </View>
       </ChartCard>
 
       <ChartCard
@@ -265,31 +232,6 @@ function ChartCard({
       )}
     </ThemedView>
   );
-}
-
-function getHeatmapFill(scoreValue: number | null, visibility: DashboardMetricVisibility): string {
-  if (visibility === "hidden") {
-    // Hidden cells always get the neutral gray regardless of scoreValue.
-    return "#9ca3af";
-  }
-
-  if ((scoreValue ?? 0) >= 8) {
-    return "#22c55e";
-  }
-
-  if ((scoreValue ?? 0) >= 6) {
-    return "#84cc16";
-  }
-
-  if ((scoreValue ?? 0) >= 4) {
-    return "#facc15";
-  }
-
-  if ((scoreValue ?? 0) >= 2) {
-    return "#fb923c";
-  }
-
-  return "#ef4444";
 }
 
 const axisStyle = {
