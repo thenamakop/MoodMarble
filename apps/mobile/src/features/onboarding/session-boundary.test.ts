@@ -1,3 +1,10 @@
+import { clearAnonymousSession, saveAnonymousSession } from "@/features/onboarding/session";
+import {
+  getAnonymousSessionFromParams,
+  restoreAnonymousSession,
+} from "@/features/onboarding/session-boundary";
+import { installLocalStorageMock } from "@/test-utils/web-storage-mock";
+
 jest.mock("react-native", () => ({
   Platform: {
     OS: "web",
@@ -9,15 +16,6 @@ jest.mock("expo-secure-store", () => ({
   getItemAsync: jest.fn(),
   setItemAsync: jest.fn(),
 }));
-
-import {
-  clearAnonymousSession,
-  saveAnonymousSession,
-} from "@/features/onboarding/session";
-import {
-  getAnonymousSessionFromParams,
-  restoreAnonymousSession,
-} from "@/features/onboarding/session-boundary";
 
 describe("anonymous session route boundary", () => {
   beforeEach(() => {
@@ -153,36 +151,4 @@ function futureExp(): number {
 
 function pastExp(): number {
   return Math.floor(Date.now() / 1000) - 60;
-}
-
-function installLocalStorageMock() {
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: createStorageMock(),
-  });
-}
-
-function createStorageMock(): Storage {
-  const storageMap = new Map<string, string>();
-
-  return {
-    get length() {
-      return storageMap.size;
-    },
-    clear() {
-      storageMap.clear();
-    },
-    getItem(key: string) {
-      return storageMap.get(key) ?? null;
-    },
-    key(index: number) {
-      return Array.from(storageMap.keys())[index] ?? null;
-    },
-    removeItem(key: string) {
-      storageMap.delete(key);
-    },
-    setItem(key: string, value: string) {
-      storageMap.set(key, value);
-    },
-  };
 }

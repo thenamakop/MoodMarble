@@ -1,5 +1,12 @@
 import * as Crypto from "expo-crypto";
 
+import {
+  clearDeviceToken,
+  getOrCreateDeviceToken,
+  saveDeviceToken,
+} from "@/features/onboarding/device-token";
+import { installSessionStorageMock } from "@/test-utils/web-storage-mock";
+
 jest.mock("react-native", () => ({
   Platform: {
     OS: "web",
@@ -12,12 +19,6 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(),
 }));
 
-import {
-  clearDeviceToken,
-  getOrCreateDeviceToken,
-  saveDeviceToken,
-} from "@/features/onboarding/device-token";
-
 jest.mock("expo-crypto", () => ({
   randomUUID: jest.fn(),
 }));
@@ -28,6 +29,7 @@ describe("anonymous device token storage", () => {
 
   beforeEach(() => {
     mockedRandomUUID.mockReset();
+    installSessionStorageMock();
   });
 
   afterEach(async () => {
@@ -49,21 +51,17 @@ describe("anonymous device token storage", () => {
       value: undefined,
     });
 
-    await expect(getOrCreateDeviceToken()).resolves.toBe(
+    await expect(getOrCreateDeviceToken()).resolves.toBe("550e8400-e29b-41d4-a716-446655440000");
+    expect(window.sessionStorage.getItem("moodmarble.anonymous-device-token")).toBe(
       "550e8400-e29b-41d4-a716-446655440000",
     );
-    expect(
-      window.sessionStorage.getItem("moodmarble.anonymous-device-token"),
-    ).toBe("550e8400-e29b-41d4-a716-446655440000");
   });
 
   it("reuses the persisted device token instead of generating a new one", async () => {
     await saveDeviceToken("550e8400-e29b-41d4-a716-446655440000");
     mockedRandomUUID.mockReturnValue("660e8400-e29b-41d4-a716-446655440000");
 
-    await expect(getOrCreateDeviceToken()).resolves.toBe(
-      "550e8400-e29b-41d4-a716-446655440000",
-    );
+    await expect(getOrCreateDeviceToken()).resolves.toBe("550e8400-e29b-41d4-a716-446655440000");
     expect(mockedRandomUUID).not.toHaveBeenCalled();
   });
 
@@ -75,15 +73,11 @@ describe("anonymous device token storage", () => {
     Object.defineProperty(globalThis, "crypto", {
       configurable: true,
       value: {
-        randomUUID: jest
-          .fn()
-          .mockReturnValue("660e8400-e29b-41d4-a716-446655440000"),
+        randomUUID: jest.fn().mockReturnValue("660e8400-e29b-41d4-a716-446655440000"),
       },
     });
 
-    await expect(getOrCreateDeviceToken()).resolves.toBe(
-      "660e8400-e29b-41d4-a716-446655440000",
-    );
+    await expect(getOrCreateDeviceToken()).resolves.toBe("660e8400-e29b-41d4-a716-446655440000");
   });
 
   it("falls back to global crypto.getRandomValues when Expo crypto and randomUUID are unavailable", async () => {
@@ -96,17 +90,15 @@ describe("anonymous device token storage", () => {
       value: {
         getRandomValues: jest.fn((typedArray: Uint8Array) => {
           typedArray.set([
-            0x77, 0x0e, 0x84, 0x00, 0xe2, 0x9b, 0x11, 0xd4, 0xa7, 0x16, 0x44,
-            0x66, 0x55, 0x44, 0x00, 0x00,
+            0x77, 0x0e, 0x84, 0x00, 0xe2, 0x9b, 0x11, 0xd4, 0xa7, 0x16, 0x44, 0x66, 0x55, 0x44,
+            0x00, 0x00,
           ]);
           return typedArray;
         }),
       },
     });
 
-    await expect(getOrCreateDeviceToken()).resolves.toBe(
-      "770e8400-e29b-41d4-a716-446655440000",
-    );
+    await expect(getOrCreateDeviceToken()).resolves.toBe("770e8400-e29b-41d4-a716-446655440000");
   });
 
   it("throws a stable error when no crypto source exists", async () => {
