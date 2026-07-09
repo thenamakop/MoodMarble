@@ -113,9 +113,7 @@ describe("admin routes", () => {
     });
 
     expect(response.statusCode).toBe(201);
-    expect(() =>
-      AdminWorkspaceCreateResponseSchema.parse(response.json()),
-    ).not.toThrow();
+    expect(() => AdminWorkspaceCreateResponseSchema.parse(response.json())).not.toThrow();
     expect(response.json()).toMatchObject({
       workspace: {
         id: TEST_WORKSPACE_ID,
@@ -172,9 +170,7 @@ describe("admin routes", () => {
     });
 
     expect(listResponse.statusCode).toBe(200);
-    expect(() =>
-      AdminTeamListResponseSchema.parse(listResponse.json()),
-    ).not.toThrow();
+    expect(() => AdminTeamListResponseSchema.parse(listResponse.json())).not.toThrow();
     expect(listResponse.json()).toEqual({
       teams: [
         {
@@ -186,15 +182,11 @@ describe("admin routes", () => {
     });
 
     expect(createResponse.statusCode).toBe(201);
-    expect(() =>
-      AdminTeamResponseSchema.parse(createResponse.json()),
-    ).not.toThrow();
+    expect(() => AdminTeamResponseSchema.parse(createResponse.json())).not.toThrow();
     expect(createResponse.json().team.workspace_id).toBe(TEST_WORKSPACE_ID);
 
     expect(updateResponse.statusCode).toBe(200);
-    expect(() =>
-      AdminTeamResponseSchema.parse(updateResponse.json()),
-    ).not.toThrow();
+    expect(() => AdminTeamResponseSchema.parse(updateResponse.json())).not.toThrow();
     expect(updateResponse.json()).toEqual({
       team: {
         id: TEST_TEAM_ID,
@@ -364,9 +356,7 @@ describe("admin routes", () => {
     });
 
     expect(getJoinCodeResponse.statusCode).toBe(200);
-    expect(() =>
-      AdminJoinCodeResponseSchema.parse(getJoinCodeResponse.json()),
-    ).not.toThrow();
+    expect(() => AdminJoinCodeResponseSchema.parse(getJoinCodeResponse.json())).not.toThrow();
     expect(getJoinCodeResponse.json()).toEqual({
       workspace: {
         id: TEST_WORKSPACE_ID,
@@ -389,9 +379,7 @@ describe("admin routes", () => {
     );
     const [headerRow, dataRow] = exportResponse.body.trim().split("\n");
 
-    expect(headerRow).toBe(
-      "team_id,team_name,mood_type,tags,hour_of_day,submission_date",
-    );
+    expect(headerRow).toBe("team_id,team_name,mood_type,tags,hour_of_day,submission_date");
     expect(dataRow).toBeTruthy();
     expect(exportResponse.body).toContain('"tm_product","Product","focused"');
     expect(exportResponse.body).not.toContain("device_token");
@@ -551,9 +539,7 @@ describe("admin routes", () => {
   });
 });
 
-function createAdminAuthorizationHeader(
-  workspaceId: string = TEST_WORKSPACE_ID,
-): string {
+function createAdminAuthorizationHeader(workspaceId: string = TEST_WORKSPACE_ID): string {
   const { adminJwt } = createAdminJwt(JWT_SECRET, {
     workspace_id: workspaceId,
     role: "admin",

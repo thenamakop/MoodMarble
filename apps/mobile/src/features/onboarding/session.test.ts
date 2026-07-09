@@ -1,3 +1,10 @@
+import {
+  clearAnonymousSession,
+  loadAnonymousSession,
+  saveAnonymousSession,
+} from "@/features/onboarding/session";
+import { installLocalStorageMock, installSessionStorageMock } from "@/test-utils/web-storage-mock";
+
 jest.mock("react-native", () => ({
   Platform: {
     OS: "web",
@@ -10,17 +17,12 @@ jest.mock("expo-secure-store", () => ({
   setItemAsync: jest.fn(),
 }));
 
-import {
-  clearAnonymousSession,
-  loadAnonymousSession,
-  saveAnonymousSession,
-} from "@/features/onboarding/session";
-
 describe("anonymous session storage", () => {
   const originalWindow = globalThis.window;
 
   beforeEach(() => {
     installLocalStorageMock();
+    installSessionStorageMock();
   });
 
   afterEach(async () => {
@@ -90,9 +92,7 @@ describe("anonymous session storage", () => {
     );
 
     await expect(loadAnonymousSession()).resolves.toBeNull();
-    expect(
-      window.localStorage.getItem("moodmarble.anonymous-session"),
-    ).toBeNull();
+    expect(window.localStorage.getItem("moodmarble.anonymous-session")).toBeNull();
   });
 
   it("clears an expired stored anonymous session", async () => {
@@ -106,9 +106,7 @@ describe("anonymous session storage", () => {
     );
 
     await expect(loadAnonymousSession()).resolves.toBeNull();
-    expect(
-      window.localStorage.getItem("moodmarble.anonymous-session"),
-    ).toBeNull();
+    expect(window.localStorage.getItem("moodmarble.anonymous-session")).toBeNull();
   });
 
   it("clears the stored anonymous session on sign-out cleanup", async () => {
@@ -116,17 +114,12 @@ describe("anonymous session storage", () => {
 
     await clearAnonymousSession();
 
-    expect(
-      window.localStorage.getItem("moodmarble.anonymous-session"),
-    ).toBeNull();
+    expect(window.localStorage.getItem("moodmarble.anonymous-session")).toBeNull();
   });
 
   it("falls back to sessionStorage when localStorage access is unavailable", async () => {
     const activeDeviceJwt = createDeviceJwt({ exp: futureExp() });
-    const localStorageDescriptor = Object.getOwnPropertyDescriptor(
-      window,
-      "localStorage",
-    );
+    const localStorageDescriptor = Object.getOwnPropertyDescriptor(window, "localStorage");
 
     Object.defineProperty(window, "localStorage", {
       configurable: true,
@@ -142,9 +135,7 @@ describe("anonymous session storage", () => {
         deviceJwt: activeDeviceJwt,
       });
 
-      expect(
-        window.sessionStorage.getItem("moodmarble.anonymous-session"),
-      ).toBe(
+      expect(window.sessionStorage.getItem("moodmarble.anonymous-session")).toBe(
         JSON.stringify({
           workspaceId: "ws_test",
           teamId: "tm_product",
@@ -190,36 +181,4 @@ function futureExp(): number {
 
 function pastExp(): number {
   return Math.floor(Date.now() / 1000) - 60;
-}
-
-function installLocalStorageMock() {
-  Object.defineProperty(window, "localStorage", {
-    configurable: true,
-    value: createStorageMock(),
-  });
-}
-
-function createStorageMock(): Storage {
-  const storageMap = new Map<string, string>();
-
-  return {
-    get length() {
-      return storageMap.size;
-    },
-    clear() {
-      storageMap.clear();
-    },
-    getItem(key: string) {
-      return storageMap.get(key) ?? null;
-    },
-    key(index: number) {
-      return Array.from(storageMap.keys())[index] ?? null;
-    },
-    removeItem(key: string) {
-      storageMap.delete(key);
-    },
-    setItem(key: string, value: string) {
-      storageMap.set(key, value);
-    },
-  };
 }

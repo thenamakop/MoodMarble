@@ -3,7 +3,7 @@ import type { LocalSettings } from "@/features/settings/model";
 import { getReminderRuntimeSupport } from "./platform";
 import type { ReminderScheduleSyncResult, ReminderSchedulerOptions } from "./scheduler";
 
-type SchedulerModule = typeof import("./scheduler");
+export type SchedulerModule = typeof import("./scheduler");
 type SchedulerModuleLoader = () => Promise<SchedulerModule>;
 
 interface CancelReminderNotificationsOptions {
@@ -14,11 +14,11 @@ interface CancelReminderNotificationsOptions {
   loadSchedulerModule?: SchedulerModuleLoader;
 }
 
-interface SyncReminderScheduleForRuntimeOptions extends ReminderSchedulerOptions {
+export interface SyncReminderScheduleForRuntimeOptions extends ReminderSchedulerOptions {
   loadSchedulerModule?: SchedulerModuleLoader;
 }
 
-interface SyncStoredReminderScheduleForRuntimeOptions extends ReminderSchedulerOptions {
+export interface SyncStoredReminderScheduleForRuntimeOptions extends ReminderSchedulerOptions {
   loadSchedulerModule?: SchedulerModuleLoader;
 }
 

@@ -20,9 +20,7 @@ interface ManagerDashboardChartsProps {
   viewModel: ManagerDashboardViewModel;
 }
 
-export function ManagerDashboardCharts({
-  viewModel,
-}: ManagerDashboardChartsProps) {
+export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProps) {
   const chartTheme = VictoryTheme?.clean;
 
   return (
@@ -52,9 +50,7 @@ export function ManagerDashboardCharts({
               },
               ticks: { stroke: "transparent" },
             }}
-            tickValues={viewModel.dailyHeatmap.data.map(
-              (cell) => cell.hourLabel,
-            )}
+            tickValues={viewModel.dailyHeatmap.data.map((cell) => cell.hourLabel)}
           />
           <VictoryScatter
             data={viewModel.dailyHeatmap.data.map((cell) => ({
@@ -94,11 +90,7 @@ export function ManagerDashboardCharts({
             style={axisStyle}
             tickValues={viewModel.weeklyTrend.data.map((point) => point.label)}
           />
-          <VictoryAxis
-            dependentAxis
-            style={axisStyle}
-            tickValues={[0, 2, 4, 6, 8, 10]}
-          />
+          <VictoryAxis dependentAxis style={axisStyle} tickValues={[0, 2, 4, 6, 8, 10]} />
           <VictoryLine
             data={viewModel.weeklyTrend.data.map((point) => ({
               x: point.label,
@@ -125,9 +117,7 @@ export function ManagerDashboardCharts({
         visibility={viewModel.moodDistribution.visibility}
       >
         <VictoryPie
-          colorScale={viewModel.moodDistribution.data.map(
-            (segment) => segment.color,
-          )}
+          colorScale={viewModel.moodDistribution.data.map((segment) => segment.color)}
           data={viewModel.moodDistribution.data.map((segment) => ({
             x: segment.label,
             y: segment.value,
@@ -250,11 +240,7 @@ function ChartCard({
       <ThemedText themeColor="textSecondary">{description}</ThemedText>
 
       {visibility === "hidden" ? (
-        <ThemedView
-          style={styles.fallbackPanel}
-          testID={`${testID}-hidden`}
-          type="background"
-        >
+        <ThemedView style={styles.fallbackPanel} testID={`${testID}-hidden`} type="background">
           <ThemedText type="smallBold">Hidden by privacy threshold</ThemedText>
           <ThemedText themeColor="textSecondary">{hiddenMessage}</ThemedText>
         </ThemedView>
@@ -271,9 +257,7 @@ function ChartCard({
               testID={`${testID}-blurred`}
             >
               <ThemedText type="smallBold">Blurred values</ThemedText>
-              <ThemedText themeColor="textSecondary">
-                {thresholdMessage}
-              </ThemedText>
+              <ThemedText themeColor="textSecondary">{thresholdMessage}</ThemedText>
             </View>
           ) : null}
           {children}
@@ -283,10 +267,7 @@ function ChartCard({
   );
 }
 
-function getHeatmapFill(
-  scoreValue: number,
-  visibility: DashboardMetricVisibility,
-): string {
+function getHeatmapFill(scoreValue: number, visibility: DashboardMetricVisibility): string {
   if (visibility === "hidden") {
     return "#9ca3af";
   }

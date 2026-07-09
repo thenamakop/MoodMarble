@@ -1,17 +1,14 @@
 const { execFileSync } = require("child_process");
 const { by, device, element, waitFor } = require("detox");
 
-const DEFAULT_DEV_CLIENT_SCHEME =
-  process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
-const DEFAULT_DEV_SERVER_URL =
-  process.env.DETOX_DEV_SERVER_URL || "http://127.0.0.1:8081";
+const DEFAULT_DEV_CLIENT_SCHEME = process.env.DETOX_DEV_CLIENT_SCHEME || "exp+moodmarble";
+const DEFAULT_DEV_SERVER_URL = process.env.DETOX_DEV_SERVER_URL || "http://127.0.0.1:8081";
 const DEFAULT_BACKEND_URL = DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000");
 const DEFAULT_ANDROID_DEV_SERVER_URL = DEFAULT_DEV_SERVER_URL.replace(
   "127.0.0.1",
   "10.0.2.2",
 ).replace("localhost", "10.0.2.2");
-const DEFAULT_ANDROID_APP_ID =
-  process.env.DETOX_ANDROID_APP_ID || "com.thenamak.MoodMarble";
+const DEFAULT_ANDROID_APP_ID = process.env.DETOX_ANDROID_APP_ID || "com.thenamak.MoodMarble";
 const DEFAULT_AVD_NAME = process.env.DETOX_AVD_NAME || "Pixel_8";
 const METRO_PORT = 8081;
 const BACKEND_PORT = 3000;
@@ -29,14 +26,11 @@ const BOOTSTRAP_READY_TEST_IDS = [
 const SEEDED_MANAGER_CODE = "MGR001";
 
 async function resetBackendTestState() {
-  const backendUrl =
-    DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000") + "/__test/reset";
+  const backendUrl = DEFAULT_DEV_SERVER_URL.replace(/:8081$/, ":3000") + "/__test/reset";
   try {
     const response = await fetch(backendUrl, { method: "POST" });
     if (!response.ok) {
-      console.warn(
-        `[DEBUG] Failed to reset backend state. Status: ${response.status}`,
-      );
+      console.warn(`[DEBUG] Failed to reset backend state. Status: ${response.status}`);
     } else {
       console.log("[DEBUG] Backend test state reset successfully.");
     }
@@ -170,15 +164,11 @@ async function launchExpoDevClient() {
     execFileSync("adb", ["reverse", `tcp:${METRO_PORT}`, `tcp:${METRO_PORT}`], {
       stdio: "pipe",
     });
-    execFileSync(
-      "adb",
-      ["reverse", `tcp:${BACKEND_PORT}`, `tcp:${BACKEND_PORT}`],
-      { stdio: "pipe" },
-    );
+    execFileSync("adb", ["reverse", `tcp:${BACKEND_PORT}`, `tcp:${BACKEND_PORT}`], {
+      stdio: "pipe",
+    });
   } catch {
-    console.warn(
-      "[e2e] adb reverse failed; continuing with Detox reversePorts.",
-    );
+    console.warn("[e2e] adb reverse failed; continuing with Detox reversePorts.");
   }
 
   // 1. Cold-start using Detox's built-in URL override so the initial
@@ -269,9 +259,7 @@ async function waitForBootstrappedApp(timeout = 20000) {
     await sleep(500);
   }
 
-  throw new Error(
-    `Expo dev client did not open the app runtime within ${timeout}ms.`,
-  );
+  throw new Error(`Expo dev client did not open the app runtime within ${timeout}ms.`);
 }
 
 async function maybeWaitForBootstrappedApp(timeout = 5000) {
@@ -290,13 +278,9 @@ async function openDevClientUrlWithRetries(url, attempts = 3) {
       const emulatorSerial = await waitForConnectedEmulator();
 
       await sleep(750);
-      execFileSync(
-        "adb",
-        ["-s", emulatorSerial, "shell", buildAdbBootstrapCommand(url)],
-        {
-          stdio: "pipe",
-        },
-      );
+      execFileSync("adb", ["-s", emulatorSerial, "shell", buildAdbBootstrapCommand(url)], {
+        stdio: "pipe",
+      });
       return;
     } catch (error) {
       lastError = error;
@@ -315,10 +299,7 @@ function buildAdbBootstrapCommand(url) {
 }
 
 function buildAdbIntentCommand(url, includeAppId) {
-  const command = [
-    "am start -W -a android.intent.action.VIEW -d",
-    quoteForAndroidShell(url),
-  ];
+  const command = ["am start -W -a android.intent.action.VIEW -d", quoteForAndroidShell(url)];
 
   if (includeAppId) {
     command.push(DEFAULT_ANDROID_APP_ID);
@@ -401,14 +382,10 @@ function parseAdbAvdName(output) {
 
 function isBootCompleted(serial) {
   try {
-    const output = execFileSync(
-      "adb",
-      ["-s", serial, "shell", "getprop", "sys.boot_completed"],
-      {
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "pipe"],
-      },
-    );
+    const output = execFileSync("adb", ["-s", serial, "shell", "getprop", "sys.boot_completed"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    });
 
     return output.trim() === "1";
   } catch {

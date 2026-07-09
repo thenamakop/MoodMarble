@@ -3,6 +3,16 @@ import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-nati
 
 import { OnboardingScreen } from "@/features/onboarding/onboarding-screen";
 
+type JoinWorkspaceResult = {
+  workspace: { id: string; name: string };
+  teams: { id: string; name: string }[];
+  device_jwt: string;
+};
+
+type JoinWorkspaceResolver = (
+  value: JoinWorkspaceResult | PromiseLike<JoinWorkspaceResult>,
+) => void;
+
 afterEach(() => {
   cleanup();
 });
@@ -208,21 +218,11 @@ describe("OnboardingScreen", () => {
   });
 
   it("shows the loading state while checking the join code", async () => {
-    let resolveJoin:
-      | ((value: {
-          workspace: { id: string; name: string };
-          teams: { id: string; name: string }[];
-          device_jwt: string;
-        }) => void)
-      | null = null;
+    let resolveJoin: JoinWorkspaceResolver = () => {};
 
     const onJoinWorkspace = jest.fn(
       () =>
-        new Promise<{
-          workspace: { id: string; name: string };
-          teams: { id: string; name: string }[];
-          device_jwt: string;
-        }>((resolve) => {
+        new Promise<JoinWorkspaceResult>((resolve: JoinWorkspaceResolver) => {
           resolveJoin = resolve;
         }),
     );
@@ -236,7 +236,7 @@ describe("OnboardingScreen", () => {
 
     expect(await view.findByText("onboarding.joiningButton")).toBeTruthy();
 
-    resolveJoin?.({
+    resolveJoin({
       workspace: {
         id: "ws_localdemo",
         name: "MoodMarble Local Workspace",

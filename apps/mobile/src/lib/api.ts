@@ -15,6 +15,9 @@ export function resolveApiBaseUrl(): string {
   const configuredApiBaseUrl = process.env.EXPO_PUBLIC_API_BASE_URL?.trim();
 
   if (configuredApiBaseUrl) {
+    if (process.env.NODE_ENV !== "production") {
+      warnIfHostLooksMismatched(configuredApiBaseUrl);
+    }
     return configuredApiBaseUrl;
   }
 
@@ -31,6 +34,46 @@ export function resolveApiBaseUrl(): string {
   }
 
   throw new Error("EXPO_PUBLIC_API_BASE_URL must be set when running on a physical device.");
+}
+
+function warnIfHostLooksMismatched(configuredUrl: string): void {
+  let hostname: string | undefined;
+
+  try {
+    hostname = new URL(configuredUrl).hostname;
+  } catch {
+    return;
+  }
+
+  if (!hostname) {
+    return;
+  }
+
+  const isPrivateLan =
+    /^127\./.test(hostname) === false &&
+    (/^10\./.test(hostname) ||
+      /^172\.(1[6-9]|2[0-9]|3[0-1])\./.test(hostname) ||
+      /^192\.168\./.test(hostname));
+
+  const isAndroidEmulator = Platform.OS === "android" && !Device.isDevice;
+  const isIosSimulator = Platform.OS === "ios" && !Device.isDevice;
+
+  if (isAndroidEmulator && hostname !== "10.0.2.2") {
+    console.warn(
+      `[MoodMarble] EXPO_PUBLIC_API_BASE_URL is set to ${configuredUrl}. ` +
+        `Android emulator traffic cannot reach a LAN/private host; ` +
+        `clear this override to use the platform default ${ANDROID_EMULATOR_API_BASE_URL}.`,
+    );
+    return;
+  }
+
+  if (isIosSimulator && isPrivateLan) {
+    console.warn(
+      `[MoodMarble] EXPO_PUBLIC_API_BASE_URL is set to ${configuredUrl}. ` +
+        `iOS simulator should use ${LOCALHOST_API_BASE_URL}; ` +
+        `only set a LAN override when testing on a physical device.`,
+    );
+  }
 }
 
 /**
@@ -83,9 +126,51 @@ export function getApiRequestErrorMessage(
 
   const details = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
 
+  if (isAbortError(error)) {
+    const connectivityHint = requestUrl
+      ? `Request timed out — check that the backend is reachable at ${requestUrl}`
+      : "Request timed out — check that the backend is reachable";
+    return `${stableMessage} Dev details: ${connectivityHint}`;
+  }
+
   return requestUrl
     ? `${stableMessage} Dev details: ${details} (${requestUrl})`
     : `${stableMessage} Dev details: ${details}`;
+}
+
+export function isAbortError(error: unknown): boolean {
+  if (hasErrorName(error, "AbortError")) {
+    return true;
+  }
+
+  if (hasErrorMessage(error, /aborted|abort/i)) {
+    return true;
+  }
+
+  const cause = hasErrorCause(error) ? (error as { cause?: unknown }).cause : undefined;
+  if (cause) {
+    return isAbortError(cause);
+  }
+
+  return false;
+}
+
+function hasErrorName(error: unknown, name: string): boolean {
+  return typeof error === "object" && error !== null && "name" in error && error.name === name;
+}
+
+function hasErrorMessage(error: unknown, pattern: RegExp): boolean {
+  return (
+    typeof error === "object" &&
+    error !== null &&
+    "message" in error &&
+    typeof error.message === "string" &&
+    pattern.test(error.message)
+  );
+}
+
+function hasErrorCause(error: unknown): boolean {
+  return typeof error === "object" && error !== null && "cause" in error;
 }
 
 /**

@@ -11,6 +11,15 @@ export async function seedAdmin(
   adminPassword = process.env.ADMIN_PASSWORD,
   databaseClientOverride?: any,
 ) {
+  // Load env file first so ADMIN_EMAIL and ADMIN_PASSWORD are available
+  if (!databaseClientOverride) {
+    loadLocalEnvFile();
+  }
+
+  // Now read from process.env (which now has the .env values)
+  adminEmail = adminEmail || process.env.ADMIN_EMAIL;
+  adminPassword = adminPassword || process.env.ADMIN_PASSWORD;
+
   // Only load env and create a DB client when no override is provided.
   // When called from a route handler (e.g. test-fixtures.ts), the caller
   // passes its own databaseClient — env loading is neither needed nor safe.
@@ -18,7 +27,6 @@ export async function seedAdmin(
   if (databaseClientOverride) {
     databaseClient = databaseClientOverride;
   } else {
-    loadLocalEnvFile();
     const env = getAppEnv();
     databaseClient = createDatabaseClient(env.DATABASE_URL);
   }

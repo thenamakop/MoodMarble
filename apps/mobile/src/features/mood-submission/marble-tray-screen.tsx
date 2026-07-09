@@ -45,18 +45,11 @@ interface MarbleTrayScreenProps {
   deviceJwt?: string;
   onOpenHistory?: () => void;
   onOpenSettings?: () => void;
-  onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<{ queued: boolean }>;
+  onSubmitMood?: (payload: MoodSubmission, deviceJwt: string) => Promise<void>;
   getCurrentHour?: () => number;
   getCurrentSubmissionDate?: () => string;
 }
 
-/**
- * Renders the marble submission screen.
- *
- * @param workspaceId - Workspace identifier required to submit a marble.
- * @param teamId - Team identifier required to submit a marble.
- * @param deviceJwt - Device token used to authenticate a submission.
- */
 export function MarbleTrayScreen({
   workspaceId,
   teamId,
@@ -75,7 +68,6 @@ export function MarbleTrayScreen({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [confirmationMood, setConfirmationMood] = useState<MoodValue | null>(null);
-  const [lastSubmissionQueued, setLastSubmissionQueued] = useState(false);
 
   const hasSubmissionContext = Boolean(workspaceId && teamId && deviceJwt);
   const canSubmit = Boolean(selectedMood) && hasSubmissionContext && !isSubmitting;
@@ -153,8 +145,7 @@ export function MarbleTrayScreen({
         submission_date: getCurrentSubmissionDate(),
       });
 
-      const result = await onSubmitMood(payload, deviceJwt);
-      const queued = result?.queued ?? false;
+      await onSubmitMood(payload, deviceJwt);
       try {
         await appendLocalMoodHistoryRecord(
           createLocalMoodHistoryRecord(extractLocalMoodHistoryRecordInput(payload)),
@@ -166,7 +157,6 @@ export function MarbleTrayScreen({
       setSelectedMood(null);
       setSelectedTags([]);
       setNote("");
-      setLastSubmissionQueued(queued);
       void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       setConfirmationMood(submittedMood);
     } catch (error) {
@@ -182,11 +172,7 @@ export function MarbleTrayScreen({
 
   return (
     <ThemedView style={styles.screen}>
-      <SubmissionConfirmation
-        mood={confirmationMood}
-        onDismiss={handleDismissConfirmation}
-        queued={lastSubmissionQueued}
-      />
+      <SubmissionConfirmation mood={confirmationMood} onDismiss={handleDismissConfirmation} />
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           style={styles.scrollView}

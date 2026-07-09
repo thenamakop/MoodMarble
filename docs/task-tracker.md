@@ -462,3 +462,34 @@ When a task changes state:
 - keep acceptance criteria tied to the `.docx`
 - avoid adding scope not stated in the specification
 - note any privacy-impacting ambiguity before implementation starts
+  The following overlaps were intentionally merged:
+
+- dashboard endpoint work is grouped in `MM-W5-01`
+- dashboard privacy rules are grouped in `MM-W5-02`
+- dashboard visual widgets are grouped in `MM-W5-03`
+- daily prompts and notification configuration are grouped in `MM-W6-01`
+- CI, EAS, and deployment readiness are grouped in `MM-W8-03`
+
+## Next update rule
+
+When a task changes state:
+
+- update its `Status`
+- keep acceptance criteria tied to the `.docx`
+- avoid adding scope not stated in the specification
+- note any privacy-impacting ambiguity before implementation starts
+
+- dashboard endpoint work is grouped in `MM-W5-01`
+- dashboard privacy rules are grouped in `MM-W5-02`
+- dashboard visual widgets are grouped in `MM-W5-03`
+- daily prompts and notification configuration are grouped in `MM-W6-01`
+- CI, EAS, and deployment readiness are grouped in `MM-W8-03`
+
+## Next update rule
+
+When a task changes state:
+
+- update its `Status`
+- keep acceptance criteria tied to the `.docx`
+- avoid adding scope not stated in the specification
+- note any privacy-impacting ambiguity before implementation starts

@@ -25,89 +25,28 @@ export type PendingSubmission = z.infer<typeof PendingSubmissionSchema>;
 // Storage helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Returns the localStorage object when running on web, or null.
- * Falls back to null gracefully if localStorage is unavailable (e.g. private
- * browsing with storage blocked).
- */
-function getWebStorage(): Storage | null {
-  if (Platform.OS !== "web" || typeof window === "undefined") {
-    return null;
-  }
+let webQueueMemoryFallback: string | null = null;
 
-  try {
-    const storage = window.localStorage;
-
-    if (
-      storage &&
-      typeof storage.getItem === "function" &&
-      typeof storage.setItem === "function" &&
-      typeof storage.removeItem === "function"
-    ) {
-      return storage;
-    }
-  } catch {
-    // localStorage blocked (private browsing, etc.)
-  }
-
-  return null;
-}
-
-/**
- * Reads the persisted queue from storage.
- *
- * Uses localStorage on web and SecureStore on native.
- *
- * @returns The stored queue string, or `null` if no queue is saved.
- */
 async function readRawQueue(): Promise<string | null> {
-  const webStorage = getWebStorage();
-
-  if (webStorage) {
-    return webStorage.getItem(QUEUE_STORAGE_KEY);
-  }
-
   if (Platform.OS === "web") {
-    return null;
+    return webQueueMemoryFallback;
   }
 
   return SecureStore.getItemAsync(QUEUE_STORAGE_KEY);
 }
 
-/**
- * Persists the raw queue string.
- *
- * Uses localStorage on web and SecureStore on native.
- *
- * @param value - The serialized queue data to store
- */
 async function writeRawQueue(value: string): Promise<void> {
-  const webStorage = getWebStorage();
-
-  if (webStorage) {
-    webStorage.setItem(QUEUE_STORAGE_KEY, value);
-    return;
-  }
-
   if (Platform.OS === "web") {
+    webQueueMemoryFallback = value;
     return;
   }
 
   await SecureStore.setItemAsync(QUEUE_STORAGE_KEY, value);
 }
 
-/**
- * Deletes the stored queue.
- */
 async function deleteRawQueue(): Promise<void> {
-  const webStorage = getWebStorage();
-
-  if (webStorage) {
-    webStorage.removeItem(QUEUE_STORAGE_KEY);
-    return;
-  }
-
   if (Platform.OS === "web") {
+    webQueueMemoryFallback = null;
     return;
   }
 
@@ -116,11 +55,7 @@ async function deleteRawQueue(): Promise<void> {
 
 // ---------------------------------------------------------------------------
 // Public API
-/**
- * Loads the persisted pending submission queue.
- *
- * @returns The stored pending submissions, or an empty array if none exists or the stored data is invalid.
- */
+// ---------------------------------------------------------------------------
 
 export async function loadQueue(): Promise<PendingSubmission[]> {
   try {
@@ -142,13 +77,6 @@ export async function loadQueue(): Promise<PendingSubmission[]> {
   }
 }
 
-/**
- * Saves pending submissions to persistent storage.
- *
- * Clears the stored queue when `items` is empty.
- *
- * @param items - The pending submissions to store
- */
 export async function saveQueue(items: PendingSubmission[]): Promise<void> {
   if (items.length === 0) {
     await deleteRawQueue();
@@ -158,12 +86,6 @@ export async function saveQueue(items: PendingSubmission[]): Promise<void> {
   await writeRawQueue(JSON.stringify(items));
 }
 
-/**
- * Enqueues a mood submission for later retry and keeps the queue within its size limit.
- *
- * @param payload - The mood submission to store
- * @param deviceJwt - The device token to associate with the queued submission
- */
 export async function enqueueSubmission(payload: MoodSubmission, deviceJwt: string): Promise<void> {
   const current = await loadQueue();
 
@@ -181,12 +103,6 @@ export async function enqueueSubmission(payload: MoodSubmission, deviceJwt: stri
   await saveQueue(next);
 }
 
-/**
- * Attempts to submit queued mood submissions and updates the stored queue.
- *
- * Stops at the first network error and keeps the remaining items in the queue.
- * Items that fail with other errors are removed from the queue and the drain continues.
- */
 export async function drainQueue(): Promise<void> {
   const queue = await loadQueue();
 
@@ -218,65 +134,22 @@ export async function drainQueue(): Promise<void> {
   await saveQueue(remaining);
 }
 
-/**
- * Submits a mood entry immediately, or queues it when the network is unavailable.
- *
- * @param payload - The mood submission to send.
- * @param deviceJwt - The device token used to authenticate the submission.
- * @throws Re-throws submission errors other than network failures.
- */
-/**
- * Returns true for errors that indicate a transient network problem where
- * retrying later makes sense (e.g. no connectivity, server unreachable).
- *
- * Abort errors (timeout, wrong host) are NOT treated as queueable — they
- * indicate a configuration problem that won't resolve by itself, and silently
- * queuing them would hide the real failure from the user.
- */
-function isTransientNetworkError(error: unknown): boolean {
-  if (!(error instanceof TypeError)) {
-    return false;
-  }
-
-  // AbortError wraps a DOMException; its name is "AbortError".
-  // When fetch is aborted (e.g. our timeout fires), the thrown error is
-  // a TypeError whose cause is a DOMException with name "AbortError".
-  const { cause } = error as { cause?: unknown };
-
-  if (cause instanceof DOMException && cause.name === "AbortError") {
-    return false;
-  }
-
-  // Also check the error itself in environments where AbortError surfaces
-  // directly as a DOMException rather than as the TypeError's cause.
-  if (error instanceof DOMException && error.name === "AbortError") {
-    return false;
-  }
-
-  return true;
-}
-
 export async function submitMoodSubmissionWithQueue(
   payload: MoodSubmission,
   deviceJwt: string,
-): Promise<{ queued: boolean }> {
+): Promise<void> {
   try {
     await submitMoodSubmission(payload, deviceJwt);
-    return { queued: false };
   } catch (error) {
-    if (isTransientNetworkError(error)) {
-      // Genuine network error (no connectivity, DNS failure, etc.) — queue
-      // for later retry and let the caller show a "queued" state.
-      console.warn(
-        "[MoodMarble] Mood submission failed (network error) — queued for retry.",
-        error instanceof Error ? error.message : error,
-      );
+    if (error instanceof TypeError) {
+      // Network error — queue for later and return normally so the caller
+      // shows the optimistic confirmation overlay.
       await enqueueSubmission(payload, deviceJwt);
-      return { queued: true };
+      return;
     }
 
-    // Timeout (abort), daily limit, auth error, 4xx, etc. — rethrow so the
-    // caller can surface the correct error message.
+    // Daily limit, auth error, 4xx, etc. — rethrow so the screen displays
+    // the appropriate error message.
     throw error;
   }
 }

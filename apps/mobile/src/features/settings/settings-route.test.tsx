@@ -22,11 +22,7 @@ jest.mock("@/features/settings/storage", () => ({
 }));
 
 jest.mock("@/features/settings/settings-screen", () => {
-  // require() is necessary here: jest.mock factories are hoisted before
-  // import statements, so ES imports are not yet bound at this point.
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Pressable, Text, View } = require("react-native");
 
   return {
@@ -34,12 +30,10 @@ jest.mock("@/features/settings/settings-screen", () => {
       onClearLocalData,
       onRequestOnboardingReplay,
       onReturnHome,
-      onSignOut,
     }: {
       onClearLocalData?: () => Promise<void> | void;
       onRequestOnboardingReplay?: () => Promise<void> | void;
       onReturnHome?: () => void;
-      onSignOut?: () => Promise<void> | void;
     }) => (
       <View>
         <Text>settings-screen-route</Text>
@@ -51,9 +45,6 @@ jest.mock("@/features/settings/settings-screen", () => {
         </Pressable>
         <Pressable onPress={onClearLocalData} testID="settings-route-clear-local-data">
           <Text>clear-local-data</Text>
-        </Pressable>
-        <Pressable onPress={onSignOut} testID="settings-route-sign-out">
-          <Text>sign-out</Text>
         </Pressable>
       </View>
     ),
@@ -105,27 +96,5 @@ describe("SettingsRoute", () => {
 
     await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
     expect(replace).toHaveBeenCalledWith("/");
-  });
-
-  it("signs out: clears local device data and returns to the main app", async () => {
-    const view = await render(<SettingsRoute />);
-
-    fireEvent.press(view.getByTestId("settings-route-sign-out"));
-
-    await waitFor(() => expect(clearLocalDeviceData).toHaveBeenCalledTimes(1));
-    expect(replace).toHaveBeenCalledWith("/");
-  });
-
-  it("navigates away from settings even when sign-out cleanup fails", async () => {
-    const consoleWarn = jest.spyOn(console, "warn").mockImplementation(() => undefined);
-    (clearLocalDeviceData as jest.Mock).mockRejectedValueOnce(new Error("Cleanup failed"));
-
-    const view = await render(<SettingsRoute />);
-
-    fireEvent.press(view.getByTestId("settings-route-sign-out"));
-
-    await waitFor(() => expect(replace).toHaveBeenCalledWith("/"));
-    expect(clearLocalDeviceData).toHaveBeenCalledTimes(1);
-    consoleWarn.mockRestore();
   });
 });

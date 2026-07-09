@@ -38,3 +38,14 @@ package-lock.json
 
 # Playwright MCP server runtime state (browser profiles, cache, etc.)
 .playwright-mcp/
+
+# Temporary issue notes and PR drafts
+.issue-*.md
+.pr-body*.txt
+
+# Stray compiled JS sitting next to TS source (should never be emitted here)
+apps/backend/src/**/*.js
+apps/backend/scripts/**/*.js
+apps/backend/tests/**/*.js
+packages/shared/*.js
+!apps/backend/scripts/test-mobile.cjs

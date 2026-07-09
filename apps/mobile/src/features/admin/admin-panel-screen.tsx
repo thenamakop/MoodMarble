@@ -74,25 +74,6 @@ const SECTION_ORDER: {
   { focus: "export", label: "Export" },
 ];
 
-/**
- * Renders the admin panel screen with section navigation, status panels, and workspace management actions.
- *
- * @param contentState - Controls which admin state panel or content layout is shown.
- * @param feedbackState - Optional feedback banner to display above the content.
- * @param isActionPending - Disables actions while a workspace operation is in progress.
- * @param sectionFocus - Initial section focus for the navigation chips and scroll position.
- * @param viewModel - Current admin data used to populate workspace, team, join code, and manager code content.
- * @param onCopyJoinCode - Called with the current join code when the copy action is pressed.
- * @param onCreateTeam - Called with the trimmed team name when a new team is created.
- * @param onCreateWorkspace - Called with the trimmed workspace name and bootstrap secret when a workspace is created.
- * @param onExport - Called with the trimmed export date range when an export is run.
- * @param onGenerateManagerCode - Called with a team ID to generate a manager code for that team.
- * @param onReturnHome - Called when the user leaves the admin panel or uses the guarded-state return action.
- * @param onRevokeManagerCode - Called with a manager code ID to revoke that code.
- * @param onRotateJoinCode - Called to refresh the workspace join code.
- * @param onRetry - Called when retrying from the error state.
- * @param onUpdateTeam - Called with the selected team ID and trimmed name when a team is renamed.
- */
 export function AdminPanelScreen({
   contentState = { kind: "ready" },
   feedbackState = null,
@@ -737,14 +718,6 @@ export function AdminPanelScreen({
   );
 }
 
-/**
- * Renders a panel for an admin screen state.
- *
- * @param title - The panel title text.
- * @param body - The supporting message text.
- * @param testID - The test identifier for the panel.
- * @param children - Additional content to render below the message.
- */
 function StatePanel({
   title,
   body,
@@ -769,16 +742,6 @@ function StatePanel({
   );
 }
 
-/**
- * Renders a section card with a header, focus pill, and content area.
- *
- * @param title - Section title text.
- * @param body - Section description text.
- * @param testID - Test identifier for the card container.
- * @param isActive - Whether the section is currently selected.
- * @param focus - Section focus label shown in the pill.
- * @param onLayout - Called with the card's vertical offset after layout.
- */
 function AdminSectionCard({
   title,
   body,
@@ -846,17 +809,6 @@ function DetailRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-/**
- * Renders the workspace creation form.
- *
- * @param workspaceNameDraft - Current workspace name input value.
- * @param bootstrapSecretDraft - Current bootstrap secret input value.
- * @param isActionPending - Whether workspace creation is in progress.
- * @param onChangeWorkspaceName - Handles workspace name text changes.
- * @param onChangeBootstrapSecret - Handles bootstrap secret text changes.
- * @param onCreateWorkspace - Called with the trimmed workspace name and bootstrap secret when the form is submitted.
- * @param theme - Theme values used to style the inputs and button.
- */
 function WorkspaceSetupForm({
   workspaceNameDraft,
   bootstrapSecretDraft,
@@ -938,16 +890,6 @@ function WorkspaceSetupForm({
   );
 }
 
-/**
- * Renders a themed action button.
- *
- * @param label - The button label.
- * @param onPress - The function to call when the button is pressed.
- * @param disabled - Whether the button is disabled.
- * @param testID - The test identifier.
- * @param theme - The active theme.
- * @param variant - The visual style to apply.
- */
 function ActionButton({
   label,
   onPress,

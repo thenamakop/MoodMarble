@@ -46,9 +46,7 @@ export function ManagerJoinScreen({ onSubmit, onBack }: ManagerJoinScreenProps) 
     try {
       await onSubmit(code);
     } catch (error) {
-      setErrorMessage(
-        error instanceof Error ? error.message : "Something went wrong.",
-      );
+      setErrorMessage(error instanceof Error ? error.message : "Something went wrong.");
     } finally {
       setIsSubmitting(false);
     }
@@ -56,10 +54,7 @@ export function ManagerJoinScreen({ onSubmit, onBack }: ManagerJoinScreenProps) 
 
   return (
     <SafeAreaView style={styles.safeArea} testID="manager-join-screen">
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <ThemedView style={styles.container}>
           <View style={styles.topBar}>
             {onBack ? (
@@ -104,10 +99,7 @@ export function ManagerJoinScreen({ onSubmit, onBack }: ManagerJoinScreenProps) 
             </View>
 
             {errorMessage ? (
-              <ThemedText
-                style={styles.errorText}
-                testID="manager-code-error-text"
-              >
+              <ThemedText style={styles.errorText} testID="manager-code-error-text">
                 {errorMessage}
               </ThemedText>
             ) : null}
@@ -119,9 +111,7 @@ export function ManagerJoinScreen({ onSubmit, onBack }: ManagerJoinScreenProps) 
               style={({ pressed }) => [
                 styles.primaryButton,
                 {
-                  backgroundColor: pressed
-                    ? theme.backgroundSelected
-                    : theme.background,
+                  backgroundColor: pressed ? theme.backgroundSelected : theme.background,
                   opacity: isSubmitting ? 0.6 : 1,
                 },
               ]}

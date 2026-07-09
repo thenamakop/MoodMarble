@@ -3,12 +3,10 @@ const path = require("path");
 const { spawnSync } = require("child_process");
 
 const appRoot = path.resolve(__dirname, "..");
-const defaultSdkRoot =
-  process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME || "D:\\Android";
+const defaultSdkRoot = process.env.ANDROID_SDK_ROOT || process.env.ANDROID_HOME || "D:\\Android";
 const ndkVersion = process.env.ANDROID_NDK_VERSION || "27.1.12297006";
 const cmakeVersion = process.env.ANDROID_CMAKE_VERSION || "3.22.1";
-const gradleCommand =
-  process.platform === "win32" ? "gradlew.bat" : "./gradlew";
+const gradleCommand = process.platform === "win32" ? "gradlew.bat" : "./gradlew";
 const shortPaths = resolveShortPaths();
 
 try {
@@ -26,9 +24,7 @@ try {
   );
 
   if (!existsSync(path.join(shortPaths.appRoot, "android"))) {
-    throw new Error(
-      "Expo prebuild did not create the Android project required for Detox.",
-    );
+    throw new Error("Expo prebuild did not create the Android project required for Detox.");
   }
 
   writeAndroidLocalProperties(shortPaths.appRoot);
@@ -92,9 +88,7 @@ function quoteForWindowsCmd(value) {
     return value;
   }
 
-  const escaped = value
-    .replace(/(\\*)"/g, '$1$1\\"')
-    .replace(/(\\+)$/g, "$1$1");
+  const escaped = value.replace(/(\\*)"/g, '$1$1\\"').replace(/(\\+)$/g, "$1$1");
   return `"${escaped}"`;
 }
 

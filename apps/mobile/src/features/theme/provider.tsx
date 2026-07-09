@@ -38,7 +38,7 @@ function isValidThemePreference(value: unknown): value is ThemePreference {
  * Provides the user's theme preference and the resolved light/dark theme.
  *
  * The provider loads the persisted preference on startup and resolves it against
- * the system appearance. Changing the preference saves it back to AsyncStorage.
+ * the system appearance. Changing the preference saves it back to SecureStore.
  */
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const systemColorScheme = useRNColorScheme();

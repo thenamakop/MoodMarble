@@ -28,9 +28,7 @@ async function main() {
     console.log("[seed-dashboard] Seeding dashboard fixtures...");
     await seedDashboardFixtures(databaseClient);
     console.log("[seed-dashboard] Done. Team members and submissions seeded.");
-    console.log(
-      "[seed-dashboard] Open the manager dashboard — all charts should be visible.",
-    );
+    console.log("[seed-dashboard] Open the manager dashboard — all charts should be visible.");
   } catch (error) {
     console.error("[seed-dashboard] Failed:", error);
     process.exit(1);

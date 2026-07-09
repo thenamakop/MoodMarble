@@ -1,10 +1,6 @@
 import { eq } from "drizzle-orm";
 
-import type {
-  TeamId,
-  TeamSummary,
-  WorkspaceId,
-} from "../../../../packages/shared";
+import type { TeamId, TeamSummary, WorkspaceId } from "../../../../packages/shared";
 import type { DatabaseClient } from "../db/client";
 import { teams, workspaces } from "../db/schema";
 
@@ -45,19 +41,11 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
     this.workspaces = workspaces.map(cloneWorkspaceDirectoryEntry);
   }
 
-  async findByJoinCode(
-    joinCode: string,
-  ): Promise<WorkspaceDirectoryEntry | null> {
-    return (
-      this.workspaces.find((workspace) => workspace.joinCode === joinCode) ??
-      null
-    );
+  async findByJoinCode(joinCode: string): Promise<WorkspaceDirectoryEntry | null> {
+    return this.workspaces.find((workspace) => workspace.joinCode === joinCode) ?? null;
   }
 
-  async hasTeamInWorkspace(
-    workspaceId: string,
-    teamId: string,
-  ): Promise<boolean> {
+  async hasTeamInWorkspace(workspaceId: string, teamId: string): Promise<boolean> {
     const workspace = this.workspaces.find(
       (currentWorkspace) => currentWorkspace.id === workspaceId,
     );
@@ -66,22 +54,14 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
       return false;
     }
 
-    return workspace.teams.some(
-      (team): team is TeamSummary & { id: TeamId } => team.id === teamId,
-    );
+    return workspace.teams.some((team): team is TeamSummary & { id: TeamId } => team.id === teamId);
   }
 
   async findById(workspaceId: string): Promise<WorkspaceDirectoryEntry | null> {
-    return (
-      this.workspaces.find(
-        (currentWorkspace) => currentWorkspace.id === workspaceId,
-      ) ?? null
-    );
+    return this.workspaces.find((currentWorkspace) => currentWorkspace.id === workspaceId) ?? null;
   }
 
-  async addWorkspace(
-    workspace: WorkspaceDirectoryEntry,
-  ): Promise<WorkspaceDirectoryEntry> {
+  async addWorkspace(workspace: WorkspaceDirectoryEntry): Promise<WorkspaceDirectoryEntry> {
     const storedWorkspace = cloneWorkspaceDirectoryEntry(workspace);
     this.workspaces.push(storedWorkspace);
     return cloneWorkspaceDirectoryEntry(storedWorkspace);
@@ -141,11 +121,7 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
     };
   }
 
-  async updateTeam(
-    workspaceId: string,
-    teamId: string,
-    name: string,
-  ): Promise<TeamSummary | null> {
+  async updateTeam(workspaceId: string, teamId: string, name: string): Promise<TeamSummary | null> {
     const workspace = this.workspaces.find(
       (currentWorkspace) => currentWorkspace.id === workspaceId,
     );
@@ -154,9 +130,7 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
       return null;
     }
 
-    const team = workspace.teams.find(
-      (currentTeam) => currentTeam.id === teamId,
-    );
+    const team = workspace.teams.find((currentTeam) => currentTeam.id === teamId);
 
     if (!team) {
       return null;
@@ -173,13 +147,10 @@ export class InMemoryWorkspaceDirectory implements WorkspaceDirectory {
 export class PostgresWorkspaceDirectory implements WorkspaceDirectory {
   constructor(private readonly databaseClient: DatabaseClient) {}
 
-  async findByJoinCode(
-    joinCode: string,
-  ): Promise<WorkspaceDirectoryEntry | null> {
-    const workspaceRecord =
-      await this.databaseClient.db.query.workspaces.findFirst({
-        where: eq(workspaces.joinCode, joinCode),
-      });
+  async findByJoinCode(joinCode: string): Promise<WorkspaceDirectoryEntry | null> {
+    const workspaceRecord = await this.databaseClient.db.query.workspaces.findFirst({
+      where: eq(workspaces.joinCode, joinCode),
+    });
 
     if (!workspaceRecord) {
       return null;
@@ -194,19 +165,14 @@ export class PostgresWorkspaceDirectory implements WorkspaceDirectory {
       id: workspaceRecord.id as WorkspaceId,
       name: workspaceRecord.name,
       joinCode: workspaceRecord.joinCode,
-      teams: teamRecords.map(
-        (teamRecord): TeamSummary => ({
-          id: teamRecord.id,
-          name: teamRecord.name,
-        }),
-      ),
+      teams: teamRecords.map((teamRecord): TeamSummary => ({
+        id: teamRecord.id,
+        name: teamRecord.name,
+      })),
     };
   }
 
-  async hasTeamInWorkspace(
-    workspaceId: string,
-    teamId: string,
-  ): Promise<boolean> {
+  async hasTeamInWorkspace(workspaceId: string, teamId: string): Promise<boolean> {
     const teamRecord = await this.databaseClient.db.query.teams.findFirst({
       where: eq(teams.id, teamId),
     });
@@ -215,9 +181,7 @@ export class PostgresWorkspaceDirectory implements WorkspaceDirectory {
   }
 }
 
-function cloneWorkspaceDirectoryEntry(
-  workspace: WorkspaceDirectoryEntry,
-): WorkspaceDirectoryEntry {
+function cloneWorkspaceDirectoryEntry(workspace: WorkspaceDirectoryEntry): WorkspaceDirectoryEntry {
   return {
     id: workspace.id,
     name: workspace.name,

@@ -36,7 +36,6 @@
   },
   "dependencies": {
     "i18next": "^26.3.3",
-    "lucide-react-native": "^1.22.0",
     "react-i18next": "^17.0.8",
     "zustand": "^5.0.14"
   }

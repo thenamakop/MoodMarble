@@ -36,31 +36,21 @@ export function getDashboardWindowPrivacy(
 ): DashboardPrivacyState {
   const reasons: DashboardThresholdReason[] = [];
 
-  if (
-    input.totalSubmissions < DASHBOARD_PRIVACY_THRESHOLDS.minimum_submissions
-  ) {
+  if (input.totalSubmissions < DASHBOARD_PRIVACY_THRESHOLDS.minimum_submissions) {
     reasons.push("minimum_submissions");
   }
 
-  if (
-    input.teamMemberCount <
-    DASHBOARD_PRIVACY_THRESHOLDS.minimum_members_for_precise_values
-  ) {
+  if (input.teamMemberCount < DASHBOARD_PRIVACY_THRESHOLDS.minimum_members_for_precise_values) {
     reasons.push("minimum_members_for_precise_values");
   }
 
   return createDashboardPrivacyState(reasons);
 }
 
-export function getDashboardHourPrivacy(
-  input: DashboardPrivacyHourInput,
-): DashboardPrivacyState {
+export function getDashboardHourPrivacy(input: DashboardPrivacyHourInput): DashboardPrivacyState {
   const reasons = [...getDashboardWindowPrivacy(input).reasons];
 
-  if (
-    input.hourSubmissions <
-    DASHBOARD_PRIVACY_THRESHOLDS.minimum_hourly_submissions
-  ) {
+  if (input.hourSubmissions < DASHBOARD_PRIVACY_THRESHOLDS.minimum_hourly_submissions) {
     reasons.push("minimum_hourly_submissions");
   }
 
@@ -114,9 +104,7 @@ export function toDashboardScoreValue(
 export function createDashboardPrivacyState(
   reasons: DashboardThresholdReason[],
 ): DashboardPrivacyState {
-  const normalizedReasons = DASHBOARD_REASON_ORDER.filter((reason) =>
-    reasons.includes(reason),
-  );
+  const normalizedReasons = DASHBOARD_REASON_ORDER.filter((reason) => reasons.includes(reason));
 
   return {
     visibility: getDashboardVisibility(normalizedReasons),

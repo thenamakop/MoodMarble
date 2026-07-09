@@ -18,10 +18,7 @@ export const TeamRoleSchema = z.enum(["member", "manager", "admin"]);
 export const WorkspaceIdSchema = z.string().min(1, "workspace_id is required");
 export const TeamIdSchema = z.string().min(1, "team_id is required");
 export const MarbleIdSchema = z.string().min(1, "marble_id is required");
-export const WorkspaceNameSchema = z
-  .string()
-  .trim()
-  .min(1, "workspace name is required");
+export const WorkspaceNameSchema = z.string().trim().min(1, "workspace name is required");
 export const TeamNameSchema = z.string().trim().min(1, "team name is required");
 export const HourOfDaySchema = z
   .number()
@@ -196,11 +193,7 @@ export const AdminJwtPayloadSchema = z
   })
   .strict();
 
-export const DashboardMetricVisibilitySchema = z.enum([
-  "visible",
-  "blurred",
-  "hidden",
-]);
+export const DashboardMetricVisibilitySchema = z.enum(["visible", "blurred", "hidden"]);
 
 export const DashboardThresholdReasonSchema = z.enum([
   "minimum_submissions",
@@ -393,9 +386,7 @@ export const ManagerCodeInputSchema = z
     message: "Manager code must be 6 uppercase letters or numbers.",
   });
 
-export const RedeemManagerCodeRequestSchema = z
-  .object({ code: ManagerCodeInputSchema })
-  .strict();
+export const RedeemManagerCodeRequestSchema = z.object({ code: ManagerCodeInputSchema }).strict();
 
 export const RedeemManagerCodeResponseSchema = z
   .object({

@@ -26,8 +26,6 @@ import { setReminderOptIn, setReminderTimes, type LocalSettings } from "@/featur
 import { persistLocalReminderSettings } from "@/features/settings/actions";
 import { loadLocalSettings, requestStoredOnboardingReplay } from "@/features/settings/storage";
 import { useTheme } from "@/hooks/use-theme";
-import { useThemeContext } from "@/features/theme/provider";
-import type { ThemePreference } from "@/features/theme/model";
 
 import { clearLocalDeviceData } from "./local-data";
 
@@ -45,12 +43,6 @@ interface SettingsScreenProps {
   openAppSettings?: () => Promise<void>;
 }
 
-/**
- * Renders the settings screen for reminder preferences, onboarding replay, and local data management.
- *
- * The screen loads and persists reminder settings, handles notification permission actions, and shows
- * feedback for reminder, onboarding, and data-clearing operations.
- */
 export function SettingsScreen({
   loadSettings = loadLocalSettings,
   onClearLocalData = clearLocalDeviceData,
@@ -66,13 +58,13 @@ export function SettingsScreen({
 }: SettingsScreenProps) {
   const theme = useTheme();
   const { t } = useTranslation();
-  const { themePreference, setThemePreference } = useThemeContext();
   const reminderRuntimeSupport = getReminderRuntimeSupport();
   const [settings, setSettings] = useState<LocalSettings | null>(null);
   const [draftReminderTimes, setDraftReminderTimes] = useState<string[]>([]);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isBusy, setIsBusy] = useState(true);
   const [isClearPromptVisible, setIsClearPromptVisible] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] =
     useState<NotificationPermissionStatus>("undetermined");
@@ -364,17 +356,25 @@ export function SettingsScreen({
               <Pressable
                 accessibilityLabel={t("settings.signOutLabel")}
                 accessibilityRole="button"
+                disabled={isSigningOut}
                 onPress={async () => {
+                  if (!onSignOut || isSigningOut) {
+                    return;
+                  }
+
+                  setIsSigningOut(true);
                   setErrorMessage(null);
                   setStatusMessage(null);
 
                   try {
-                    await onSignOut?.();
+                    await onSignOut();
                   } catch (error) {
                     setStatusMessage(null);
                     setErrorMessage(
                       error instanceof Error ? error.message : t("settings.errorMessages.signOut"),
                     );
+                  } finally {
+                    setIsSigningOut(false);
                   }
                 }}
                 style={({ pressed }) => [
@@ -382,12 +382,16 @@ export function SettingsScreen({
                   {
                     backgroundColor: theme.backgroundElement,
                     borderColor: theme.backgroundSelected,
-                    opacity: pressed ? 0.85 : 1,
+                    opacity: pressed || isSigningOut ? 0.85 : 1,
                   },
                 ]}
                 testID="settings-sign-out"
               >
-                <ThemedText type="smallBold">{t("common.signOut")}</ThemedText>
+                {isSigningOut ? (
+                  <ActivityIndicator color={theme.text} size="small" />
+                ) : (
+                  <ThemedText type="smallBold">{t("common.signOut")}</ThemedText>
+                )}
               </Pressable>
             </View>
           </View>
@@ -559,44 +563,6 @@ export function SettingsScreen({
           <ThemedView type="backgroundElement" style={styles.panel}>
             <View style={styles.sectionCopy}>
               <ThemedText type="subtitle" style={styles.sectionTitle}>
-                {t("settings.appearanceSection.title")}
-              </ThemedText>
-              <ThemedText themeColor="textSecondary">
-                {t("settings.appearanceSection.subtitle")}
-              </ThemedText>
-            </View>
-
-            <View style={styles.segmentedControl}>
-              {(["light", "dark", "system"] as ThemePreference[]).map((option) => (
-                <Pressable
-                  key={option}
-                  accessibilityRole="button"
-                  accessibilityLabel={t(`settings.appearanceSection.${option}`)}
-                  onPress={() => {
-                    void setThemePreference(option);
-                  }}
-                  style={({ pressed }) => [
-                    styles.segmentButton,
-                    {
-                      backgroundColor:
-                        themePreference === option ? theme.backgroundSelected : theme.background,
-                      borderColor: theme.backgroundSelected,
-                      opacity: pressed ? 0.85 : 1,
-                    },
-                  ]}
-                  testID={`settings-theme-option-${option}`}
-                >
-                  <ThemedText type="smallBold">
-                    {t(`settings.appearanceSection.${option}`)}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
-          </ThemedView>
-
-          <ThemedView type="backgroundElement" style={styles.panel}>
-            <View style={styles.sectionCopy}>
-              <ThemedText type="subtitle" style={styles.sectionTitle}>
                 {t("settings.onboardingSection.title")}
               </ThemedText>
               <ThemedText themeColor="textSecondary">
@@ -719,14 +685,6 @@ export function SettingsScreen({
   );
 }
 
-/**
- * Displays the current notification permission status and, when denied, an action to open app settings.
- *
- * @param busy - Whether the status is being refreshed.
- * @param onOpenSettings - Called when the open-settings action is pressed.
- * @param status - The current notification permission state.
- * @param theme - Theme values used for button styling.
- */
 function PermissionStatusRow({
   busy,
   onOpenSettings,
@@ -780,12 +738,6 @@ function PermissionStatusRow({
   );
 }
 
-/**
- * Suggests the next reminder time to add.
- *
- * @param existingTimes - The reminder times already in use.
- * @returns The first suggested time that is not present, or the next hour after the last listed time.
- */
 function getNextSuggestedReminderTime(existingTimes: string[]): string {
   for (const suggestedTime of SUGGESTED_REMINDER_TIMES) {
     if (!existingTimes.includes(suggestedTime)) {
@@ -944,18 +896,5 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.two,
-  },
-  segmentedControl: {
-    flexDirection: "row",
-    gap: Spacing.two,
-  },
-  segmentButton: {
-    flex: 1,
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    alignItems: "center",
-    justifyContent: "center",
   },
 });

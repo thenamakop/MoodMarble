@@ -38,9 +38,7 @@ if (!fs.existsSync(emulatorExecutable)) {
 printSection("ADB");
 const adbVersionResult = runCommand("adb", ["version"]);
 if (adbVersionResult.status !== 0) {
-  fail(
-    "`adb` is not available on PATH. Ensure D:\\Android\\platform-tools is on PATH.",
-  );
+  fail("`adb` is not available on PATH. Ensure D:\\Android\\platform-tools is on PATH.");
 } else {
   ok("`adb` is available on PATH.");
 }
@@ -65,9 +63,7 @@ const cmakePath = path.join(resolvedSdkRoot, "cmake", DEFAULT_CMAKE_VERSION);
 const availableNdkVersions = fs.existsSync(path.join(resolvedSdkRoot, "ndk"))
   ? fs.readdirSync(path.join(resolvedSdkRoot, "ndk"))
   : [];
-const availableCmakeVersions = fs.existsSync(
-  path.join(resolvedSdkRoot, "cmake"),
-)
+const availableCmakeVersions = fs.existsSync(path.join(resolvedSdkRoot, "cmake"))
   ? fs.readdirSync(path.join(resolvedSdkRoot, "cmake"))
   : [];
 
@@ -109,9 +105,7 @@ if (devicesResult.status !== 0) {
   );
 } else {
   for (const emulator of matchingEmulators) {
-    ok(
-      `ADB sees ${emulator.serial} (${emulator.state}) for ${DEFAULT_AVD_NAME}.`,
-    );
+    ok(`ADB sees ${emulator.serial} (${emulator.state}) for ${DEFAULT_AVD_NAME}.`);
   }
 }
 
@@ -226,16 +220,7 @@ function checkUrl(name, url, attempts = 5, maxTimeSeconds = 8, delayMs = 1500) {
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
     const result = runCommand(
       "curl",
-      [
-        "-s",
-        "-o",
-        nullDevice,
-        "-w",
-        "%{http_code}",
-        "--max-time",
-        String(maxTimeSeconds),
-        url,
-      ],
+      ["-s", "-o", nullDevice, "-w", "%{http_code}", "--max-time", String(maxTimeSeconds), url],
       (maxTimeSeconds + 2) * 1000,
     );
     const httpCode = (result.stdout || "").trim();

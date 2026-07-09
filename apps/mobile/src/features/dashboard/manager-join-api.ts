@@ -14,9 +14,7 @@ export interface RedeemManagerCodeResponse {
   manager_teams: string;
 }
 
-export async function redeemManagerCode(
-  code: string,
-): Promise<RedeemManagerCodeResponse> {
+export async function redeemManagerCode(code: string): Promise<RedeemManagerCodeResponse> {
   const response = await fetch(createApiUrl("/auth/redeem-manager-code"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -27,10 +25,7 @@ export async function redeemManagerCode(
     let errorMsg = REDEEM_ERROR_MESSAGE;
     try {
       const data = (await response.json()) as { message?: string };
-      if (
-        typeof data.message === "string" &&
-        SAFE_REDEEM_MESSAGES.has(data.message)
-      ) {
+      if (typeof data.message === "string" && SAFE_REDEEM_MESSAGES.has(data.message)) {
         errorMsg = data.message;
       }
     } catch {}

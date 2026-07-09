@@ -1,9 +1,6 @@
 import jwt from "jsonwebtoken";
 
-import {
-  type AdminJwtPayload,
-  AdminJwtPayloadSchema,
-} from "../../../../packages/shared";
+import { type AdminJwtPayload, AdminJwtPayloadSchema } from "../../../../packages/shared";
 
 import { MissingJwtSecretError, UnauthorizedError } from "./device-jwt";
 

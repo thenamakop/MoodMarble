@@ -13,11 +13,7 @@ const WORKSPACE_ID = "ws_test";
 
 describe("device jwt auth", () => {
   it("creates and accepts a valid anonymous device jwt", () => {
-    const { deviceJwt, deviceToken } = createDeviceJwt(
-      JWT_SECRET,
-      WORKSPACE_ID,
-      DEVICE_TOKEN,
-    );
+    const { deviceJwt, deviceToken } = createDeviceJwt(JWT_SECRET, WORKSPACE_ID, DEVICE_TOKEN);
 
     expect(deviceToken).toBe(DEVICE_TOKEN);
     expect(verifyDeviceJwt(`Bearer ${deviceJwt}`, JWT_SECRET)).toEqual({
@@ -27,11 +23,7 @@ describe("device jwt auth", () => {
   });
 
   it("keeps the jwt lifetime aligned to 30 days", () => {
-    const { deviceJwt } = createDeviceJwt(
-      JWT_SECRET,
-      WORKSPACE_ID,
-      DEVICE_TOKEN,
-    );
+    const { deviceJwt } = createDeviceJwt(JWT_SECRET, WORKSPACE_ID, DEVICE_TOKEN);
     const decoded = jwt.decode(deviceJwt) as jwt.JwtPayload;
 
     expect(DEVICE_JWT_EXPIRES_IN).toBe("30d");
@@ -41,9 +33,7 @@ describe("device jwt auth", () => {
   });
 
   it("rejects an invalid device jwt", () => {
-    expect(() =>
-      verifyDeviceJwt("Bearer invalid-jwt", JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyDeviceJwt("Bearer invalid-jwt", JWT_SECRET)).toThrowError(UnauthorizedError);
   });
 
   it("rejects an expired device jwt", () => {
@@ -58,9 +48,8 @@ describe("device jwt auth", () => {
       },
     );
 
-    expect(() =>
-      verifyDeviceJwt(`Bearer ${expiredJwt}`, JWT_SECRET),
-    ).toThrowError(UnauthorizedError);
+    expect(() => verifyDeviceJwt(`Bearer ${expiredJwt}`, JWT_SECRET)).toThrowError(
+      UnauthorizedError,
+    );
   });
 });
-

@@ -58,9 +58,7 @@ describe("manager dashboard journey", () => {
     await element(by.id("manager-dashboard-screen")).scrollTo("top");
 
     await expect(element(by.id("manager-dashboard-date-picker"))).toBeVisible();
-    await expect(
-      element(by.id("manager-dashboard-team-selector")),
-    ).toBeVisible();
+    await expect(element(by.id("manager-dashboard-team-selector"))).toBeVisible();
 
     // The team label should read "Product" — the team MGR001 is scoped to.
     await waitFor(element(by.text("Product")))
@@ -79,9 +77,7 @@ describe("manager dashboard journey", () => {
 
     // The ready-state view is visible — confirms data loaded and the view
     // model was built successfully.
-    await expect(
-      element(by.id("manager-dashboard-ready-state")),
-    ).toBeVisible();
+    await expect(element(by.id("manager-dashboard-ready-state"))).toBeVisible();
   });
 
   // ─── 3. Date picker steps back one day ────────────────────────────────────
@@ -121,12 +117,8 @@ describe("manager dashboard journey", () => {
 
     // The export button carries accessibilityState disabled — it is not
     // tappable in the current release.
-    await expect(element(by.id("manager-dashboard-export-button"))).toHaveValue(
-      undefined,
-    );
-    await expect(
-      element(by.id("manager-dashboard-export-button")),
-    ).toBeVisible();
+    await expect(element(by.id("manager-dashboard-export-button"))).toHaveValue(undefined);
+    await expect(element(by.id("manager-dashboard-export-button"))).toBeVisible();
   });
 
   // ─── 5. Sign out ──────────────────────────────────────────────────────────

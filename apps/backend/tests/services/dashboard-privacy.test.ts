@@ -1,4 +1,3 @@
-
 import {
   createDashboardPrivacyState,
   DASHBOARD_PRIVACY_THRESHOLDS,
@@ -94,9 +93,7 @@ describe("dashboard privacy service", () => {
   });
 
   it("converts blurred values to privacy-safe ranges", () => {
-    const privacy = createDashboardPrivacyState([
-      "minimum_members_for_precise_values",
-    ]);
+    const privacy = createDashboardPrivacyState(["minimum_members_for_precise_values"]);
 
     expect(toDashboardCountValue(8, privacy)).toEqual({
       kind: "range",

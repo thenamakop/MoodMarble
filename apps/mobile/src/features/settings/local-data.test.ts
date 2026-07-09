@@ -1,13 +1,13 @@
 import { clearLocalDeviceData } from "@/features/settings/local-data";
 
-const mockCancelReminderNotificationsForRuntime = jest.fn(async () => undefined);
+const mockCancelReminderNotificationsForRuntime = jest.fn(async (_options?: unknown) => undefined);
 const mockClearLocalSettings = jest.fn(async () => undefined);
 const mockClearLocalMoodHistory = jest.fn(async () => undefined);
 const mockClearAnonymousSession = jest.fn(async () => undefined);
 
 jest.mock("@/features/notifications/scheduler-bridge", () => ({
-  cancelReminderNotificationsForRuntime: (...args: unknown[]) =>
-    mockCancelReminderNotificationsForRuntime(...args),
+  cancelReminderNotificationsForRuntime: (arg?: unknown) =>
+    mockCancelReminderNotificationsForRuntime(arg),
 }));
 
 jest.mock("@/features/notifications/platform", () => ({

@@ -1,10 +1,7 @@
 import jwt from "jsonwebtoken";
 import { z } from "zod";
 
-import {
-  DeviceTokenSchema,
-  WorkspaceIdSchema,
-} from "../../../../packages/shared";
+import { DeviceTokenSchema, WorkspaceIdSchema } from "../../../../packages/shared";
 
 const DeviceJwtPayloadSchema = z.object({
   device_token: DeviceTokenSchema,

@@ -49,14 +49,6 @@ interface OnboardingScreenProps {
   replaySession?: AnonymousSession;
 }
 
-/**
- * Renders the onboarding flow for introducing the app, joining a workspace, and completing team selection.
- *
- * @param onSessionReady - Called when onboarding is finished and an anonymous session can be finalized.
- * @param onCompleteTeamSelection - Called after a team is chosen to persist the selection.
- * @param onJoinWorkspace - Called with a join code to fetch the workspace and available teams.
- * @param replaySession - When provided, completes onboarding by restoring the supplied session.
- */
 export function OnboardingScreen({
   onSessionReady,
   onCompleteTeamSelection = ({ teamId, deviceJwt }) =>

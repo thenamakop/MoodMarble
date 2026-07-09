@@ -6,10 +6,7 @@ import { createAdminJwt } from "../../src/auth/admin-jwt";
 import { createDeviceJwt } from "../../src/auth/device-jwt";
 import { createManagerJwt } from "../../src/auth/manager-jwt";
 import type { AdminApiService } from "../../src/services/admin-api";
-import {
-  AdminWorkspaceNotFoundError,
-  AdminTeamNotFoundError,
-} from "../../src/services/admin-api";
+import { AdminWorkspaceNotFoundError, AdminTeamNotFoundError } from "../../src/services/admin-api";
 
 const JWT_SECRET = "test-jwt-secret";
 const ADMIN_BOOTSTRAP_SECRET = "test-admin-bootstrap-secret";
@@ -184,10 +181,12 @@ describe("admin auth hardening", () => {
         method: "GET",
         url: `/admin/workspace/ws_other/teams`,
         headers: {
-          authorization: `Bearer ${createAdminJwt(JWT_SECRET, {
-            workspace_id: TEST_WORKSPACE_ID,
-            role: "admin",
-          }).adminJwt}`,
+          authorization: `Bearer ${
+            createAdminJwt(JWT_SECRET, {
+              workspace_id: TEST_WORKSPACE_ID,
+              role: "admin",
+            }).adminJwt
+          }`,
         },
       });
 
@@ -202,10 +201,12 @@ describe("admin auth hardening", () => {
         method: "POST",
         url: "/admin/team",
         headers: {
-          authorization: `Bearer ${createAdminJwt(JWT_SECRET, {
-            workspace_id: TEST_WORKSPACE_ID,
-            role: "admin",
-          }).adminJwt}`,
+          authorization: `Bearer ${
+            createAdminJwt(JWT_SECRET, {
+              workspace_id: TEST_WORKSPACE_ID,
+              role: "admin",
+            }).adminJwt
+          }`,
         },
         payload: {
           name: "Product",
@@ -255,10 +256,12 @@ describe("admin auth hardening", () => {
         method: "POST",
         url: "/admin/team",
         headers: {
-          authorization: `Bearer ${createAdminJwt(JWT_SECRET, {
-            workspace_id: TEST_WORKSPACE_ID,
-            role: "admin",
-          }).adminJwt}`,
+          authorization: `Bearer ${
+            createAdminJwt(JWT_SECRET, {
+              workspace_id: TEST_WORKSPACE_ID,
+              role: "admin",
+            }).adminJwt
+          }`,
         },
         payload: {
           name: "Product",
@@ -307,10 +310,12 @@ describe("admin auth hardening", () => {
         method: "PATCH",
         url: `/admin/team/${TEST_TEAM_ID}`,
         headers: {
-          authorization: `Bearer ${createAdminJwt(JWT_SECRET, {
-            workspace_id: TEST_WORKSPACE_ID,
-            role: "admin",
-          }).adminJwt}`,
+          authorization: `Bearer ${
+            createAdminJwt(JWT_SECRET, {
+              workspace_id: TEST_WORKSPACE_ID,
+              role: "admin",
+            }).adminJwt
+          }`,
         },
         payload: {
           name: "Renamed",

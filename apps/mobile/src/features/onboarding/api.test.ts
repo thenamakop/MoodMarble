@@ -166,12 +166,14 @@ describe("joinWorkspace", () => {
     await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");
   });
 
-  it("surfaces a clear error when the request is aborted by the timeout", async () => {
+  it("surfaces a clear connectivity error when the request is aborted by the timeout", async () => {
     (globalThis.fetch as jest.Mock).mockRejectedValue(
       new DOMException("The operation was aborted.", "AbortError"),
     );
 
-    await expect(joinWorkspace("ABC123")).rejects.toThrow("Unable to join workspace right now.");
+    await expect(joinWorkspace("ABC123")).rejects.toThrow(
+      /Unable to join workspace right now\. Dev details: Request timed out — check that the backend is reachable at http:\/\/127\.0\.0\.1:3000\/workspace\/join/,
+    );
   });
 
   it("includes a signal in the fetch call for timeout support", async () => {

@@ -11,17 +11,14 @@ import {
 } from "@/contracts/admin";
 import { createApiUrl, getApiRequestErrorMessage } from "@/lib/api";
 
-const ADMIN_PANEL_ERROR_MESSAGE =
-  "Unable to load the admin control panel right now.";
+const ADMIN_PANEL_ERROR_MESSAGE = "Unable to load the admin control panel right now.";
 const ADMIN_ACCESS_MISSING_MESSAGE =
-  "Admin access missing. Please sign in again.";
-const ADMIN_WORKSPACE_CREATE_ERROR_MESSAGE =
-  "Unable to create workspace right now.";
+  "Admin access missing. Open the admin panel from a valid admin link again.";
+const ADMIN_WORKSPACE_CREATE_ERROR_MESSAGE = "Unable to create workspace right now.";
 const ADMIN_TEAM_CREATE_ERROR_MESSAGE = "Unable to add team right now.";
 const ADMIN_TEAM_UPDATE_ERROR_MESSAGE = "Unable to update team right now.";
 const ADMIN_JOIN_CODE_ERROR_MESSAGE = "Unable to load join code right now.";
-const ADMIN_JOIN_CODE_ROTATE_ERROR_MESSAGE =
-  "Unable to refresh join code right now.";
+const ADMIN_JOIN_CODE_ROTATE_ERROR_MESSAGE = "Unable to refresh join code right now.";
 const ADMIN_EXPORT_ERROR_MESSAGE = "Unable to export CSV right now.";
 const ADMIN_LOGIN_ERROR_MESSAGE = "Unable to login right now.";
 const SAFE_ADMIN_ERROR_MESSAGES = new Set([
@@ -127,9 +124,7 @@ export async function loadAdminPanelShell(
     }),
     requestJson({
       authorization: input.adminJwt,
-      requestUrl: createApiUrl(
-        `/admin/workspace/${input.workspaceId}/join-code`,
-      ),
+      requestUrl: createApiUrl(`/admin/workspace/${input.workspaceId}/join-code`),
       responseSchema: AdminJoinCodeResponseSchema,
       stableMessage: ADMIN_PANEL_ERROR_MESSAGE,
     }),
@@ -170,9 +165,7 @@ export async function createAdminWorkspace(
   });
 }
 
-export async function createAdminTeam(
-  input: CreateAdminTeamInput,
-): Promise<AdminTeam> {
+export async function createAdminTeam(input: CreateAdminTeamInput): Promise<AdminTeam> {
   const response = await requestJson({
     authorization: input.adminJwt,
     body: AdminTeamCreateRequestSchema.parse({
@@ -187,9 +180,7 @@ export async function createAdminTeam(
   return response.team;
 }
 
-export async function updateAdminTeam(
-  input: UpdateAdminTeamInput,
-): Promise<AdminTeam> {
+export async function updateAdminTeam(input: UpdateAdminTeamInput): Promise<AdminTeam> {
   const response = await requestJson({
     authorization: input.adminJwt,
     body: AdminTeamUpdateRequestSchema.parse({
@@ -204,9 +195,7 @@ export async function updateAdminTeam(
   return response.team;
 }
 
-export async function fetchAdminJoinCode(
-  input: AdminWorkspaceSession,
-): Promise<string> {
+export async function fetchAdminJoinCode(input: AdminWorkspaceSession): Promise<string> {
   const response = await requestJson({
     authorization: input.adminJwt,
     requestUrl: createApiUrl(`/admin/workspace/${input.workspaceId}/join-code`),
@@ -217,9 +206,7 @@ export async function fetchAdminJoinCode(
   return response.workspace.join_code;
 }
 
-export async function rotateAdminJoinCode(
-  input: AdminWorkspaceSession,
-): Promise<string> {
+export async function rotateAdminJoinCode(input: AdminWorkspaceSession): Promise<string> {
   const response = await requestJson({
     authorization: input.adminJwt,
     requestUrl: createApiUrl(`/admin/workspace/${input.workspaceId}/join-code`),
@@ -231,9 +218,7 @@ export async function rotateAdminJoinCode(
   return response.workspace.join_code;
 }
 
-export async function exportAdminCsv(
-  input: ExportAdminCsvInput,
-): Promise<AdminExportResult> {
+export async function exportAdminCsv(input: ExportAdminCsvInput): Promise<AdminExportResult> {
   const query = new URLSearchParams({
     start_date: input.startDate,
     end_date: input.endDate,
@@ -251,20 +236,14 @@ export async function exportAdminCsv(
       },
     });
   } catch (error: unknown) {
-    throw new Error(
-      getApiRequestErrorMessage(ADMIN_EXPORT_ERROR_MESSAGE, error, requestUrl),
-    );
+    throw new Error(getApiRequestErrorMessage(ADMIN_EXPORT_ERROR_MESSAGE, error, requestUrl));
   }
 
   if (!response.ok) {
-    throw new Error(
-      await getAdminErrorMessage(response, ADMIN_EXPORT_ERROR_MESSAGE),
-    );
+    throw new Error(await getAdminErrorMessage(response, ADMIN_EXPORT_ERROR_MESSAGE));
   }
 
-  const fileName = readExportFileName(
-    response.headers.get("content-disposition"),
-  );
+  const fileName = readExportFileName(response.headers.get("content-disposition"));
 
   return {
     csv: await response.text(),
@@ -272,9 +251,7 @@ export async function exportAdminCsv(
   };
 }
 
-async function requestJson<
-  TSchema extends { parse: (value: unknown) => unknown },
->(options: {
+async function requestJson<TSchema extends { parse: (value: unknown) => unknown }>(options: {
   authorization?: string;
   body?: unknown;
   headers?: Record<string, string>;
@@ -289,45 +266,28 @@ async function requestJson<
     response = await fetch(options.requestUrl, {
       method: options.method ?? "GET",
       headers: {
-        ...(options.authorization
-          ? { Authorization: `Bearer ${options.authorization}` }
-          : {}),
+        ...(options.authorization ? { Authorization: `Bearer ${options.authorization}` } : {}),
         ...(options.body ? { "Content-Type": "application/json" } : {}),
         ...(options.headers ?? {}),
       },
       body: options.body ? JSON.stringify(options.body) : undefined,
     });
   } catch (error: unknown) {
-    throw new Error(
-      getApiRequestErrorMessage(
-        options.stableMessage,
-        error,
-        options.requestUrl,
-      ),
-    );
+    throw new Error(getApiRequestErrorMessage(options.stableMessage, error, options.requestUrl));
   }
 
   if (!response.ok) {
-    throw new Error(
-      await getAdminErrorMessage(response, options.stableMessage),
-    );
+    throw new Error(await getAdminErrorMessage(response, options.stableMessage));
   }
 
-  return options.responseSchema.parse(await response.json()) as ReturnType<
-    TSchema["parse"]
-  >;
+  return options.responseSchema.parse(await response.json()) as ReturnType<TSchema["parse"]>;
 }
 
-async function getAdminErrorMessage(
-  response: Response,
-  fallbackMessage: string,
-): Promise<string> {
+async function getAdminErrorMessage(response: Response, fallbackMessage: string): Promise<string> {
   try {
     const responseBody = (await response.json()) as { message?: unknown };
     const publicErrorMessage =
-      typeof responseBody.message === "string"
-        ? responseBody.message.trim()
-        : "";
+      typeof responseBody.message === "string" ? responseBody.message.trim() : "";
 
     if (SAFE_ADMIN_ERROR_MESSAGES.has(publicErrorMessage)) {
       return publicErrorMessage;
@@ -421,9 +381,7 @@ export async function listManagerCodes(input: {
   teamId: string;
 }): Promise<AdminManagerCodeListResult> {
   const response = await fetch(
-    createApiUrl(
-      `/admin/workspace/${input.workspaceId}/team/${input.teamId}/manager-codes`,
-    ),
+    createApiUrl(`/admin/workspace/${input.workspaceId}/team/${input.teamId}/manager-codes`),
     { headers: { Authorization: `Bearer ${input.adminJwt}` } },
   );
   if (!response.ok) throw new Error(MANAGER_CODE_ERROR_MESSAGE);
@@ -436,9 +394,7 @@ export async function revokeManagerCode(input: {
   codeId: string;
 }): Promise<void> {
   const response = await fetch(
-    createApiUrl(
-      `/admin/workspace/${input.workspaceId}/manager-codes/${input.codeId}`,
-    ),
+    createApiUrl(`/admin/workspace/${input.workspaceId}/manager-codes/${input.codeId}`),
     {
       method: "DELETE",
       headers: { Authorization: `Bearer ${input.adminJwt}` },

@@ -1,7 +1,7 @@
 import React, { useCallback, useState } from "react";
 import { useRouter } from "expo-router";
-import { Calendar, Clock, ChevronDown } from "lucide-react-native";
-import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Calendar, Clock } from "lucide-react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
@@ -18,12 +18,6 @@ interface LocalHistoryScreenProps {
   onReturnHome?: () => void;
 }
 
-/**
- * Renders the local history screen with timeline and calendar views, mood filters, and navigation back home.
- *
- * @param initialView - The view shown when the screen opens.
- * @param onReturnHome - Called when the back button is pressed.
- */
 export function LocalHistoryScreen({
   initialView = "timeline",
   onReturnHome,
@@ -32,12 +26,6 @@ export function LocalHistoryScreen({
   const theme = useTheme();
   const [activeView, setActiveView] = useState<HistoryView>(initialView);
   const [selectedMoodFilter, setSelectedMoodFilter] = useState<MoodValue | null>(null);
-  const [isFilterDropdownOpen, setIsFilterDropdownOpen] = useState(false);
-
-  const handleFilterSelect = useCallback((filter: MoodValue | null) => {
-    setSelectedMoodFilter(filter);
-    setIsFilterDropdownOpen(false);
-  }, []);
 
   const handleReturnHome = useCallback(() => {
     if (onReturnHome) {
@@ -50,18 +38,18 @@ export function LocalHistoryScreen({
 
   return (
     <ThemedView style={styles.screen}>
-      <ScrollView style={styles.pageScroll} contentContainerStyle={styles.pageScrollContent}>
-        <View style={styles.header}>
-          <View style={styles.headerCopy}>
-            <ThemedText type="title" style={styles.title}>
-              Local history
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              Review your private timeline, streak, and monthly mood pattern on this device only.
-            </ThemedText>
-          </View>
+      <View style={styles.header}>
+        <View style={styles.headerCopy}>
+          <ThemedText type="title" style={styles.title}>
+            Local history
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+            Review your private timeline, streak, and monthly mood pattern on this device only.
+          </ThemedText>
+        </View>
 
-          <View style={styles.actionRow}>
+        <View style={styles.actions}>
+          <View style={styles.switchRow}>
             <HistorySwitchButton
               icon={Clock}
               isActive={activeView === "timeline"}
@@ -78,155 +66,91 @@ export function LocalHistoryScreen({
               testID="history-view-calendar"
               theme={theme}
             />
-
-            <Pressable
-              accessibilityLabel="Back to marbles"
-              accessibilityRole="button"
-              onPress={handleReturnHome}
-              style={({ pressed }) => [
-                styles.backButton,
-                {
-                  backgroundColor: theme.background,
-                  borderColor: theme.backgroundSelected,
-                  opacity: pressed ? 0.85 : 1,
-                },
-              ]}
-              testID="history-return-home"
-            >
-              <ThemedText type="smallBold">Back to marbles</ThemedText>
-            </Pressable>
           </View>
-        </View>
 
-        <View style={styles.filterDropdownRow}>
           <Pressable
-            accessibilityLabel="Open mood filter"
+            accessibilityLabel="Back to marbles"
             accessibilityRole="button"
-            onPress={() => setIsFilterDropdownOpen(true)}
+            onPress={handleReturnHome}
             style={({ pressed }) => [
-              styles.filterDropdownButton,
+              styles.backButton,
               {
-                backgroundColor: theme.backgroundElement,
+                backgroundColor: theme.background,
                 borderColor: theme.backgroundSelected,
                 opacity: pressed ? 0.85 : 1,
               },
             ]}
-            testID="mood-filter-dropdown-button"
+            testID="history-return-home"
           >
-            <View style={styles.filterDropdownButtonContent}>
-              <ThemedText type="smallBold">
-                {selectedMoodFilter ? MOOD_LABELS[selectedMoodFilter] : "All moods"}
-              </ThemedText>
-              <ChevronDown size={16} color={theme.text} />
-            </View>
+            <ThemedText type="smallBold">Back to marbles</ThemedText>
           </Pressable>
+        </View>
+      </View>
 
-          {selectedMoodFilter ? (
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.filterRow}
+        testID="mood-filter-row"
+      >
+        <Pressable
+          accessibilityLabel="Show all moods"
+          accessibilityRole="button"
+          accessibilityState={{ selected: selectedMoodFilter === null }}
+          onPress={() => setSelectedMoodFilter(null)}
+          style={({ pressed }) => [
+            styles.filterChip,
+            {
+              backgroundColor:
+                selectedMoodFilter === null ? theme.backgroundSelected : theme.backgroundElement,
+              borderColor: selectedMoodFilter === null ? theme.text : theme.backgroundSelected,
+              opacity: pressed ? 0.85 : 1,
+            },
+          ]}
+          testID="mood-filter-all"
+        >
+          <ThemedText type="smallBold">All</ThemedText>
+        </Pressable>
+
+        {MOODS.map((mood) => {
+          const isSelected = selectedMoodFilter === mood;
+
+          return (
             <Pressable
-              accessibilityLabel="Clear mood filter"
+              key={mood}
+              accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
               accessibilityRole="button"
-              onPress={() => setSelectedMoodFilter(null)}
+              accessibilityState={{ selected: isSelected }}
+              onPress={() => setSelectedMoodFilter(isSelected ? null : mood)}
               style={({ pressed }) => [
-                styles.filterClearButton,
+                styles.filterChip,
                 {
-                  backgroundColor: theme.background,
-                  borderColor: theme.backgroundSelected,
+                  backgroundColor: MOOD_COLORS[mood],
+                  borderColor: isSelected ? theme.text : "transparent",
                   opacity: pressed ? 0.85 : 1,
                 },
               ]}
-              testID="mood-filter-clear"
+              testID={`mood-filter-${mood}`}
             >
-              <ThemedText type="small">Clear</ThemedText>
+              <ThemedText type="smallBold" style={styles.filterChipLabel}>
+                {MOOD_LABELS[mood]}
+              </ThemedText>
             </Pressable>
-          ) : null}
-        </View>
-
-        <Modal
-          animationType="fade"
-          transparent
-          visible={isFilterDropdownOpen}
-          onRequestClose={() => setIsFilterDropdownOpen(false)}
-        >
-          <View style={styles.modalContainer}>
-            <Pressable
-              style={styles.dropdownBackdrop}
-              onPress={() => setIsFilterDropdownOpen(false)}
-            />
-
-            <View
-              style={[
-                styles.dropdownPanel,
-                { backgroundColor: theme.backgroundElement, borderColor: theme.backgroundSelected },
-              ]}
-            >
-              <Pressable
-                accessibilityLabel="Show all moods"
-                accessibilityRole="button"
-                onPress={() => handleFilterSelect(null)}
-                style={({ pressed }) => [
-                  styles.dropdownItem,
-                  {
-                    backgroundColor:
-                      selectedMoodFilter === null ? theme.backgroundSelected : "transparent",
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-                testID="mood-filter-all"
-              >
-                <ThemedText type="smallBold">All moods</ThemedText>
-              </Pressable>
-
-              {MOODS.map((mood) => {
-                const isSelected = selectedMoodFilter === mood;
-
-                return (
-                  <Pressable
-                    key={mood}
-                    accessibilityLabel={`Filter by ${MOOD_LABELS[mood]}`}
-                    accessibilityRole="button"
-                    onPress={() => handleFilterSelect(mood)}
-                    style={({ pressed }) => [
-                      styles.dropdownItem,
-                      {
-                        backgroundColor: isSelected ? theme.backgroundSelected : "transparent",
-                        opacity: pressed ? 0.85 : 1,
-                      },
-                    ]}
-                    testID={`mood-filter-${mood}`}
-                  >
-                    <View style={styles.dropdownItemContent}>
-                      <View style={[styles.dropdownDot, { backgroundColor: MOOD_COLORS[mood] }]} />
-                      <ThemedText type="smallBold">{MOOD_LABELS[mood]}</ThemedText>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-          </View>
-        </Modal>
-
-        <View style={styles.content} testID={`history-panel-${activeView}`}>
-          {activeView === "timeline" ? (
-            <LocalMoodTimelineScreen moodFilter={selectedMoodFilter} nested />
-          ) : (
-            <LocalMoodCalendarScreen nested />
-          )}
-        </View>
+          );
+        })}
       </ScrollView>
+
+      <View style={styles.content} testID={`history-panel-${activeView}`}>
+        {activeView === "timeline" ? (
+          <LocalMoodTimelineScreen moodFilter={selectedMoodFilter} />
+        ) : (
+          <LocalMoodCalendarScreen />
+        )}
+      </View>
     </ThemedView>
   );
 }
 
-/**
- * Renders a switch button for the history view.
- *
- * @param icon - Icon component displayed next to the label.
- * @param isActive - Whether the button is selected.
- * @param label - Text shown on the button and in its accessibility label.
- * @param onPress - Called when the button is pressed.
- * @param testID - Test identifier for the button.
- * @param theme - Current theme values used for button and icon styling.
- */
 function HistorySwitchButton({
   icon: Icon,
   isActive,
@@ -271,10 +195,10 @@ function HistorySwitchButton({
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    gap: Spacing.one,
+    gap: Spacing.three,
   },
   header: {
-    gap: Spacing.one,
+    gap: Spacing.three,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
   },
@@ -288,17 +212,18 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 560,
   },
-  actionRow: {
-    flexDirection: "row",
-    flexWrap: "nowrap",
-    alignItems: "center",
+  actions: {
     gap: Spacing.two,
-    paddingHorizontal: Spacing.four,
+  },
+  switchRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.two,
   },
   switchButton: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
   switchButtonContent: {
@@ -307,80 +232,28 @@ const styles = StyleSheet.create({
     gap: Spacing.one,
   },
   backButton: {
+    alignSelf: "flex-start",
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.two,
   },
-  pageScroll: {
+  content: {
     flex: 1,
   },
-  pageScrollContent: {
-    flexGrow: 1,
-    paddingBottom: Spacing.four,
-  },
-  content: {
-    // Intentionally no flex: the nested timeline/calendar provide their own height
-    // so the parent ScrollView can scroll the whole page as one unit.
-  },
-  filterDropdownRow: {
+  filterRow: {
     flexDirection: "row",
-    alignItems: "center",
     gap: Spacing.two,
     paddingHorizontal: Spacing.four,
+    paddingBottom: Spacing.one,
   },
-  filterDropdownButton: {
-    flexDirection: "row",
-    alignItems: "center",
+  filterChip: {
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.two,
   },
-  filterDropdownButtonContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.one,
-  },
-  filterClearButton: {
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-  },
-  modalContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dropdownBackdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0, 0, 0, 0.5)",
-  },
-  dropdownPanel: {
-    borderWidth: 1,
-    borderRadius: Spacing.three,
-    padding: Spacing.two,
-    gap: Spacing.half,
-    minWidth: 200,
-    maxWidth: 320,
-    maxHeight: "80%",
-  },
-  dropdownItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: Spacing.two,
-    paddingHorizontal: Spacing.two,
-    paddingVertical: Spacing.half,
-  },
-  dropdownItemContent: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.one,
-  },
-  dropdownDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+  filterChipLabel: {
+    color: "#ffffff",
   },
 });

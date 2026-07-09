@@ -1,4 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import * as SecureStore from "expo-secure-store";
 
 import { DEFAULT_THEME_PREFERENCE, type ThemePreference } from "./model";
 
@@ -12,7 +12,7 @@ const THEME_PREFERENCE_STORAGE_KEY = "moodmarble.theme-preference";
  */
 export async function loadThemePreference(): Promise<ThemePreference> {
   try {
-    const storedValue = await AsyncStorage.getItem(THEME_PREFERENCE_STORAGE_KEY);
+    const storedValue = await SecureStore.getItemAsync(THEME_PREFERENCE_STORAGE_KEY);
 
     if (storedValue === null) {
       return DEFAULT_THEME_PREFERENCE;
@@ -34,7 +34,7 @@ export async function loadThemePreference(): Promise<ThemePreference> {
  * Persists the theme preference.
  */
 export async function saveThemePreference(themePreference: ThemePreference): Promise<void> {
-  await AsyncStorage.setItem(THEME_PREFERENCE_STORAGE_KEY, JSON.stringify(themePreference));
+  await SecureStore.setItemAsync(THEME_PREFERENCE_STORAGE_KEY, JSON.stringify(themePreference));
 }
 
 function isValidThemePreference(value: unknown): value is ThemePreference {
