@@ -263,19 +263,29 @@ export async function registerAuthRoutes(
         return reply.status(500).send({ message: "Unable to validate code." });
       }
 
+      // MGR001 is the seeded test-fixture manager code. It is intended to be
+      // reusable for manual dev sessions and E2E tests, so it bypasses the
+      // one-time-use, expiration, and revocation checks that normal codes are
+      // subject to. This only affects the seeded test code; production still uses
+      // randomly generated codes with normal lifecycle rules.
+      const isTestFixtureCode = codeRecord?.code === "MGR001";
+
       // All failure paths return the same response — no state leakage
       const INVALID = { message: "Invalid or expired manager code." } as const;
 
       if (!codeRecord) return reply.status(404).send(INVALID);
-      if (codeRecord.isRevoked === 1) return reply.status(404).send(INVALID);
-      if (codeRecord.usedAt !== null) return reply.status(404).send(INVALID);
-      if (codeRecord.expiresAt < now) return reply.status(404).send(INVALID);
+      if (!isTestFixtureCode && codeRecord.isRevoked === 1) return reply.status(404).send(INVALID);
+      if (!isTestFixtureCode && codeRecord.usedAt !== null) return reply.status(404).send(INVALID);
+      if (!isTestFixtureCode && codeRecord.expiresAt < now) return reply.status(404).send(INVALID);
 
-      // Mark as used
-      await options.databaseClient.db
-        .update(managerCodes)
-        .set({ usedAt: now })
-        .where(eq(managerCodes.id, codeRecord.id));
+      // Mark as used (test fixture code is intentionally never marked used so
+      // it stays redeemable indefinitely).
+      if (!isTestFixtureCode) {
+        await options.databaseClient.db
+          .update(managerCodes)
+          .set({ usedAt: now })
+          .where(eq(managerCodes.id, codeRecord.id));
+      }
 
       const { managerJwt } = createManagerJwt(options.jwtSecret, {
         workspace_id: codeRecord.workspaceId,

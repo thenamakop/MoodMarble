@@ -189,9 +189,11 @@ export async function registerTestRoutes(
         });
       }
 
-      // 5. Seed a known manager code for E2E tests (6-char alphanumeric)
-      const codeExpiresAt = new Date();
-      codeExpiresAt.setDate(codeExpiresAt.getDate() + 30);
+      // 5. Seed a known manager code for E2E tests (6-char alphanumeric).
+      //    Set expiration far in the future so manual dev sessions and CI
+      //    don't need to regenerate it every 30 days. This is test-fixture
+      //    data only, not a production code.
+      const codeExpiresAt = new Date("2099-12-31T23:59:59Z");
 
       try {
         await databaseClient.db.insert(managerCodes).values({
