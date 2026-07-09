@@ -114,15 +114,19 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                 <VictoryAxis dependentAxis style={axisStyle} tickValues={[0, 2, 4, 6, 8, 10]} />
                 <View testID="manager-dashboard-weekly-series">
                   <VictoryLine
-                    data={viewModel.weeklyTrend.data.map((point, index) => ({
-                      x: point.label,
-                      y: point.scoreValue,
-                      // Only the last point carries a label — showing a label on
-                      // every point caused overlapping numbers to spill past the
-                      // chart's right edge when points were close together.
-                      label:
-                        index === viewModel.weeklyTrend.data.length - 1 ? point.scoreLabel : "",
-                    }))}
+                    data={viewModel.weeklyTrend.data
+                      // Omit privacy-hidden days (null scoreValue) so Victory
+                      // renders a gap in the line rather than a dip to zero.
+                      .filter((point) => point.scoreValue !== null)
+                      .map((point, index, arr) => ({
+                        x: point.label,
+                        y: point.scoreValue as number,
+                        // Only the last visible point carries a label — showing
+                        // a label on every point caused overlapping numbers to
+                        // spill past the chart's right edge when points were
+                        // close together.
+                        label: index === arr.length - 1 ? point.scoreLabel : "",
+                      }))}
                     interpolation="monotoneX"
                     labelComponent={
                       <VictoryLabel
@@ -396,24 +400,25 @@ function ChartCard({
   );
 }
 
-function getHeatmapFill(scoreValue: number, visibility: DashboardMetricVisibility): string {
+function getHeatmapFill(scoreValue: number | null, visibility: DashboardMetricVisibility): string {
   if (visibility === "hidden") {
+    // Hidden cells always get the neutral gray regardless of scoreValue.
     return "#9ca3af";
   }
 
-  if (scoreValue >= 8) {
+  if ((scoreValue ?? 0) >= 8) {
     return "#22c55e";
   }
 
-  if (scoreValue >= 6) {
+  if ((scoreValue ?? 0) >= 6) {
     return "#84cc16";
   }
 
-  if (scoreValue >= 4) {
+  if ((scoreValue ?? 0) >= 4) {
     return "#facc15";
   }
 
-  if (scoreValue >= 2) {
+  if ((scoreValue ?? 0) >= 2) {
     return "#fb923c";
   }
 

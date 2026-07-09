@@ -25,7 +25,9 @@ interface ManagerDashboardSummaryModel {
 interface DailyHeatmapCellModel {
   hourLabel: string;
   hourOfDay: number;
-  scoreValue: number;
+  // null when the score is privacy-hidden — the fill color for hidden cells
+  // is determined by the `visibility` field, not this value.
+  scoreValue: number | null;
   scoreLabel: string;
   submissionsLabel: string;
   visibility: DashboardMetricVisibility;
@@ -34,7 +36,9 @@ interface DailyHeatmapCellModel {
 interface WeeklyTrendPointModel {
   label: string;
   date: string;
-  scoreValue: number;
+  // null when the score is privacy-hidden — these points are omitted from
+  // the Victory data array so the line shows a gap rather than a dip to 0.
+  scoreValue: number | null;
   scoreLabel: string;
   visibility: DashboardMetricVisibility;
 }
@@ -94,9 +98,7 @@ export function buildManagerDashboardViewModel(
 
   return {
     summary: {
-      totalSubmissionsLabel: formatCountValue(
-        bundle.weekly.summary.total_submissions,
-      ),
+      totalSubmissionsLabel: formatCountValue(bundle.weekly.summary.total_submissions),
       windowLabel: `${bundle.weekly.window.start_date} to ${bundle.weekly.window.end_date}`,
     },
     banner: buildDashboardBanner(
@@ -121,6 +123,10 @@ export function buildManagerDashboardViewModel(
       visibility: weeklyVisibility,
       hiddenMessage: getHiddenMessage("weekly trend", bundle.weekly.privacy),
       thresholdMessage: getThresholdMessage(bundle.weekly.privacy),
+      // Days with null scoreValue (privacy-hidden) are kept in the data array
+      // for axis tick purposes (so the x-axis still shows every day label)
+      // but filtered out before being passed to the Victory line/series so
+      // Victory renders a visible gap instead of dipping the line to 0.
       data: bundle.weekly.daily_points.map((point) => ({
         label: point.date.slice(5),
         date: point.date,
@@ -131,10 +137,7 @@ export function buildManagerDashboardViewModel(
     },
     submissionVolume: {
       visibility: weeklyVisibility,
-      hiddenMessage: getHiddenMessage(
-        "submission volume",
-        bundle.weekly.privacy,
-      ),
+      hiddenMessage: getHiddenMessage("submission volume", bundle.weekly.privacy),
       thresholdMessage: getThresholdMessage(bundle.weekly.privacy),
       data: bundle.weekly.daily_points.map((point) => ({
         label: point.date.slice(5),
@@ -146,10 +149,7 @@ export function buildManagerDashboardViewModel(
     },
     moodDistribution: {
       visibility: weeklyVisibility,
-      hiddenMessage: getHiddenMessage(
-        "mood distribution",
-        bundle.weekly.privacy,
-      ),
+      hiddenMessage: getHiddenMessage("mood distribution", bundle.weekly.privacy),
       thresholdMessage: getThresholdMessage(bundle.weekly.privacy),
       data: bundle.weekly.summary.mood_distribution
         .map((entry) => ({
@@ -235,10 +235,7 @@ function getThresholdMessage(privacy: DashboardPrivacyState): string | null {
   return null;
 }
 
-function getHiddenMessage(
-  label: string,
-  privacy: DashboardPrivacyState,
-): string | null {
+function getHiddenMessage(label: string, privacy: DashboardPrivacyState): string | null {
   if (privacy.visibility !== "hidden") {
     return null;
   }
@@ -258,7 +255,7 @@ function getChartCountValue(value: DashboardCountValue): number {
   return 0;
 }
 
-function getChartScoreValue(value: DashboardScoreValue): number {
+function getChartScoreValue(value: DashboardScoreValue): number | null {
   if (value.kind === "exact") {
     return value.value;
   }
@@ -267,7 +264,9 @@ function getChartScoreValue(value: DashboardScoreValue): number {
     return (value.min + value.max) / 2;
   }
 
-  return 0;
+  // Privacy-hidden — return null so callers can omit the point rather than
+  // plotting it as 0 (which would falsely imply "worst possible mood").
+  return null;
 }
 
 function formatCountValue(value: DashboardCountValue): string {
@@ -284,9 +283,7 @@ function formatCountValue(value: DashboardCountValue): string {
 
 function formatScoreValue(value: DashboardScoreValue): string {
   if (value.kind === "exact") {
-    return Number.isInteger(value.value)
-      ? String(value.value)
-      : value.value.toFixed(1);
+    return Number.isInteger(value.value) ? String(value.value) : value.value.toFixed(1);
   }
 
   if (value.kind === "range") {

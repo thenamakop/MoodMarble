@@ -267,24 +267,25 @@ function ChartCard({
   );
 }
 
-function getHeatmapFill(scoreValue: number, visibility: DashboardMetricVisibility): string {
+function getHeatmapFill(scoreValue: number | null, visibility: DashboardMetricVisibility): string {
   if (visibility === "hidden") {
+    // Hidden cells always get the neutral gray regardless of scoreValue.
     return "#9ca3af";
   }
 
-  if (scoreValue >= 8) {
+  if ((scoreValue ?? 0) >= 8) {
     return "#22c55e";
   }
 
-  if (scoreValue >= 6) {
+  if ((scoreValue ?? 0) >= 6) {
     return "#84cc16";
   }
 
-  if (scoreValue >= 4) {
+  if ((scoreValue ?? 0) >= 4) {
     return "#facc15";
   }
 
-  if (scoreValue >= 2) {
+  if ((scoreValue ?? 0) >= 2) {
     return "#fb923c";
   }
 
