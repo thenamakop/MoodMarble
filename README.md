@@ -58,6 +58,68 @@ MoodMarble helps teams understand collective sentiment without exposing individu
 - Privacy-threshold enforcement for team analytics
 - Manager JWT-protected dashboard endpoints
 
+### Mood Rating Criteria
+
+MoodMarble converts each anonymous mood submission into a numeric score so managers can see aggregated trends without exposing individual responses.
+
+#### Mood-to-Score Mapping
+
+Submissions use one of nine mood labels. Each label maps to a fixed score on a 1–9 scale:
+
+| Mood        | Score | Sentiment                 |
+| ----------- | ----- | ------------------------- |
+| `energised` | 9     | Very positive             |
+| `happy`     | 8     | Positive                  |
+| `calm`      | 7     | Mildly positive           |
+| `focused`   | 6     | Slightly positive         |
+| `neutral`   | 5     | Neutral                   |
+| `tired`     | 4     | Slightly negative         |
+| `stressed`  | 3     | Negative                  |
+| `sad`       | 2     | Very negative             |
+| `unheard`   | 1     | Distressed / disconnected |
+
+This mapping is defined in `apps/backend/src/services/dashboard-daily.ts` as `MOOD_SCORES` and is used for all team-level averages.
+
+#### Average Mood Score Calculation
+
+For any group of submissions (an hour, a day, or a week), the average mood score is:
+
+```text
+average = round(sum of mapped scores / number of submissions, 2)
+```
+
+If no submissions exist for a bucket, the backend defaults to `5` (neutral) for internal calculations, but the bucket is marked hidden and displayed as gray until enough data is collected.
+
+#### Privacy Thresholds
+
+Manager dashboards enforce minimum anonymity thresholds before showing precise values:
+
+| Level          | Rule                                                              |
+| -------------- | ----------------------------------------------------------------- |
+| Daily view     | Hidden when total team submissions for the day are below `5`      |
+| Hourly buckets | Hidden individually when that hour has fewer than `3` submissions |
+| Weekly trend   | Hidden when the day falls below the same daily threshold          |
+
+When hidden, the UI shows a fallback panel instead of a numeric value.
+
+#### Dashboard Color Scale
+
+The daily heatmap renders each visible hour bucket with a continuous color gradient from the bucket’s average score:
+
+| Score | Color  | Meaning       |
+| ----- | ------ | ------------- |
+| 0     | Red    | Poor          |
+| 2.5   | Orange | Below average |
+| 5     | Yellow | Neutral       |
+| 7.5   | Lime   | Above average |
+| 10    | Green  | Great         |
+
+The gradient is interpolated linearly between these stops, and hidden cells are shown in neutral gray (`#9ca3af`).
+
+#### Mood Alert
+
+The daily dashboard raises a manager alert when the average mood score is low for `3` or more consecutive hours, so teams can spot sustained negative trends early.
+
 ### Planned Admin Features
 
 - Workspace creation
