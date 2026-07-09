@@ -40,6 +40,15 @@ async function reachManagerDashboard() {
     .withTimeout(20000);
 }
 
+// Scroll the dashboard screen until the requested chart card is visible.
+async function scrollToChartCard(testID) {
+  await element(by.id("manager-dashboard-screen")).scrollTo("top");
+  await waitFor(element(by.id(testID)))
+    .toBeVisible()
+    .whileElement(by.id("manager-dashboard-screen"))
+    .scroll(300, "down", NaN, 0.5);
+}
+
 // ─── suite ────────────────────────────────────────────────────────────────────
 
 describe("manager dashboard journey", () => {
@@ -106,7 +115,56 @@ describe("manager dashboard journey", () => {
     await expect(element(by.id("manager-dashboard-date-picker"))).toBeVisible();
   });
 
-  // ─── 4. Export control is present but disabled ────────────────────────────
+  // ─── 4. Daily heatmap card ────────────────────────────────────────────────
+
+  it("renders the redesigned daily heatmap as a 2x12 grid", async () => {
+    await scrollToChartCard("manager-dashboard-daily-card");
+
+    await expect(element(by.id("manager-dashboard-daily-card"))).toBeVisible();
+    await expect(element(by.id("manager-dashboard-daily-grid"))).toBeVisible();
+
+    // AM row header and at least one populated hour cell are visible.
+    await waitFor(element(by.text("AM")))
+      .toBeVisible()
+      .withTimeout(5000);
+    await waitFor(element(by.id("manager-dashboard-daily-cell-0-9")))
+      .toBeVisible()
+      .withTimeout(5000);
+  });
+
+  // ─── 5. Expand-to-fullscreen chart cards ──────────────────────────────────
+
+  it("opens and closes the expanded daily chart modal", async () => {
+    await scrollToChartCard("manager-dashboard-daily-card");
+
+    const expandTrigger = element(by.id("manager-dashboard-daily-card-expand-trigger"));
+    await waitFor(expandTrigger).toBeVisible().withTimeout(5000);
+    await expandTrigger.tap();
+
+    // The fullscreen modal and close button appear.
+    await waitFor(element(by.id("manager-dashboard-daily-card-expand-close")))
+      .toBeVisible()
+      .withTimeout(10000);
+
+    await element(by.id("manager-dashboard-daily-card-expand-close")).tap();
+
+    // The modal closes and the original card is back in view.
+    await waitFor(element(by.id("manager-dashboard-daily-card")))
+      .toBeVisible()
+      .withTimeout(10000);
+  });
+
+  // ─── 6. Weekly trend and tag analytics cards render ───────────────────────
+
+  it("renders the weekly trend and tag analytics cards", async () => {
+    await scrollToChartCard("manager-dashboard-weekly-card");
+    await expect(element(by.id("manager-dashboard-weekly-card"))).toBeVisible();
+
+    await scrollToChartCard("manager-dashboard-tags-card");
+    await expect(element(by.id("manager-dashboard-tags-card"))).toBeVisible();
+  });
+
+  // ─── 7. Export control is present but disabled ────────────────────────────
 
   it("renders the export control as disabled (coming soon)", async () => {
     await element(by.id("manager-dashboard-screen")).scrollTo("top");
@@ -121,7 +179,7 @@ describe("manager dashboard journey", () => {
     await expect(element(by.id("manager-dashboard-export-button"))).toBeVisible();
   });
 
-  // ─── 5. Sign out ──────────────────────────────────────────────────────────
+  // ─── 8. Sign out ──────────────────────────────────────────────────────────
 
   it("signs out from the dashboard and lands back on the onboarding intro", async () => {
     await element(by.id("manager-dashboard-screen")).scrollTo("top");
