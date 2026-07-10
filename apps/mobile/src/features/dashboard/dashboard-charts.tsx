@@ -52,6 +52,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
       <ChartCard
         description="Average mood score trend across the week."
         hiddenMessage={viewModel.weeklyTrend.hiddenMessage}
+        isExpandableChart={true}
         testID="manager-dashboard-weekly-card"
         thresholdMessage={viewModel.weeklyTrend.thresholdMessage}
         title="Weekly trend"
@@ -126,6 +127,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
       <ChartCard
         description="Anonymous submission volume by day."
         hiddenMessage={viewModel.submissionVolume.hiddenMessage}
+        isExpandableChart={true}
         testID="manager-dashboard-volume-card"
         thresholdMessage={viewModel.submissionVolume.thresholdMessage}
         title="Submission volume"
@@ -169,6 +171,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
       <ChartCard
         description="Aggregate tag frequency for the selected week."
         hiddenMessage={viewModel.tagFrequency.hiddenMessage}
+        isExpandableChart={true}
         testID="manager-dashboard-tags-card"
         thresholdMessage={viewModel.tagFrequency.thresholdMessage}
         title="Tag frequency"
@@ -315,6 +318,7 @@ function ChartCard({
   hiddenMessage,
   children,
   testID,
+  isExpandableChart = false,
 }: {
   title: string;
   description: string;
@@ -323,61 +327,62 @@ function ChartCard({
   hiddenMessage: string | null;
   children: React.ReactNode;
   testID: string;
+  isExpandableChart?: boolean;
 }) {
   const theme = useTheme();
 
   const [isExpanded, setIsExpanded] = useState(false);
-  const isExpandable = visibility === "visible";
+  const isExpandable = isExpandableChart && visibility === "visible";
 
-  return (
+  const cardContent = (
+    <ThemedView style={styles.card} testID={testID} type="backgroundElement">
+      <View style={styles.cardHeader}>
+        <ThemedText type="subtitle" style={styles.cardTitle}>
+          {title}
+        </ThemedText>
+        {isExpandable ? (
+          <View style={styles.expandIcon} testID={`${testID}-expand-icon`}>
+            <Maximize2 color={theme.textSecondary} size={18} />
+          </View>
+        ) : null}
+      </View>
+      <ThemedText themeColor="textSecondary">{description}</ThemedText>
+
+      {visibility === "hidden" ? (
+        <ThemedView style={styles.fallbackPanel} testID={`${testID}-hidden`} type="background">
+          <ThemedText type="smallBold">Hidden by privacy threshold</ThemedText>
+          <ThemedText themeColor="textSecondary">{hiddenMessage}</ThemedText>
+        </ThemedView>
+      ) : (
+        <ChartWidthProvider testID={`${testID}-width-provider`}>
+          {visibility === "blurred" && thresholdMessage ? (
+            <View
+              style={[
+                styles.thresholdBadge,
+                {
+                  backgroundColor: theme.backgroundSelected,
+                },
+              ]}
+              testID={`${testID}-blurred`}
+            >
+              <ThemedText type="smallBold">Blurred values</ThemedText>
+              <ThemedText themeColor="textSecondary">{thresholdMessage}</ThemedText>
+            </View>
+          ) : null}
+          {children}
+        </ChartWidthProvider>
+      )}
+    </ThemedView>
+  );
+
+  return isExpandable ? (
     <>
       <Pressable
-        disabled={!isExpandable}
         onPress={() => setIsExpanded(true)}
-        style={({ pressed }) => [
-          styles.cardPressable,
-          { opacity: pressed && isExpandable ? 0.85 : 1 },
-        ]}
+        style={({ pressed }) => [styles.cardPressable, { opacity: pressed ? 0.85 : 1 }]}
         testID={`${testID}-expand-trigger`}
       >
-        <ThemedView style={styles.card} testID={testID} type="backgroundElement">
-          <View style={styles.cardHeader}>
-            <ThemedText type="subtitle" style={styles.cardTitle}>
-              {title}
-            </ThemedText>
-            {isExpandable ? (
-              <View style={styles.expandIcon} testID={`${testID}-expand-icon`}>
-                <Maximize2 color={theme.textSecondary} size={18} />
-              </View>
-            ) : null}
-          </View>
-          <ThemedText themeColor="textSecondary">{description}</ThemedText>
-
-          {visibility === "hidden" ? (
-            <ThemedView style={styles.fallbackPanel} testID={`${testID}-hidden`} type="background">
-              <ThemedText type="smallBold">Hidden by privacy threshold</ThemedText>
-              <ThemedText themeColor="textSecondary">{hiddenMessage}</ThemedText>
-            </ThemedView>
-          ) : (
-            <ChartWidthProvider testID={`${testID}-width-provider`}>
-              {visibility === "blurred" && thresholdMessage ? (
-                <View
-                  style={[
-                    styles.thresholdBadge,
-                    {
-                      backgroundColor: theme.backgroundSelected,
-                    },
-                  ]}
-                  testID={`${testID}-blurred`}
-                >
-                  <ThemedText type="smallBold">Blurred values</ThemedText>
-                  <ThemedText themeColor="textSecondary">{thresholdMessage}</ThemedText>
-                </View>
-              ) : null}
-              {children}
-            </ChartWidthProvider>
-          )}
-        </ThemedView>
+        {cardContent}
       </Pressable>
 
       <Modal
@@ -405,6 +410,8 @@ function ChartCard({
         </ThemedView>
       </Modal>
     </>
+  ) : (
+    cardContent
   );
 }
 

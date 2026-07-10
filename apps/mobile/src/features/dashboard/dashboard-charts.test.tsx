@@ -127,30 +127,34 @@ describe("ManagerDashboardCharts (mobile)", () => {
     );
   });
 
-  it("renders an expand trigger on each visible chart card", async () => {
+  it("renders an expand trigger only on Weekly Trend, Submission Volume, and Tag Frequency", async () => {
     const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
     await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
 
-    expect(view.getByTestId("manager-dashboard-daily-card-expand-trigger")).toBeTruthy();
+    // Expandable cards.
     expect(view.getByTestId("manager-dashboard-weekly-card-expand-trigger")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-volume-card-expand-trigger")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-tags-card-expand-trigger")).toBeTruthy();
+
+    // Non-expandable cards.
+    expect(view.queryByTestId("manager-dashboard-daily-card-expand-trigger")).toBeNull();
+    expect(view.queryByTestId("manager-dashboard-distribution-card-expand-trigger")).toBeNull();
   });
 
-  it("opens and closes the expanded modal when the expand trigger is tapped", async () => {
+  it("opens and closes the expanded modal when an expandable card's trigger is tapped", async () => {
     const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
     await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
 
-    fireEvent.press(view.getByTestId("manager-dashboard-daily-card-expand-trigger"));
+    fireEvent.press(view.getByTestId("manager-dashboard-weekly-card-expand-trigger"));
 
     await waitFor(() =>
-      expect(view.getByTestId("manager-dashboard-daily-card-expand-close")).toBeTruthy(),
+      expect(view.getByTestId("manager-dashboard-weekly-card-expand-close")).toBeTruthy(),
     );
 
-    fireEvent.press(view.getByTestId("manager-dashboard-daily-card-expand-close"));
+    fireEvent.press(view.getByTestId("manager-dashboard-weekly-card-expand-close"));
 
     await waitFor(() =>
-      expect(view.queryByTestId("manager-dashboard-daily-card-expand-close")).toBeNull(),
+      expect(view.queryByTestId("manager-dashboard-weekly-card-expand-close")).toBeNull(),
     );
   });
 
@@ -158,18 +162,18 @@ describe("ManagerDashboardCharts (mobile)", () => {
     const base = createViewModel();
     const hiddenViewModel = {
       ...base,
-      dailyHeatmap: {
-        ...base.dailyHeatmap,
+      weeklyTrend: {
+        ...base.weeklyTrend,
         visibility: "hidden" as const,
-        hiddenMessage: "The daily heatmap is hidden until privacy thresholds are met.",
+        hiddenMessage: "The weekly trend is hidden until privacy thresholds are met.",
       },
     };
 
     const view = await render(<ManagerDashboardCharts viewModel={hiddenViewModel} />);
-    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+    await waitFor(() => expect(view.getByText("Weekly trend")).toBeTruthy());
 
-    expect(view.getByTestId("manager-dashboard-daily-card-hidden")).toBeTruthy();
-    expect(view.queryByTestId("manager-dashboard-daily-card-expand-icon")).toBeNull();
+    expect(view.getByTestId("manager-dashboard-weekly-card-hidden")).toBeTruthy();
+    expect(view.queryByTestId("manager-dashboard-weekly-card-expand-icon")).toBeNull();
   });
 
   it("renders the redesigned daily heatmap as a 2x12 grid with AM and PM rows", async () => {

@@ -134,22 +134,22 @@ describe("manager dashboard journey", () => {
 
   // ─── 5. Expand-to-fullscreen chart cards ──────────────────────────────────
 
-  it("opens and closes the expanded daily chart modal", async () => {
-    await scrollToChartCard("manager-dashboard-daily-card");
+  it("opens and closes the expanded weekly trend chart modal", async () => {
+    await scrollToChartCard("manager-dashboard-weekly-card");
 
-    const expandTrigger = element(by.id("manager-dashboard-daily-card-expand-trigger"));
+    const expandTrigger = element(by.id("manager-dashboard-weekly-card-expand-trigger"));
     await waitFor(expandTrigger).toBeVisible().withTimeout(5000);
     await expandTrigger.tap();
 
     // The fullscreen modal and close button appear.
-    await waitFor(element(by.id("manager-dashboard-daily-card-expand-close")))
+    await waitFor(element(by.id("manager-dashboard-weekly-card-expand-close")))
       .toBeVisible()
       .withTimeout(10000);
 
-    await element(by.id("manager-dashboard-daily-card-expand-close")).tap();
+    await element(by.id("manager-dashboard-weekly-card-expand-close")).tap();
 
     // The modal closes and the original card is back in view.
-    await waitFor(element(by.id("manager-dashboard-daily-card")))
+    await waitFor(element(by.id("manager-dashboard-weekly-card")))
       .toBeVisible()
       .withTimeout(10000);
   });
