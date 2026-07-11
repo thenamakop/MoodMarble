@@ -27,7 +27,9 @@ describe("ManagerDashboardScreen", () => {
 
     expect(view.getByTestId("manager-dashboard-screen")).toBeTruthy();
     expect(view.getByText("dashboard.title")).toBeTruthy();
-    expect(view.getByTestId("manager-dashboard-date-picker")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-this-week")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-last-week")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-choose-week")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-team-selector")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-export-button")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-ready-state")).toBeTruthy();
@@ -78,23 +80,27 @@ describe("ManagerDashboardScreen", () => {
     expect(onReturnHome).toHaveBeenCalledTimes(1);
   });
 
-  it("invokes the date and team selection controls when manager options are available", async () => {
-    const onSelectDate = jest.fn();
+  it("invokes the week and team selection controls when manager options are available", async () => {
+    const onSelectThisWeek = jest.fn();
+    const onSelectLastWeek = jest.fn();
     const onSelectTeam = jest.fn();
     const view = await render(
       <ManagerDashboardScreen
         canChangeDate
         canChangeTeam
         contentState={{ kind: "ready" }}
-        onSelectDate={onSelectDate}
+        onSelectLastWeek={onSelectLastWeek}
         onSelectTeam={onSelectTeam}
+        onSelectThisWeek={onSelectThisWeek}
       />,
     );
 
-    fireEvent.press(view.getByTestId("manager-dashboard-date-picker"));
+    fireEvent.press(view.getByTestId("manager-dashboard-this-week"));
+    fireEvent.press(view.getByTestId("manager-dashboard-last-week"));
     fireEvent.press(view.getByTestId("manager-dashboard-team-selector"));
 
-    expect(onSelectDate).toHaveBeenCalledTimes(1);
+    expect(onSelectThisWeek).toHaveBeenCalledTimes(1);
+    expect(onSelectLastWeek).toHaveBeenCalledTimes(1);
     expect(onSelectTeam).toHaveBeenCalledTimes(1);
   });
 

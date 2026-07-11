@@ -18,6 +18,14 @@ jest.mock("@/features/dashboard/chart-model", () => ({
   buildManagerDashboardViewModel: jest.fn(),
 }));
 
+jest.mock("@/features/dashboard/route-state", () => {
+  const actual = jest.requireActual("@/features/dashboard/route-state");
+  return {
+    ...actual,
+    getTodayDate: () => "2026-06-18",
+  };
+});
+
 jest.mock("@/features/dashboard/manager-dashboard-screen", () => {
   const React = require("react");
   const { Pressable, Text, View } = require("react-native");
@@ -28,10 +36,13 @@ jest.mock("@/features/dashboard/manager-dashboard-screen", () => {
       canChangeTeam,
       contentState,
       onReturnHome,
-      onSelectDate,
+      onSelectLastWeek,
       onSelectTeam,
+      onSelectThisWeek,
+      onSelectWeek,
       onSignOut,
       selectedDateLabel,
+      selectedWeekStart,
       selectedTeamLabel,
       viewModel,
     }: {
@@ -39,22 +50,32 @@ jest.mock("@/features/dashboard/manager-dashboard-screen", () => {
       canChangeTeam?: boolean;
       contentState?: { kind: string };
       onReturnHome?: () => void;
-      onSelectDate?: () => void;
+      onSelectLastWeek?: () => void;
       onSelectTeam?: () => void;
+      onSelectThisWeek?: () => void;
+      onSelectWeek?: (weekStart: string) => void;
       onSignOut?: () => void;
       selectedDateLabel?: string;
+      selectedWeekStart?: string;
       selectedTeamLabel?: string;
       viewModel?: unknown;
     }) => (
       <View>
         <Text>{`content:${contentState?.kind ?? "unknown"}`}</Text>
         <Text>{`date:${selectedDateLabel ?? "none"}`}</Text>
+        <Text>{`week-start:${selectedWeekStart ?? "none"}`}</Text>
         <Text>{`team:${selectedTeamLabel ?? "none"}`}</Text>
         <Text>{`can-change-date:${canChangeDate ? "yes" : "no"}`}</Text>
         <Text>{`can-change-team:${canChangeTeam ? "yes" : "no"}`}</Text>
         <Text>{`view-model:${viewModel ? "present" : "missing"}`}</Text>
-        <Pressable onPress={onSelectDate} testID="manager-route-select-date">
-          <Text>select-date</Text>
+        <Pressable onPress={onSelectThisWeek} testID="manager-route-this-week">
+          <Text>this-week</Text>
+        </Pressable>
+        <Pressable onPress={onSelectLastWeek} testID="manager-route-last-week">
+          <Text>last-week</Text>
+        </Pressable>
+        <Pressable onPress={() => onSelectWeek?.("2026-06-22")} testID="manager-route-select-week">
+          <Text>select-week</Text>
         </Pressable>
         <Pressable onPress={onSelectTeam} testID="manager-route-select-team">
           <Text>select-team</Text>
@@ -187,13 +208,14 @@ describe("ManagerDashboardRoute", () => {
 
     await waitFor(() => expect(view.getByText("content:ready")).toBeTruthy());
     expect(view.getByText("date:2026-06-18")).toBeTruthy();
+    expect(view.getByText("week-start:2026-06-16")).toBeTruthy();
     expect(view.getByText("team:Product")).toBeTruthy();
     expect(view.getByText("can-change-date:yes")).toBeTruthy();
     expect(view.getByText("can-change-team:yes")).toBeTruthy();
     expect(view.getByText("view-model:present")).toBeTruthy();
   });
 
-  it("updates the date selection and refetches the matching aggregate bundle", async () => {
+  it("navigates to this week when the This week shortcut is pressed", async () => {
     currentParams = {
       date: "2026-06-18",
       manager_jwt: "manager-jwt-token",
@@ -207,33 +229,76 @@ describe("ManagerDashboardRoute", () => {
 
     await waitFor(() => expect(loadManagerDashboardBundle).toHaveBeenCalledTimes(1));
 
-    fireEvent.press(view.getByTestId("manager-route-select-date"));
+    fireEvent.press(view.getByTestId("manager-route-this-week"));
 
     expect(replace).toHaveBeenCalledWith({
       pathname: "/manager",
       params: {
-        date: "2026-06-17",
+        date: "2026-06-15",
         manager_jwt: "manager-jwt-token",
         manager_teams: "tm_product:Product|tm_design:Design",
-        start_date: "2026-06-16",
+        start_date: "2026-06-15",
         team_id: "tm_product",
         team_name: "Product",
       },
     });
+  });
 
+  it("navigates to last week when the Last week shortcut is pressed", async () => {
     currentParams = {
-      ...currentParams,
-      date: "2026-06-17",
+      date: "2026-06-18",
+      manager_jwt: "manager-jwt-token",
+      manager_teams: "tm_product:Product|tm_design:Design",
+      start_date: "2026-06-16",
+      team_id: "tm_product",
+      team_name: "Product",
     };
-    view.rerender(<ManagerDashboardRoute />);
 
-    await waitFor(() =>
-      expect(loadManagerDashboardBundle).toHaveBeenNthCalledWith(2, {
-        teamId: "tm_product",
-        managerJwt: "manager-jwt-token",
-        date: "2026-06-17",
-        startDate: "2026-06-16",
-      }),
-    );
+    const view = await render(<ManagerDashboardRoute />);
+
+    await waitFor(() => expect(loadManagerDashboardBundle).toHaveBeenCalledTimes(1));
+
+    fireEvent.press(view.getByTestId("manager-route-last-week"));
+
+    expect(replace).toHaveBeenCalledWith({
+      pathname: "/manager",
+      params: {
+        date: "2026-06-08",
+        manager_jwt: "manager-jwt-token",
+        manager_teams: "tm_product:Product|tm_design:Design",
+        start_date: "2026-06-08",
+        team_id: "tm_product",
+        team_name: "Product",
+      },
+    });
+  });
+
+  it("navigates to the chosen week start when a calendar week is selected", async () => {
+    currentParams = {
+      date: "2026-06-18",
+      manager_jwt: "manager-jwt-token",
+      manager_teams: "tm_product:Product|tm_design:Design",
+      start_date: "2026-06-16",
+      team_id: "tm_product",
+      team_name: "Product",
+    };
+
+    const view = await render(<ManagerDashboardRoute />);
+
+    await waitFor(() => expect(loadManagerDashboardBundle).toHaveBeenCalledTimes(1));
+
+    fireEvent.press(view.getByTestId("manager-route-select-week"));
+
+    expect(replace).toHaveBeenCalledWith({
+      pathname: "/manager",
+      params: {
+        date: "2026-06-22",
+        manager_jwt: "manager-jwt-token",
+        manager_teams: "tm_product:Product|tm_design:Design",
+        start_date: "2026-06-22",
+        team_id: "tm_product",
+        team_name: "Product",
+      },
+    });
   });
 });

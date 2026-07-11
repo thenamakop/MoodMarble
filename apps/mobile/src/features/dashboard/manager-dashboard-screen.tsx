@@ -1,11 +1,13 @@
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { useTranslation } from "@/hooks/use-translation";
 
+import { useState } from "react";
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
 import { MaxContentWidth, Spacing } from "@/constants/theme";
 import { ManagerDashboardCharts } from "@/features/dashboard/dashboard-charts";
 import type { ManagerDashboardViewModel } from "@/features/dashboard/chart-model";
+import { WeekPicker } from "@/features/dashboard/week-picker";
 import { useTheme } from "@/hooks/use-theme";
 
 type ManagerDashboardContentState =
@@ -28,12 +30,15 @@ type ManagerDashboardContentState =
 
 interface ManagerDashboardScreenProps {
   selectedDateLabel?: string;
+  selectedWeekStart?: string;
   selectedTeamLabel?: string;
   contentState?: ManagerDashboardContentState;
   viewModel?: ManagerDashboardViewModel | null;
   canChangeDate?: boolean;
   canChangeTeam?: boolean;
-  onSelectDate?: () => void;
+  onSelectThisWeek?: () => void;
+  onSelectLastWeek?: () => void;
+  onSelectWeek?: (weekStart: string) => void;
   onSelectTeam?: () => void;
   onReturnHome?: () => void;
   onSignOut?: () => Promise<void> | void;
@@ -41,12 +46,15 @@ interface ManagerDashboardScreenProps {
 
 export function ManagerDashboardScreen({
   selectedDateLabel,
+  selectedWeekStart,
   selectedTeamLabel,
   contentState = { kind: "ready" },
   viewModel = null,
   canChangeDate = false,
   canChangeTeam = false,
-  onSelectDate,
+  onSelectThisWeek,
+  onSelectLastWeek,
+  onSelectWeek,
   onSelectTeam,
   onReturnHome,
   onSignOut,
@@ -55,6 +63,7 @@ export function ManagerDashboardScreen({
   const { t } = useTranslation();
   const resolvedDateLabel = selectedDateLabel ?? t("dashboard.defaultLabels.thisWeek");
   const resolvedTeamLabel = selectedTeamLabel ?? t("dashboard.defaultLabels.currentTeam");
+  const [isWeekPickerOpen, setIsWeekPickerOpen] = useState(false);
 
   return (
     <ThemedView style={styles.screen}>
@@ -73,9 +82,25 @@ export function ManagerDashboardScreen({
             <View style={styles.controlRow}>
               <DashboardControl
                 disabled={!canChangeDate}
-                label={t("dashboard.controls.dateWindow")}
-                onPress={onSelectDate}
-                testID="manager-dashboard-date-picker"
+                label={t("dashboard.controls.thisWeek")}
+                onPress={onSelectThisWeek}
+                testID="manager-dashboard-this-week"
+                theme={theme}
+                value=""
+              />
+              <DashboardControl
+                disabled={!canChangeDate}
+                label={t("dashboard.controls.lastWeek")}
+                onPress={onSelectLastWeek}
+                testID="manager-dashboard-last-week"
+                theme={theme}
+                value=""
+              />
+              <DashboardControl
+                disabled={!canChangeDate}
+                label={t("dashboard.controls.chooseWeek")}
+                onPress={() => setIsWeekPickerOpen(true)}
+                testID="manager-dashboard-choose-week"
                 theme={theme}
                 value={resolvedDateLabel}
               />
@@ -116,6 +141,15 @@ export function ManagerDashboardScreen({
               </Pressable>
             </View>
           </View>
+
+          {isWeekPickerOpen && selectedWeekStart ? (
+            <WeekPicker
+              onClose={() => setIsWeekPickerOpen(false)}
+              onSelectWeek={(weekStart) => onSelectWeek?.(weekStart)}
+              selectedWeekStart={selectedWeekStart}
+              visible={isWeekPickerOpen}
+            />
+          ) : null}
 
           {contentState.kind === "guarded" ? (
             <ThemedView

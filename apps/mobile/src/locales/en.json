@@ -252,7 +252,9 @@
     "subtitle": "Review team-level mood patterns using aggregate analytics only. Individual entries, raw notes, and identity details are never shown here.",
     "signOut": "Sign out",
     "controls": {
-      "dateWindow": "Date window",
+      "thisWeek": "This week",
+      "lastWeek": "Last week",
+      "chooseWeek": "Choose a different week",
       "team": "Team",
       "export": "Export",
       "comingSoon": "Coming soon"
