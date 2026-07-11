@@ -79,7 +79,7 @@ const styles = StyleSheet.create({
   },
   distributionItem: {
     gap: Spacing.one,
-    paddingHorizontal: Spacing.four,
+    paddingRight: Spacing.four,
   },
   distributionHeader: {
     flexDirection: "row",
