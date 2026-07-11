@@ -46,16 +46,6 @@ export function WeeklyTrendChart({ data, width }: WeeklyTrendChartProps) {
     segments.push(currentSegment);
   }
 
-  const lastVisibleIndex = (() => {
-    for (let index = data.length - 1; index >= 0; index--) {
-      if (data[index]!.scoreValue !== null) {
-        return index;
-      }
-    }
-    return -1;
-  })();
-  const lastVisiblePoint = lastVisibleIndex >= 0 ? data[lastVisibleIndex] : null;
-
   return (
     <Svg height={CHART_HEIGHT} testID="manager-dashboard-weekly-svg" width={width}>
       {Y_TICKS.map((tick) => {
@@ -118,18 +108,22 @@ export function WeeklyTrendChart({ data, width }: WeeklyTrendChartProps) {
         ),
       )}
 
-      {lastVisiblePoint && lastVisiblePoint.scoreValue !== null ? (
-        <SvgText
-          fill={AXIS_COLOR}
-          fontSize={11}
-          fontWeight="600"
-          textAnchor="end"
-          x={xForIndex(lastVisibleIndex) - 8}
-          y={yForValue(lastVisiblePoint.scoreValue) - 12}
-        >
-          {lastVisiblePoint.scoreLabel}
-        </SvgText>
-      ) : null}
+      {data.map((point, index) =>
+        point.scoreValue === null ? null : (
+          <SvgText
+            key={`${point.date}-label`}
+            fill={AXIS_COLOR}
+            fontSize={11}
+            fontWeight="600"
+            testID={`manager-dashboard-weekly-label-${point.date}`}
+            textAnchor="middle"
+            x={xForIndex(index)}
+            y={yForValue(point.scoreValue) - 12}
+          >
+            {point.scoreLabel}
+          </SvgText>
+        ),
+      )}
     </Svg>
   );
 }

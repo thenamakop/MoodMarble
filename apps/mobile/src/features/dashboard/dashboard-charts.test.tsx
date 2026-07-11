@@ -91,14 +91,17 @@ describe("ManagerDashboardCharts (mobile)", () => {
     );
   });
 
-  it("renders the weekly trend chart with labels and the last point label", async () => {
+  it("renders the weekly trend chart with a value label on every visible point", async () => {
     const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
     await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
 
     expect(view.getByTestId("manager-dashboard-weekly-svg")).toBeTruthy();
     expect(view.getAllByText("06-15").length).toBeGreaterThan(0);
     expect(view.getAllByText("06-21").length).toBeGreaterThan(0);
-    expect(view.getAllByText("8").length).toBeGreaterThan(0);
+    for (const scoreLabel of ["5", "7", "8", "6.8"]) {
+      expect(view.getAllByText(scoreLabel).length).toBeGreaterThan(0);
+    }
+    expect(view.getAllByText("5").length).toBeGreaterThanOrEqual(3);
   });
 
   it("renders the distribution chart as a ranked list with percentages", async () => {
