@@ -1,22 +1,17 @@
 import { useState } from "react";
 import { Modal, Pressable, ScrollView, StyleSheet, View } from "react-native";
-import {
-  VictoryAxis,
-  VictoryBar,
-  VictoryChart,
-  VictoryLabel,
-  VictoryLine,
-  VictoryTheme,
-} from "victory-native";
 import { Maximize2, X } from "lucide-react-native";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import type { DashboardMetricVisibility } from "@/contracts/dashboard";
 import { Spacing } from "@/constants/theme";
 import type { ManagerDashboardViewModel } from "@/features/dashboard/chart-model";
 import { DailyHeatmap } from "@/features/dashboard/daily-heatmap";
+import { MoodDistributionList } from "@/features/dashboard/mood-distribution-list";
+import { SubmissionVolumeChart } from "@/features/dashboard/submission-volume-chart";
+import { TagFrequencyChart } from "@/features/dashboard/tag-frequency-chart";
 import { ChartWidthProvider, useChartWidth } from "@/features/dashboard/use-chart-width";
+import { WeeklyTrendChart } from "@/features/dashboard/weekly-trend-chart";
 import { useTheme } from "@/hooks/use-theme";
 
 interface ManagerDashboardChartsProps {
@@ -32,8 +27,6 @@ const CHART_FALLBACK_WIDTH = 320;
  * mood distribution is shown as a ranked list to stay readable on small screens.
  */
 export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProps) {
-  const chartTheme = VictoryTheme?.clean;
-
   return (
     <View style={styles.grid}>
       <ChartCard
@@ -60,53 +53,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
       >
         <View testID="manager-dashboard-weekly-chart">
           <ResponsiveVictoryChart height={200}>
-            {(width) => (
-              <VictoryChart
-                domain={{ y: [0, 10] }}
-                domainPadding={{ x: 12, y: 12 }}
-                height={200}
-                padding={{ bottom: 44, left: 36, right: 28, top: 16 }}
-                theme={chartTheme}
-                width={width}
-              >
-                <VictoryAxis
-                  style={axisStyle}
-                  tickValues={viewModel.weeklyTrend.data.map((point) => point.label)}
-                />
-                <VictoryAxis dependentAxis style={axisStyle} tickValues={[0, 2, 4, 6, 8, 10]} />
-                <View testID="manager-dashboard-weekly-series">
-                  <VictoryLine
-                    data={viewModel.weeklyTrend.data
-                      // Omit privacy-hidden days (null scoreValue) so Victory
-                      // renders a gap in the line rather than a dip to zero.
-                      .filter((point) => point.scoreValue !== null)
-                      .map((point, index, arr) => ({
-                        x: point.label,
-                        y: point.scoreValue as number,
-                        // Only the last visible point carries a label — showing
-                        // a label on every point caused overlapping numbers to
-                        // spill past the chart's right edge when points were
-                        // close together.
-                        label: index === arr.length - 1 ? point.scoreLabel : "",
-                      }))}
-                    interpolation="monotoneX"
-                    labelComponent={
-                      <VictoryLabel
-                        dx={-6}
-                        dy={-10}
-                        style={{ fill: axisColor, fontSize: 11, fontWeight: "600" }}
-                      />
-                    }
-                    style={{
-                      data: {
-                        stroke: "#4f46e5",
-                        strokeWidth: 3,
-                      },
-                    }}
-                  />
-                </View>
-              </VictoryChart>
-            )}
+            {(width) => <WeeklyTrendChart data={viewModel.weeklyTrend.data} width={width} />}
           </ResponsiveVictoryChart>
         </View>
       </ChartCard>
@@ -120,7 +67,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         visibility={viewModel.moodDistribution.visibility}
       >
         <View testID="manager-dashboard-distribution-chart">
-          <MobileMoodDistribution data={viewModel.moodDistribution.data} />
+          <MoodDistributionList data={viewModel.moodDistribution.data} />
         </View>
       </ChartCard>
 
@@ -134,37 +81,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         visibility={viewModel.submissionVolume.visibility}
       >
         <View testID="manager-dashboard-volume-chart">
-          <ResponsiveVictoryChart height={200}>
-            {(width) => (
-              <VictoryChart
-                domainPadding={{ x: 14, y: 12 }}
-                height={200}
-                padding={{ bottom: 44, left: 36, right: 16, top: 16 }}
-                theme={chartTheme}
-                width={width}
-              >
-                <VictoryAxis
-                  style={axisStyle}
-                  tickValues={viewModel.submissionVolume.data.map((bar) => bar.label)}
-                />
-                <VictoryAxis dependentAxis style={axisStyle} />
-                <View testID="manager-dashboard-volume-series">
-                  <VictoryBar
-                    data={viewModel.submissionVolume.data.map((bar) => ({
-                      x: bar.label,
-                      y: bar.totalValue,
-                      label: bar.totalLabel,
-                    }))}
-                    style={{
-                      data: {
-                        fill: "#14b8a6",
-                      },
-                    }}
-                  />
-                </View>
-              </VictoryChart>
-            )}
-          </ResponsiveVictoryChart>
+          <SubmissionVolumeChart data={viewModel.submissionVolume.data} />
         </View>
       </ChartCard>
 
@@ -178,55 +95,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         visibility={viewModel.tagFrequency.visibility}
       >
         <View testID="manager-dashboard-tags-chart">
-          <ResponsiveVictoryChart height={200}>
-            {(width) => {
-              const longestTagLength = viewModel.tagFrequency.data.reduce(
-                (max, bar) => Math.max(max, bar.tag.length),
-                0,
-              );
-              // Roughly 6.5px per character at fontSize 10, clamped between a
-              // sensible minimum (readable short tags) and 45% of the available
-              // chart width (never let the label column crowd out the bars).
-              const tagAxisPadding = Math.min(
-                Math.round(width * 0.45),
-                Math.max(64, Math.round(longestTagLength * 6.5) + 12),
-              );
-
-              return (
-                <VictoryChart
-                  domainPadding={{ x: 14, y: 8 }}
-                  height={200}
-                  horizontal
-                  padding={{ bottom: 28, left: tagAxisPadding, right: 16, top: 16 }}
-                  theme={chartTheme}
-                  width={width}
-                >
-                  <VictoryAxis
-                    style={axisStyle}
-                    tickFormat={(tick: string) =>
-                      tick.length > 14 ? `${tick.slice(0, 13)}…` : tick
-                    }
-                    tickValues={viewModel.tagFrequency.data.map((bar) => bar.tag)}
-                  />
-                  <VictoryAxis dependentAxis style={axisStyle} />
-                  <View testID="manager-dashboard-tags-series">
-                    <VictoryBar
-                      data={viewModel.tagFrequency.data.map((bar) => ({
-                        x: bar.tag,
-                        y: bar.value,
-                        label: bar.valueLabel,
-                      }))}
-                      style={{
-                        data: {
-                          fill: "#f97316",
-                        },
-                      }}
-                    />
-                  </View>
-                </VictoryChart>
-              );
-            }}
-          </ResponsiveVictoryChart>
+          <TagFrequencyChart data={viewModel.tagFrequency.data} />
         </View>
       </ChartCard>
     </View>
@@ -234,7 +103,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
 }
 
 /**
- * Renders a VictoryChart that sizes itself to the surrounding card width.
+ * Renders a chart that sizes itself to the surrounding card width.
  */
 function ResponsiveVictoryChart({
   height,
@@ -246,65 +115,6 @@ function ResponsiveVictoryChart({
   const width = useChartWidth(CHART_FALLBACK_WIDTH);
 
   return <>{children(width)}</>;
-}
-
-/**
- * Renders the mood distribution as a ranked list for small screens.
- *
- * Each row shows the mood name, count, percentage, and a colored bar so the
- * full mix is readable at a glance without tiny floating pie labels.
- */
-function MobileMoodDistribution({
-  data,
-}: {
-  data: ManagerDashboardViewModel["moodDistribution"]["data"];
-}) {
-  const theme = useTheme();
-  const total = data.reduce((sum, segment) => sum + segment.value, 0);
-  const sortedData = [...data].sort((left, right) => right.value - left.value);
-
-  return (
-    <View style={styles.distributionList}>
-      {sortedData.map((segment) => {
-        const percentage = total > 0 ? Math.round((segment.value / total) * 100) : 0;
-
-        return (
-          <View key={segment.moodType} style={styles.distributionRow}>
-            <View style={styles.distributionLabel}>
-              <View style={[styles.distributionDot, { backgroundColor: segment.color }]} />
-              <ThemedText type="smallBold">{segment.label}</ThemedText>
-            </View>
-            <View
-              style={[styles.distributionBarTrack, { backgroundColor: theme.backgroundSelected }]}
-            >
-              <View
-                style={[
-                  styles.distributionBarFill,
-                  {
-                    backgroundColor: segment.color,
-                    width: `${percentage}%`,
-                  },
-                ]}
-              />
-            </View>
-            <View style={styles.distributionValue}>
-              <ThemedText type="smallBold">{segment.valueLabel}</ThemedText>
-              <ThemedText
-                themeColor="textSecondary"
-                type="small"
-                testID={`manager-dashboard-distribution-${segment.moodType}-percentage`}
-              >
-                {`${percentage}%`}
-              </ThemedText>
-            </View>
-          </View>
-        );
-      })}
-      {total === 0 ? (
-        <ThemedText themeColor="textSecondary">No mood data for this period.</ThemedText>
-      ) : null}
-    </View>
-  );
 }
 
 /**
@@ -379,7 +189,7 @@ function ChartCard({
     <>
       <Pressable
         onPress={() => setIsExpanded(true)}
-        style={({ pressed }) => [styles.cardPressable, { opacity: pressed ? 0.85 : 1 }]}
+        style={({ pressed }) => [styles.cardWrapper, { opacity: pressed ? 0.85 : 1 }]}
         testID={`${testID}-expand-trigger`}
       >
         {cardContent}
@@ -411,24 +221,9 @@ function ChartCard({
       </Modal>
     </>
   ) : (
-    cardContent
+    <View style={styles.cardWrapper}>{cardContent}</View>
   );
 }
-
-const axisColor = "#6b7280";
-const gridColor = "#e5e7eb";
-
-const axisStyle = {
-  axis: { stroke: "transparent" },
-  tickLabels: {
-    fill: axisColor,
-    fontSize: 10,
-  },
-  grid: {
-    stroke: gridColor,
-    opacity: 0.6,
-  },
-};
 
 const styles = StyleSheet.create({
   grid: {
@@ -436,7 +231,7 @@ const styles = StyleSheet.create({
     flexWrap: "wrap",
     gap: Spacing.three,
   },
-  cardPressable: {
+  cardWrapper: {
     flexGrow: 1,
     flexBasis: 280,
   },
@@ -469,39 +264,6 @@ const styles = StyleSheet.create({
     borderRadius: Spacing.three,
     padding: Spacing.two,
     gap: Spacing.one,
-  },
-  distributionList: {
-    gap: Spacing.three,
-  },
-  distributionRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.two,
-  },
-  distributionLabel: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: Spacing.one,
-    width: 88,
-  },
-  distributionDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-  },
-  distributionBarTrack: {
-    flex: 1,
-    height: 8,
-    borderRadius: 4,
-    overflow: "hidden",
-  },
-  distributionBarFill: {
-    height: "100%",
-    borderRadius: 4,
-  },
-  distributionValue: {
-    width: 48,
-    alignItems: "flex-end",
   },
   modalContainer: {
     flex: 1,

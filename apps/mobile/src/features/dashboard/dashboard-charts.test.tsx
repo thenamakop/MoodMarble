@@ -2,60 +2,38 @@ import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-nati
 
 import { ManagerDashboardCharts } from "@/features/dashboard/dashboard-charts";
 
-jest.mock("victory-native", () => {
+jest.mock("react-native-svg", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text, View } = require("react-native");
 
-  function ChartContainer({
+  const Svg = ({
     children,
-    testID,
     width,
+    height,
+    testID,
   }: {
     children?: React.ReactNode;
-    testID?: string;
     width?: number;
-  }) {
-    return (
-      <View testID={testID}>
-        {width ? <Text testID="chart-width">{width}</Text> : null}
-        {children}
-      </View>
-    );
-  }
+    height?: number;
+    testID?: string;
+  }) => (
+    <View testID={testID} style={{ width, height }}>
+      {children}
+    </View>
+  );
+
+  const SvgText = ({ children }: { children?: React.ReactNode }) => <Text>{children}</Text>;
 
   return {
-    VictoryAxis: ({ tickValues }: { tickValues?: string[] }) => (
-      <ChartContainer>
-        {tickValues?.map((value) => (
-          <Text key={value}>{value}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryBar: ({ data }: { data?: { label?: string; x?: string; y?: number }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "bar"}-${index}`}>{datum.label ?? datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryChart: ChartContainer,
-    VictoryLine: ({ data }: { data?: { label?: string; x?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "line"}-${index}`}>{datum.label ?? datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryScatter: ({ data }: { data?: { label?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.label ?? "point"}-${index}`}>{datum.label}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryTheme: {
-      clean: {},
-    },
+    __esModule: true,
+    default: Svg,
+    Svg,
+    Circle: () => null,
+    Line: () => null,
+    Polyline: () => null,
+    Text: SvgText,
   };
 });
 
@@ -100,7 +78,7 @@ describe("ManagerDashboardCharts (mobile)", () => {
     expect(view.getByText("Neutral")).toBeTruthy();
   });
 
-  it("sizes charts to the measured card width", async () => {
+  it("sizes the weekly trend chart to the measured card width", async () => {
     const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
     await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
 
@@ -108,7 +86,19 @@ describe("ManagerDashboardCharts (mobile)", () => {
       nativeEvent: { layout: { width: 360 } },
     });
 
-    await waitFor(() => expect(view.getByText("360")).toBeTruthy());
+    await waitFor(() =>
+      expect(view.getByTestId("manager-dashboard-weekly-svg").props.style.width).toBe(360),
+    );
+  });
+
+  it("renders the weekly trend chart with labels and the last point label", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-weekly-svg")).toBeTruthy();
+    expect(view.getAllByText("06-15").length).toBeGreaterThan(0);
+    expect(view.getAllByText("06-21").length).toBeGreaterThan(0);
+    expect(view.getAllByText("8").length).toBeGreaterThan(0);
   });
 
   it("renders the distribution chart as a ranked list with percentages", async () => {
@@ -125,6 +115,23 @@ describe("ManagerDashboardCharts (mobile)", () => {
     expect(view.getByTestId("manager-dashboard-distribution-neutral-percentage")).toHaveTextContent(
       "33%",
     );
+  });
+
+  it("renders the submission volume bars", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-volume-bars")).toBeTruthy();
+    expect(view.getAllByText("5").length).toBeGreaterThan(0);
+  });
+
+  it("renders the tag frequency horizontal bars", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-tags-bars")).toBeTruthy();
+    expect(view.getByText("#workload")).toBeTruthy();
+    expect(view.getByText("#management")).toBeTruthy();
   });
 
   it("renders an expand trigger only on Weekly Trend, Submission Volume, and Tag Frequency", async () => {
