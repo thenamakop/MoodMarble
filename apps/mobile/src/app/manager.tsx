@@ -3,7 +3,9 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 
 import { loadManagerDashboardBundle, type ManagerDashboardBundle } from "@/features/dashboard/api";
 import { buildManagerDashboardViewModel } from "@/features/dashboard/chart-model";
+import { buildManagerExportCsv, buildManagerExportFileName } from "@/features/dashboard/export";
 import { ManagerDashboardScreen } from "@/features/dashboard/manager-dashboard-screen";
+import { shareCsv } from "@/lib/share-csv";
 import {
   buildManagerRouteParams,
   getTodayDate,
@@ -46,6 +48,7 @@ export default function ManagerDashboardRoute() {
   );
   const [bundle, setBundle] = useState<ManagerDashboardBundle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const isManagerAccessReady = hasManagerAccess(managerJwt, selectedTeam);
 
   useEffect(() => {
@@ -153,6 +156,35 @@ export default function ManagerDashboardRoute() {
     });
   }
 
+  async function handleExport() {
+    if (!viewModel || !selectedTeam) {
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const windowEndDate = viewModel.weeklyTrend.data.at(-1)?.date ?? selectedDate.startDate;
+
+      const csv = buildManagerExportCsv({
+        viewModel,
+        teamLabel: selectedTeam.label,
+        windowStartDate: selectedDate.startDate,
+        windowEndDate,
+      });
+
+      const fileName = buildManagerExportFileName({
+        teamLabel: selectedTeam.label,
+        windowStartDate: selectedDate.startDate,
+        windowEndDate,
+      });
+
+      await shareCsv({ csv, fileName });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   async function handleSignOut() {
     await clearAnonymousSession();
     router.replace("/");
@@ -163,6 +195,8 @@ export default function ManagerDashboardRoute() {
       contentState={contentState}
       canChangeDate={isManagerAccessReady}
       canChangeTeam={managerTeams.length > 1}
+      isExporting={isExporting}
+      onExport={handleExport}
       onReturnHome={() => router.replace("/")}
       onSelectLastWeek={handleSelectLastWeek}
       onSelectTeam={handleSelectTeam}

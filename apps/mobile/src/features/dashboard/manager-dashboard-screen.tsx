@@ -36,10 +36,12 @@ interface ManagerDashboardScreenProps {
   viewModel?: ManagerDashboardViewModel | null;
   canChangeDate?: boolean;
   canChangeTeam?: boolean;
+  isExporting?: boolean;
   onSelectThisWeek?: () => void;
   onSelectLastWeek?: () => void;
   onSelectWeek?: (weekStart: string) => void;
   onSelectTeam?: () => void;
+  onExport?: () => void;
   onReturnHome?: () => void;
   onSignOut?: () => Promise<void> | void;
 }
@@ -52,10 +54,12 @@ export function ManagerDashboardScreen({
   viewModel = null,
   canChangeDate = false,
   canChangeTeam = false,
+  isExporting = false,
   onSelectThisWeek,
   onSelectLastWeek,
   onSelectWeek,
   onSelectTeam,
+  onExport,
   onReturnHome,
   onSignOut,
 }: ManagerDashboardScreenProps) {
@@ -113,11 +117,12 @@ export function ManagerDashboardScreen({
                 value={resolvedTeamLabel}
               />
               <DashboardControl
-                disabled
+                disabled={isExporting || !viewModel}
                 label={t("dashboard.controls.export")}
+                onPress={onExport}
                 testID="manager-dashboard-export-button"
                 theme={theme}
-                value={t("dashboard.controls.comingSoon")}
+                value=""
               />
             </View>
 

@@ -35,6 +35,49 @@ describe("ManagerDashboardScreen", () => {
     expect(view.getByTestId("manager-dashboard-ready-state")).toBeTruthy();
   });
 
+  it("calls onExport when the export button is pressed and a viewModel is present", async () => {
+    const onExport = jest.fn();
+    const viewModel = {
+      summary: { totalSubmissionsLabel: "8", windowLabel: "2026-06-15 to 2026-06-21" },
+      banner: null,
+      dailyHeatmap: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+      weeklyTrend: { visibility: "visible", hiddenMessage: null, thresholdMessage: null, data: [] },
+      submissionVolume: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+      moodDistribution: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+      tagFrequency: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+    } as never;
+    const view = await render(
+      <ManagerDashboardScreen
+        contentState={{ kind: "ready" }}
+        onExport={onExport}
+        viewModel={viewModel}
+      />,
+    );
+
+    fireEvent.press(view.getByTestId("manager-dashboard-export-button"));
+    expect(onExport).toHaveBeenCalledTimes(1);
+  });
+
   it("renders the Sign out button and calls onSignOut when tapped", async () => {
     const onSignOut = jest.fn().mockResolvedValue(undefined);
     const view = await render(
