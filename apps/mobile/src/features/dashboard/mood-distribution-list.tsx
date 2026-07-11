@@ -50,7 +50,6 @@ export function MoodDistributionList({ data }: MoodDistributionListProps) {
                 styles.distributionBarTrack,
                 {
                   backgroundColor: theme.backgroundSelected,
-                  marginHorizontal: -Spacing.four,
                 },
               ]}
             >
@@ -80,6 +79,7 @@ const styles = StyleSheet.create({
   },
   distributionItem: {
     gap: Spacing.one,
+    paddingHorizontal: Spacing.four,
   },
   distributionHeader: {
     flexDirection: "row",
