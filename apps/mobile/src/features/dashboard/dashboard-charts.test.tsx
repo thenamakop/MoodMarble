@@ -24,6 +24,13 @@ jest.mock("victory-native", () => {
   }
 
   return {
+    VictoryArea: ({ data }: { data?: { label?: string; x?: string; y?: number }[] }) => (
+      <ChartContainer>
+        {data?.map((datum, index) => (
+          <Text key={`${datum.x ?? datum.label ?? "area"}-${index}`}>{datum.label ?? datum.x}</Text>
+        ))}
+      </ChartContainer>
+    ),
     VictoryAxis: ({ tickValues }: { tickValues?: string[] }) => (
       <ChartContainer>
         {tickValues?.map((value) => (

@@ -1,5 +1,6 @@
 import { StyleSheet, View } from "react-native";
 import {
+  VictoryArea,
   VictoryAxis,
   VictoryBar,
   VictoryChart,
@@ -43,12 +44,13 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         visibility={viewModel.dailyHeatmap.visibility}
       >
         <View testID="manager-dashboard-daily-chart">
-          <ResponsiveVictoryChart height={200}>
+          <ResponsiveVictoryChart height={180}>
             {(width) => (
               <VictoryChart
-                domainPadding={12}
-                height={200}
-                padding={{ bottom: 44, left: 32, right: 16, top: 16 }}
+                animate={chartAnimation}
+                domainPadding={{ x: 10, y: 0 }}
+                height={180}
+                padding={{ bottom: 32, left: 8, right: 8, top: 8 }}
                 theme={chartTheme}
                 width={width}
               >
@@ -65,26 +67,36 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                   tickValues={viewModel.dailyHeatmap.data.map((cell) => cell.hourLabel)}
                 />
                 <View testID="manager-dashboard-daily-series">
-                  <VictoryScatter
+                  <VictoryBar
+                    barRatio={0.72}
+                    cornerRadius={{ top: 3, bottom: 3 }}
                     data={viewModel.dailyHeatmap.data.map((cell) => ({
                       x: cell.hourLabel,
                       y: 1,
-                      size: 14,
                       fill: getHeatmapFill(cell.scoreValue, cell.visibility),
                     }))}
                     labels={() => null}
                     style={{
                       data: {
                         fill: ({ datum }) => datum.fill,
-                        stroke: ({ datum }) => datum.fill,
+                        strokeWidth: 0,
                       },
                     }}
-                    symbol="square"
                   />
                 </View>
               </VictoryChart>
             )}
           </ResponsiveVictoryChart>
+          <View style={styles.heatmapLegend}>
+            {heatmapLegend.map((entry) => (
+              <View key={entry.label} style={styles.heatmapLegendItem}>
+                <View style={[styles.heatmapLegendDot, { backgroundColor: entry.color }]} />
+                <ThemedText themeColor="textSecondary" type="small">
+                  {entry.label}
+                </ThemedText>
+              </View>
+            ))}
+          </View>
         </View>
       </ChartCard>
 
@@ -100,6 +112,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
           <ResponsiveVictoryChart height={200}>
             {(width) => (
               <VictoryChart
+                animate={chartAnimation}
                 domain={{ y: [0, 10] }}
                 domainPadding={{ x: 12, y: 12 }}
                 height={200}
@@ -113,6 +126,20 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                 />
                 <VictoryAxis dependentAxis style={axisStyle} tickValues={[0, 2, 4, 6, 8, 10]} />
                 <View testID="manager-dashboard-weekly-series">
+                  <VictoryArea
+                    data={viewModel.weeklyTrend.data.map((point) => ({
+                      x: point.label,
+                      y: point.scoreValue,
+                    }))}
+                    interpolation="linear"
+                    style={{
+                      data: {
+                        fill: "#4f46e5",
+                        fillOpacity: 0.12,
+                        stroke: "transparent",
+                      },
+                    }}
+                  />
                   <VictoryLine
                     data={viewModel.weeklyTrend.data.map((point, index) => ({
                       x: point.label,
@@ -123,7 +150,7 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                       label:
                         index === viewModel.weeklyTrend.data.length - 1 ? point.scoreLabel : "",
                     }))}
-                    interpolation="monotoneX"
+                    interpolation="linear"
                     labelComponent={
                       <VictoryLabel
                         dx={-6}
@@ -135,6 +162,18 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                       data: {
                         stroke: "#4f46e5",
                         strokeWidth: 3,
+                      },
+                    }}
+                  />
+                  <VictoryScatter
+                    data={viewModel.weeklyTrend.data.map((point) => ({
+                      x: point.label,
+                      y: point.scoreValue,
+                    }))}
+                    size={3}
+                    style={{
+                      data: {
+                        fill: "#4f46e5",
                       },
                     }}
                   />
@@ -168,35 +207,51 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
       >
         <View testID="manager-dashboard-volume-chart">
           <ResponsiveVictoryChart height={200}>
-            {(width) => (
-              <VictoryChart
-                domainPadding={{ x: 14, y: 12 }}
-                height={200}
-                padding={{ bottom: 44, left: 36, right: 16, top: 16 }}
-                theme={chartTheme}
-                width={width}
-              >
-                <VictoryAxis
-                  style={axisStyle}
-                  tickValues={viewModel.submissionVolume.data.map((bar) => bar.label)}
-                />
-                <VictoryAxis dependentAxis style={axisStyle} />
-                <View testID="manager-dashboard-volume-series">
-                  <VictoryBar
-                    data={viewModel.submissionVolume.data.map((bar) => ({
-                      x: bar.label,
-                      y: bar.totalValue,
-                      label: bar.totalLabel,
-                    }))}
-                    style={{
-                      data: {
-                        fill: "#14b8a6",
-                      },
-                    }}
+            {(width) => {
+              const volumeMax = computeBarChartMax(
+                viewModel.submissionVolume.data.map((bar) => bar.totalValue),
+              );
+
+              return (
+                <VictoryChart
+                  animate={chartAnimation}
+                  domain={{ y: [0, volumeMax] }}
+                  domainPadding={{ x: 14, y: 0 }}
+                  height={200}
+                  padding={{ bottom: 36, left: 36, right: 16, top: 24 }}
+                  theme={chartTheme}
+                  width={width}
+                >
+                  <VictoryAxis
+                    style={axisStyle}
+                    tickFormat={(tick: string) => tick.slice(3)}
+                    tickValues={viewModel.submissionVolume.data.map((bar) => bar.label)}
                   />
-                </View>
-              </VictoryChart>
-            )}
+                  <VictoryAxis dependentAxis style={axisStyle} />
+                  <View testID="manager-dashboard-volume-series">
+                    <VictoryBar
+                      barRatio={0.55}
+                      cornerRadius={{ top: 4 }}
+                      data={viewModel.submissionVolume.data.map((bar) => ({
+                        x: bar.label,
+                        y: bar.totalValue,
+                        label: bar.totalLabel,
+                      }))}
+                      style={{
+                        data: {
+                          fill: "#14b8a6",
+                        },
+                        labels: {
+                          fill: axisColor,
+                          fontSize: 11,
+                          fontWeight: "600",
+                        },
+                      }}
+                    />
+                  </View>
+                </VictoryChart>
+              );
+            }}
           </ResponsiveVictoryChart>
         </View>
       </ChartCard>
@@ -226,7 +281,8 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
 
               return (
                 <VictoryChart
-                  domainPadding={{ x: 14, y: 8 }}
+                  animate={chartAnimation}
+                  domainPadding={{ x: 14, y: 14 }}
                   height={200}
                   horizontal
                   padding={{ bottom: 28, left: tagAxisPadding, right: 16, top: 16 }}
@@ -244,11 +300,20 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
                   />
                   <View testID="manager-dashboard-tags-series">
                     <VictoryBar
+                      cornerRadius={{ topRight: 4, bottomRight: 4 }}
                       data={viewModel.tagFrequency.data.map((bar) => ({
                         x: bar.tag,
                         y: bar.value,
                         label: bar.valueLabel,
                       }))}
+                      labelComponent={
+                        <VictoryLabel
+                          dx={8}
+                          style={{ fill: axisColor, fontSize: 11, fontWeight: "600" }}
+                          textAnchor="start"
+                          verticalAnchor="middle"
+                        />
+                      }
                       style={{
                         data: {
                           fill: "#f97316",
@@ -436,6 +501,32 @@ const axisStyle = {
   },
 };
 
+/** Shared mount-in animation so charts feel alive instead of static. */
+const chartAnimation = { duration: 400, onLoad: { duration: 400 } };
+
+/** Heatmap legend — must stay in sync with getHeatmapFill's thresholds. */
+const heatmapLegend: { label: string; color: string }[] = [
+  { label: "Great", color: "#22c55e" },
+  { label: "Good", color: "#84cc16" },
+  { label: "Okay", color: "#facc15" },
+  { label: "Low", color: "#fb923c" },
+  { label: "Poor", color: "#ef4444" },
+  { label: "No data", color: "#9ca3af" },
+];
+
+/**
+ * Rounds a value up to a visually clean axis maximum with headroom, so
+ * bars use most of the chart's vertical space instead of leaving the
+ * top third empty. Mirrors what a "nice number" auto-scale should do,
+ * but tied to the real data max instead of an oversized default.
+ */
+function computeBarChartMax(values: number[]): number {
+  const rawMax = Math.max(1, ...values);
+  const withHeadroom = rawMax * 1.25;
+  const magnitude = Math.pow(10, Math.floor(Math.log10(withHeadroom)));
+  return Math.ceil(withHeadroom / magnitude) * magnitude;
+}
+
 const styles = StyleSheet.create({
   grid: {
     flexDirection: "row",
@@ -460,6 +551,22 @@ const styles = StyleSheet.create({
     padding: Spacing.three,
     gap: Spacing.two,
     justifyContent: "center",
+  },
+  heatmapLegend: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: Spacing.two,
+    marginTop: Spacing.one,
+  },
+  heatmapLegendItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  heatmapLegendDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   thresholdBadge: {
     borderRadius: Spacing.three,
