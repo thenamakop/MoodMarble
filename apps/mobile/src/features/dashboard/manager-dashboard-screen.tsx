@@ -1,4 +1,13 @@
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  StyleProp,
+  View,
+  ViewStyle,
+} from "react-native";
 import { useTranslation } from "@/hooks/use-translation";
 
 import { useState } from "react";
@@ -83,67 +92,86 @@ export function ManagerDashboardScreen({
               </ThemedText>
             </View>
 
-            <View style={styles.controlRow}>
-              <DashboardControl
-                disabled={!canChangeDate}
-                label={t("dashboard.controls.thisWeek")}
-                onPress={onSelectThisWeek}
-                testID="manager-dashboard-this-week"
-                theme={theme}
-                value=""
-              />
-              <DashboardControl
-                disabled={!canChangeDate}
-                label={t("dashboard.controls.lastWeek")}
-                onPress={onSelectLastWeek}
-                testID="manager-dashboard-last-week"
-                theme={theme}
-                value=""
-              />
-              <DashboardControl
-                disabled={!canChangeDate}
-                label={t("dashboard.controls.chooseWeek")}
-                onPress={() => setIsWeekPickerOpen(true)}
-                testID="manager-dashboard-choose-week"
-                theme={theme}
-                value={resolvedDateLabel}
-              />
-              <DashboardControl
-                disabled={!canChangeTeam}
-                label={t("dashboard.controls.team")}
-                onPress={onSelectTeam}
-                testID="manager-dashboard-team-selector"
-                theme={theme}
-                value={resolvedTeamLabel}
-              />
-              <DashboardControl
-                disabled={isExporting || !viewModel}
-                label={t("dashboard.controls.export")}
-                onPress={onExport}
-                testID="manager-dashboard-export-button"
-                theme={theme}
-                value=""
-              />
-            </View>
-
-            <View style={styles.headerActionRow}>
-              <Pressable
-                accessibilityRole="button"
-                onPress={async () => {
-                  await onSignOut?.();
-                }}
-                style={({ pressed }) => [
-                  styles.signOutButton,
-                  {
-                    backgroundColor: theme.backgroundElement,
-                    borderColor: theme.backgroundSelected,
-                    opacity: pressed ? 0.85 : 1,
-                  },
-                ]}
-                testID="manager-dashboard-logout"
-              >
-                <ThemedText type="smallBold">{t("dashboard.signOut")}</ThemedText>
-              </Pressable>
+            <View style={styles.controls}>
+              <View style={styles.controlRow}>
+                <DashboardControl
+                  disabled={!canChangeDate}
+                  label={t("dashboard.controls.thisWeek")}
+                  onPress={onSelectThisWeek}
+                  style={styles.controlFlex}
+                  testID="manager-dashboard-this-week"
+                  theme={theme}
+                  value=""
+                />
+                <DashboardControl
+                  disabled={!canChangeDate}
+                  label={t("dashboard.controls.lastWeek")}
+                  onPress={onSelectLastWeek}
+                  style={styles.controlFlex}
+                  testID="manager-dashboard-last-week"
+                  theme={theme}
+                  value=""
+                />
+              </View>
+              <View style={styles.controlRow}>
+                <DashboardControl
+                  disabled={!canChangeDate}
+                  label={t("dashboard.controls.chooseWeek")}
+                  onPress={() => setIsWeekPickerOpen(true)}
+                  style={styles.controlFlex}
+                  testID="manager-dashboard-choose-week"
+                  theme={theme}
+                  value={resolvedDateLabel}
+                />
+                <DashboardControl
+                  disabled={!canChangeTeam}
+                  label={t("dashboard.controls.team")}
+                  onPress={onSelectTeam}
+                  style={styles.controlFlex}
+                  testID="manager-dashboard-team-selector"
+                  theme={theme}
+                  value={resolvedTeamLabel}
+                />
+              </View>
+              <View style={styles.controlRow}>
+                <DashboardControl
+                  disabled={isExporting || !viewModel}
+                  label={t("dashboard.controls.export")}
+                  onPress={onExport}
+                  style={styles.controlFlex}
+                  testID="manager-dashboard-export-button"
+                  theme={theme}
+                  value=""
+                />
+                <DashboardControl
+                  disabled={!onSignOut}
+                  label={t("dashboard.signOut")}
+                  onPress={() =>
+                    Alert.alert(
+                      t("dashboard.signOutConfirmation.title"),
+                      t("dashboard.signOutConfirmation.body"),
+                      [
+                        {
+                          text: t("common.cancel"),
+                          style: "cancel",
+                        },
+                        {
+                          text: t("dashboard.signOut"),
+                          style: "destructive",
+                          onPress: async () => {
+                            await onSignOut?.();
+                          },
+                        },
+                      ],
+                      { cancelable: true },
+                    )
+                  }
+                  style={styles.controlFlex}
+                  testID="manager-dashboard-logout"
+                  theme={theme}
+                  value=""
+                />
+              </View>
             </View>
           </View>
 
@@ -292,13 +320,15 @@ function DashboardControl({
   testID,
   disabled = false,
   onPress,
+  style,
   theme,
 }: {
   label: string;
   value: string;
   testID: string;
   disabled?: boolean;
-  onPress?: () => void;
+  onPress?: (() => void) | (() => Promise<void>);
+  style?: StyleProp<ViewStyle>;
   theme: ReturnType<typeof useTheme>;
 }) {
   return (
@@ -314,6 +344,7 @@ function DashboardControl({
           borderColor: theme.backgroundSelected,
           opacity: pressed && !disabled ? 0.85 : disabled ? 0.6 : 1,
         },
+        style,
       ]}
       testID={testID}
     >
@@ -370,24 +401,17 @@ const styles = StyleSheet.create({
   subtitle: {
     maxWidth: 640,
   },
+  controls: {
+    gap: Spacing.two,
+  },
   controlRow: {
     flexDirection: "row",
-    flexWrap: "wrap",
     gap: Spacing.two,
   },
-  headerActionRow: {
-    flexDirection: "row",
-    gap: Spacing.two,
-  },
-  signOutButton: {
-    borderRadius: Spacing.three,
-    borderWidth: 1,
-    paddingHorizontal: Spacing.three,
-    paddingVertical: Spacing.two,
-    alignSelf: "flex-start",
+  controlFlex: {
+    flex: 1,
   },
   controlButton: {
-    minWidth: 160,
     borderWidth: 1,
     borderRadius: Spacing.three,
     paddingHorizontal: Spacing.three,

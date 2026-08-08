@@ -251,6 +251,10 @@
     "title": "Manager dashboard",
     "subtitle": "Review team-level mood patterns using aggregate analytics only. Individual entries, raw notes, and identity details are never shown here.",
     "signOut": "Sign out",
+    "signOutConfirmation": {
+      "title": "Are you really sure you want to sign out?",
+      "body": "You will need your manager code to access this dashboard again."
+    },
     "controls": {
       "thisWeek": "This week",
       "lastWeek": "Last week",

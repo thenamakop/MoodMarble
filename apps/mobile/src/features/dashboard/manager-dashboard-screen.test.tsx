@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import { ManagerDashboardScreen } from "@/features/dashboard/manager-dashboard-screen";
 
@@ -78,7 +78,10 @@ describe("ManagerDashboardScreen", () => {
     expect(onExport).toHaveBeenCalledTimes(1);
   });
 
-  it("renders the Sign out button and calls onSignOut when tapped", async () => {
+  it("shows an Alert confirmation before calling onSignOut", async () => {
+    const alertSpy = jest.spyOn(require("react-native"), "Alert", "get").mockReturnValue({
+      alert: jest.fn(),
+    });
     const onSignOut = jest.fn().mockResolvedValue(undefined);
     const view = await render(
       <ManagerDashboardScreen contentState={{ kind: "ready" }} onSignOut={onSignOut} />,
@@ -86,7 +89,45 @@ describe("ManagerDashboardScreen", () => {
 
     expect(view.getByTestId("manager-dashboard-logout")).toBeTruthy();
     fireEvent.press(view.getByTestId("manager-dashboard-logout"));
-    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+
+    const { alert } = require("react-native").Alert;
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      "dashboard.signOutConfirmation.title",
+      "dashboard.signOutConfirmation.body",
+      expect.arrayContaining([
+        expect.objectContaining({ text: "common.cancel", style: "cancel" }),
+        expect.objectContaining({ text: "dashboard.signOut", style: "destructive" }),
+      ]),
+      { cancelable: true },
+    );
+
+    const destructiveButton = alert.mock.calls[0][2].find(
+      (button: { style: string }) => button.style === "destructive",
+    );
+    await destructiveButton.onPress();
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+
+    alertSpy.mockRestore();
+  });
+
+  it("does not call onSignOut when the Alert cancel button is pressed", async () => {
+    jest.spyOn(require("react-native"), "Alert", "get").mockReturnValue({
+      alert: jest.fn(),
+    });
+    const onSignOut = jest.fn().mockResolvedValue(undefined);
+    const view = await render(
+      <ManagerDashboardScreen contentState={{ kind: "ready" }} onSignOut={onSignOut} />,
+    );
+
+    fireEvent.press(view.getByTestId("manager-dashboard-logout"));
+
+    const { alert } = require("react-native").Alert;
+    const cancelButton = alert.mock.calls[0][2].find(
+      (button: { style: string }) => button.style === "cancel",
+    );
+    expect(cancelButton).toEqual({ text: "common.cancel", style: "cancel" });
+    expect(onSignOut).not.toHaveBeenCalled();
   });
 
   it("renders the loading state", async () => {
