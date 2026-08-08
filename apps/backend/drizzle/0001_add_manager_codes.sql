@@ -12,15 +12,31 @@ CREATE TABLE IF NOT EXISTS "manager_codes" (
   "created_at" timestamp with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-ALTER TABLE "manager_codes"
-  ADD CONSTRAINT "manager_codes_workspace_id_workspaces_id_fk"
-  FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id")
-  ON DELETE cascade ON UPDATE no action;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'manager_codes_workspace_id_workspaces_id_fk'
+  ) THEN
+    ALTER TABLE "manager_codes"
+      ADD CONSTRAINT "manager_codes_workspace_id_workspaces_id_fk"
+      FOREIGN KEY ("workspace_id") REFERENCES "public"."workspaces"("id")
+      ON DELETE cascade ON UPDATE no action;
+  END IF;
+END $$;
 --> statement-breakpoint
-ALTER TABLE "manager_codes"
-  ADD CONSTRAINT "manager_codes_team_id_teams_id_fk"
-  FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id")
-  ON DELETE cascade ON UPDATE no action;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint 
+    WHERE conname = 'manager_codes_team_id_teams_id_fk'
+  ) THEN
+    ALTER TABLE "manager_codes"
+      ADD CONSTRAINT "manager_codes_team_id_teams_id_fk"
+      FOREIGN KEY ("team_id") REFERENCES "public"."teams"("id")
+      ON DELETE cascade ON UPDATE no action;
+  END IF;
+END $$;
 --> statement-breakpoint
 CREATE UNIQUE INDEX IF NOT EXISTS "manager_codes_code_unique"
   ON "manager_codes" USING btree ("code");
