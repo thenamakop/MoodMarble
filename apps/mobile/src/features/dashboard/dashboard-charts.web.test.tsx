@@ -2,54 +2,38 @@ import { render } from "@testing-library/react-native";
 
 import { ManagerDashboardCharts } from "@/features/dashboard/dashboard-charts.web";
 
-jest.mock("victory", () => {
+jest.mock("react-native-svg", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text, View } = require("react-native");
 
-  function ChartContainer({ children, testID }: { children?: React.ReactNode; testID?: string }) {
-    return <View testID={testID}>{children}</View>;
-  }
+  const Svg = ({
+    children,
+    width,
+    height,
+    testID,
+  }: {
+    children?: React.ReactNode;
+    width?: number;
+    height?: number;
+    testID?: string;
+  }) => (
+    <View testID={testID} style={{ width, height }}>
+      {children}
+    </View>
+  );
+
+  const SvgText = ({ children }: { children?: React.ReactNode }) => <Text>{children}</Text>;
 
   return {
-    VictoryAxis: ({ tickValues }: { tickValues?: string[] }) => (
-      <ChartContainer>
-        {tickValues?.map((value) => (
-          <Text key={value}>{value}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryBar: ({ data }: { data?: { label?: string; x?: string; y?: number }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "bar"}-${index}`}>{datum.label ?? datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryChart: ChartContainer,
-    VictoryLine: ({ data }: { data?: { label?: string; x?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "line"}-${index}`}>{datum.label ?? datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryPie: ({ data }: { data?: { x?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? "slice"}-${index}`}>{datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryScatter: ({ data }: { data?: { label?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.label ?? "point"}-${index}`}>{datum.label}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryTheme: {
-      clean: {},
-    },
+    __esModule: true,
+    default: Svg,
+    Svg,
+    Circle: () => null,
+    Line: () => null,
+    Polyline: () => null,
+    Text: SvgText,
   };
 });
 

@@ -1,19 +1,20 @@
 import { useEffect, useMemo, useState } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 
-import {
-  loadManagerDashboardBundle,
-  type ManagerDashboardBundle,
-} from "@/features/dashboard/api";
+import { loadManagerDashboardBundle, type ManagerDashboardBundle } from "@/features/dashboard/api";
 import { buildManagerDashboardViewModel } from "@/features/dashboard/chart-model";
+import { buildManagerExportCsv, buildManagerExportFileName } from "@/features/dashboard/export";
 import { ManagerDashboardScreen } from "@/features/dashboard/manager-dashboard-screen";
+import { shareCsv } from "@/lib/share-csv";
 import {
   buildManagerRouteParams,
-  getNextDateSelection,
+  getTodayDate,
+  getWeekStartDate,
   hasManagerAccess,
   parseManagerTeams,
   resolveSelectedDate,
   resolveSelectedTeam,
+  shiftDateByDays,
 } from "@/features/dashboard/route-state";
 import { clearAnonymousSession } from "@/features/onboarding/session";
 
@@ -47,6 +48,7 @@ export default function ManagerDashboardRoute() {
   );
   const [bundle, setBundle] = useState<ManagerDashboardBundle | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const isManagerAccessReady = hasManagerAccess(managerJwt, selectedTeam);
 
   useEffect(() => {
@@ -105,15 +107,31 @@ export default function ManagerDashboardRoute() {
         ? { kind: "ready" as const }
         : { kind: "empty" as const };
 
-  function handleSelectDate() {
-    const nextSelection = getNextDateSelection(selectedDate);
+  function handleSelectThisWeek() {
+    navigateToWeek(getWeekStartDate(getTodayDate()));
+  }
 
+  function handleSelectLastWeek() {
+    const thisWeekStart = getWeekStartDate(getTodayDate());
+    navigateToWeek(shiftDateByDays(thisWeekStart, -7));
+  }
+
+  function handleSelectWeek(weekStart: string) {
+    navigateToWeek(weekStart);
+  }
+
+  function navigateToWeek(weekStart: string) {
     router.replace({
       pathname: "/manager",
       params: buildManagerRouteParams({
         managerJwt,
         managerTeams,
-        selectedDate: nextSelection,
+        selectedDate: {
+          date: weekStart,
+          startDate: weekStart,
+          label: weekStart,
+          hasExplicitStartDate: true,
+        },
         selectedTeam,
       }),
     });
@@ -124,13 +142,8 @@ export default function ManagerDashboardRoute() {
       return;
     }
 
-    const currentIndex = managerTeams.findIndex(
-      (team) => team.teamId === selectedTeam.teamId,
-    );
-    const nextTeam =
-      managerTeams[
-        (currentIndex + 1 + managerTeams.length) % managerTeams.length
-      ];
+    const currentIndex = managerTeams.findIndex((team) => team.teamId === selectedTeam.teamId);
+    const nextTeam = managerTeams[(currentIndex + 1 + managerTeams.length) % managerTeams.length];
 
     router.replace({
       pathname: "/manager",
@@ -143,6 +156,35 @@ export default function ManagerDashboardRoute() {
     });
   }
 
+  async function handleExport() {
+    if (!viewModel || !selectedTeam) {
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const windowEndDate = viewModel.weeklyTrend.data.at(-1)?.date ?? selectedDate.startDate;
+
+      const csv = buildManagerExportCsv({
+        viewModel,
+        teamLabel: selectedTeam.label,
+        windowStartDate: selectedDate.startDate,
+        windowEndDate,
+      });
+
+      const fileName = buildManagerExportFileName({
+        teamLabel: selectedTeam.label,
+        windowStartDate: selectedDate.startDate,
+        windowEndDate,
+      });
+
+      await shareCsv({ csv, fileName });
+    } finally {
+      setIsExporting(false);
+    }
+  }
+
   async function handleSignOut() {
     await clearAnonymousSession();
     router.replace("/");
@@ -153,20 +195,23 @@ export default function ManagerDashboardRoute() {
       contentState={contentState}
       canChangeDate={isManagerAccessReady}
       canChangeTeam={managerTeams.length > 1}
+      isExporting={isExporting}
+      onExport={handleExport}
       onReturnHome={() => router.replace("/")}
-      onSelectDate={handleSelectDate}
+      onSelectLastWeek={handleSelectLastWeek}
       onSelectTeam={handleSelectTeam}
+      onSelectThisWeek={handleSelectThisWeek}
+      onSelectWeek={handleSelectWeek}
       onSignOut={handleSignOut}
       selectedDateLabel={selectedDate.label}
       selectedTeamLabel={selectedTeam?.label ?? "Manager team"}
+      selectedWeekStart={selectedDate.startDate}
       viewModel={viewModel}
     />
   );
 }
 
-function normalizeSearchParam(
-  value: string | string[] | undefined,
-): string | null {
+function normalizeSearchParam(value: string | string[] | undefined): string | null {
   if (typeof value === "string" && value.trim()) {
     return value;
   }

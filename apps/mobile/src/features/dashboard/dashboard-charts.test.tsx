@@ -2,60 +2,38 @@ import { cleanup, fireEvent, render, waitFor } from "@testing-library/react-nati
 
 import { ManagerDashboardCharts } from "@/features/dashboard/dashboard-charts";
 
-jest.mock("victory-native", () => {
+jest.mock("react-native-svg", () => {
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const React = require("react");
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const { Text, View } = require("react-native");
 
-  function ChartContainer({
+  const Svg = ({
     children,
-    testID,
     width,
+    height,
+    testID,
   }: {
     children?: React.ReactNode;
-    testID?: string;
     width?: number;
-  }) {
-    return (
-      <View testID={testID}>
-        {width ? <Text testID="chart-width">{width}</Text> : null}
-        {children}
-      </View>
-    );
-  }
+    height?: number;
+    testID?: string;
+  }) => (
+    <View testID={testID} style={{ width, height }}>
+      {children}
+    </View>
+  );
+
+  const SvgText = ({ children }: { children?: React.ReactNode }) => <Text>{children}</Text>;
 
   return {
-    VictoryAxis: ({ tickValues }: { tickValues?: string[] }) => (
-      <ChartContainer>
-        {tickValues?.map((value) => (
-          <Text key={value}>{value}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryBar: ({ data }: { data?: { label?: string; x?: string; y?: number }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "bar"}-${index}`}>{datum.label ?? datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryChart: ChartContainer,
-    VictoryLine: ({ data }: { data?: { label?: string; x?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.x ?? datum.label ?? "line"}-${index}`}>{datum.label ?? datum.x}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryScatter: ({ data }: { data?: { label?: string }[] }) => (
-      <ChartContainer>
-        {data?.map((datum, index) => (
-          <Text key={`${datum.label ?? "point"}-${index}`}>{datum.label}</Text>
-        ))}
-      </ChartContainer>
-    ),
-    VictoryTheme: {
-      clean: {},
-    },
+    __esModule: true,
+    default: Svg,
+    Svg,
+    Circle: () => null,
+    Line: () => null,
+    Polyline: () => null,
+    Text: SvgText,
   };
 });
 
@@ -67,6 +45,11 @@ jest.mock("@/hooks/use-theme", () => ({
     text: "#111827",
     textSecondary: "#6b7280",
   }),
+}));
+
+jest.mock("lucide-react-native", () => ({
+  Maximize2: () => null,
+  X: () => null,
 }));
 
 describe("ManagerDashboardCharts (mobile)", () => {
@@ -95,15 +78,30 @@ describe("ManagerDashboardCharts (mobile)", () => {
     expect(view.getByText("Neutral")).toBeTruthy();
   });
 
-  it("sizes charts to the measured card width", async () => {
+  it("sizes the weekly trend chart to the measured card width", async () => {
     const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
     await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
 
-    fireEvent(view.getByTestId("manager-dashboard-daily-card-width-provider"), "layout", {
+    fireEvent(view.getByTestId("manager-dashboard-weekly-card-width-provider"), "layout", {
       nativeEvent: { layout: { width: 360 } },
     });
 
-    await waitFor(() => expect(view.getByText("360")).toBeTruthy());
+    await waitFor(() =>
+      expect(view.getByTestId("manager-dashboard-weekly-svg").props.style.width).toBe(360),
+    );
+  });
+
+  it("renders the weekly trend chart with a value label on every visible point", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-weekly-svg")).toBeTruthy();
+    expect(view.getAllByText("06-15").length).toBeGreaterThan(0);
+    expect(view.getAllByText("06-21").length).toBeGreaterThan(0);
+    for (const scoreLabel of ["5", "7", "8", "6.8"]) {
+      expect(view.getAllByText(scoreLabel).length).toBeGreaterThan(0);
+    }
+    expect(view.getAllByText("5").length).toBeGreaterThanOrEqual(3);
   });
 
   it("renders the distribution chart as a ranked list with percentages", async () => {
@@ -120,6 +118,95 @@ describe("ManagerDashboardCharts (mobile)", () => {
     expect(view.getByTestId("manager-dashboard-distribution-neutral-percentage")).toHaveTextContent(
       "33%",
     );
+  });
+
+  it("renders the submission volume bars", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-volume-bars")).toBeTruthy();
+    expect(view.getAllByText("5").length).toBeGreaterThan(0);
+  });
+
+  it("renders the tag frequency horizontal bars", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-tags-bars")).toBeTruthy();
+    expect(view.getByText("#workload")).toBeTruthy();
+    expect(view.getByText("#management")).toBeTruthy();
+  });
+
+  it("renders an expand trigger only on Weekly Trend, Submission Volume, and Tag Frequency", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    // Expandable cards.
+    expect(view.getByTestId("manager-dashboard-weekly-card-expand-trigger")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-volume-card-expand-trigger")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-tags-card-expand-trigger")).toBeTruthy();
+
+    // Non-expandable cards.
+    expect(view.queryByTestId("manager-dashboard-daily-card-expand-trigger")).toBeNull();
+    expect(view.queryByTestId("manager-dashboard-distribution-card-expand-trigger")).toBeNull();
+  });
+
+  it("opens and closes the expanded modal when an expandable card's trigger is tapped", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    fireEvent.press(view.getByTestId("manager-dashboard-weekly-card-expand-trigger"));
+
+    await waitFor(() =>
+      expect(view.getByTestId("manager-dashboard-weekly-card-expand-close")).toBeTruthy(),
+    );
+
+    fireEvent.press(view.getByTestId("manager-dashboard-weekly-card-expand-close"));
+
+    await waitFor(() =>
+      expect(view.queryByTestId("manager-dashboard-weekly-card-expand-close")).toBeNull(),
+    );
+  });
+
+  it("does not render an expand trigger on a hidden privacy fallback card", async () => {
+    const base = createViewModel();
+    const hiddenViewModel = {
+      ...base,
+      weeklyTrend: {
+        ...base.weeklyTrend,
+        visibility: "hidden" as const,
+        hiddenMessage: "The weekly trend is hidden until privacy thresholds are met.",
+      },
+    };
+
+    const view = await render(<ManagerDashboardCharts viewModel={hiddenViewModel} />);
+    await waitFor(() => expect(view.getByText("Weekly trend")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-weekly-card-hidden")).toBeTruthy();
+    expect(view.queryByTestId("manager-dashboard-weekly-card-expand-icon")).toBeNull();
+  });
+
+  it("renders the redesigned daily heatmap as a 2x12 grid with AM and PM rows", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    expect(view.getByTestId("manager-dashboard-daily-grid")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-daily-cell-0-0")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-daily-cell-1-11")).toBeTruthy();
+    expect(view.getByText("AM")).toBeTruthy();
+    expect(view.getByText("PM")).toBeTruthy();
+  });
+
+  it("colors hidden daily heatmap cells with the neutral gray", async () => {
+    const view = await render(<ManagerDashboardCharts viewModel={createViewModel()} />);
+    await waitFor(() => expect(view.getByText("Daily heatmap")).toBeTruthy());
+
+    // Hour 13 is in the PM row (index 13 - 12 = 1) and is hidden in the fixture.
+    const cell = view.getByTestId("manager-dashboard-daily-cell-1-1");
+    const backgroundColor = cell.props.style.find(
+      (s: Record<string, unknown>) => s?.backgroundColor !== undefined,
+    )?.backgroundColor;
+    expect(backgroundColor).toBe("#9ca3af");
   });
 
   it("renders the hidden privacy fallback when a chart is below threshold", async () => {

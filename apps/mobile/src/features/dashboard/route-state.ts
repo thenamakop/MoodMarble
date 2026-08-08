@@ -10,9 +10,7 @@ interface ManagerDateSelection {
   hasExplicitStartDate: boolean;
 }
 
-function parseManagerTeams(
-  encodedManagerTeams: string | null,
-): ManagerTeamOption[] {
+function parseManagerTeams(encodedManagerTeams: string | null): ManagerTeamOption[] {
   if (!encodedManagerTeams) {
     return [];
   }
@@ -39,11 +37,7 @@ function resolveSelectedTeam(
     return null;
   }
 
-  return (
-    managerTeams.find((team) => team.teamId === teamIdParam) ??
-    managerTeams[0] ??
-    null
-  );
+  return managerTeams.find((team) => team.teamId === teamIdParam) ?? managerTeams[0] ?? null;
 }
 
 function resolveSelectedDate(
@@ -56,21 +50,6 @@ function resolveSelectedDate(
     startDate: startDateParam ?? getWeekStartDate(fallbackDate),
     label: fallbackDate,
     hasExplicitStartDate: Boolean(startDateParam),
-  };
-}
-
-function getNextDateSelection(
-  currentSelection: ManagerDateSelection,
-): ManagerDateSelection {
-  const nextDate = shiftDateByDays(currentSelection.date, -1);
-
-  return {
-    date: nextDate,
-    startDate: currentSelection.hasExplicitStartDate
-      ? currentSelection.startDate
-      : getWeekStartDate(nextDate),
-    label: nextDate,
-    hasExplicitStartDate: currentSelection.hasExplicitStartDate,
   };
 }
 
@@ -135,11 +114,13 @@ function shiftDateByDays(date: string, deltaDays: number): string {
 export {
   buildDateSelection,
   buildManagerRouteParams,
-  getNextDateSelection,
+  getTodayDate,
+  getWeekStartDate,
   hasManagerAccess,
   parseManagerTeams,
   resolveSelectedDate,
   resolveSelectedTeam,
+  shiftDateByDays,
   type ManagerDateSelection,
   type ManagerTeamOption,
 };

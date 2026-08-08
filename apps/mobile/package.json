@@ -37,8 +37,6 @@
     "react-native-svg": "^15.15.5",
     "react-native-web": "~0.21.0",
     "react-native-worklets": "0.5.1",
-    "victory": "^37.3.6",
-    "victory-native": "^37.3.6",
     "zod": "^4.4.3",
     "zustand": "^5.0.14"
   },
@@ -64,6 +62,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
+    "test:coverage": "jest --runInBand --coverage",
     "e2e:android:preflight": "node ./scripts/android-e2e-preflight.cjs",
     "e2e:android:start": "expo start --dev-client --port 8081 --host localhost",
     "e2e:android:metro": "expo start --dev-client --clear --host localhost",
@@ -81,6 +80,14 @@
       "^@/global\\.css$": "<rootDir>/test/__mocks__/styleMock.ts",
       "\\.css$": "<rootDir>/test/__mocks__/styleMock.ts",
       "^@/(.*)$": "<rootDir>/src/$1"
+    },
+    "coverageThreshold": {
+      "global": {
+        "branches": 40,
+        "functions": 40,
+        "lines": 40,
+        "statements": 40
+      }
     }
   },
   "private": true

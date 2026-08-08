@@ -82,4 +82,4 @@ jobs:
         run: pnpm --dir apps/mobile run lint
 
       - name: Test mobile
-        run: pnpm run test:mobile
+        run: pnpm run test:mobile -- --coverage

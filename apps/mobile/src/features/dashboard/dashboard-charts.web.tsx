@@ -1,19 +1,14 @@
 import { StyleSheet, View } from "react-native";
-import {
-  VictoryAxis,
-  VictoryBar,
-  VictoryChart,
-  VictoryLine,
-  VictoryPie,
-  VictoryScatter,
-  VictoryTheme,
-} from "victory";
 
 import { ThemedText } from "@/components/themed-text";
 import { ThemedView } from "@/components/themed-view";
-import type { DashboardMetricVisibility } from "@/contracts/dashboard";
 import { Spacing } from "@/constants/theme";
 import type { ManagerDashboardViewModel } from "@/features/dashboard/chart-model";
+import { DailyHeatmap } from "@/features/dashboard/daily-heatmap";
+import { MoodDistributionList } from "@/features/dashboard/mood-distribution-list";
+import { SubmissionVolumeChart } from "@/features/dashboard/submission-volume-chart";
+import { TagFrequencyChart } from "@/features/dashboard/tag-frequency-chart";
+import { WeeklyTrendChart } from "@/features/dashboard/weekly-trend-chart";
 import { useTheme } from "@/hooks/use-theme";
 
 interface ManagerDashboardChartsProps {
@@ -21,8 +16,6 @@ interface ManagerDashboardChartsProps {
 }
 
 export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProps) {
-  const chartTheme = VictoryTheme?.clean;
-
   return (
     <View style={styles.grid}>
       <ChartCard
@@ -33,42 +26,9 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         title="Daily heatmap"
         visibility={viewModel.dailyHeatmap.visibility}
       >
-        <VictoryChart
-          domainPadding={12}
-          height={220}
-          padding={{ bottom: 48, left: 36, right: 24, top: 24 }}
-          theme={chartTheme}
-          width={320}
-        >
-          <VictoryAxis
-            fixLabelOverlap
-            style={{
-              axis: { stroke: "transparent" },
-              tickLabels: {
-                fill: "#6b7280",
-                fontSize: 10,
-              },
-              ticks: { stroke: "transparent" },
-            }}
-            tickValues={viewModel.dailyHeatmap.data.map((cell) => cell.hourLabel)}
-          />
-          <VictoryScatter
-            data={viewModel.dailyHeatmap.data.map((cell) => ({
-              x: cell.hourLabel,
-              y: 1,
-              size: 16,
-              fill: getHeatmapFill(cell.scoreValue, cell.visibility),
-            }))}
-            labels={() => null}
-            style={{
-              data: {
-                fill: ({ datum }) => datum.fill,
-                stroke: ({ datum }) => datum.fill,
-              },
-            }}
-            symbol="square"
-          />
-        </VictoryChart>
+        <View testID="manager-dashboard-daily-chart">
+          <DailyHeatmap data={viewModel.dailyHeatmap.data} />
+        </View>
       </ChartCard>
 
       <ChartCard
@@ -79,33 +39,9 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         title="Weekly trend"
         visibility={viewModel.weeklyTrend.visibility}
       >
-        <VictoryChart
-          domainPadding={{ x: 16, y: 12 }}
-          height={220}
-          padding={{ bottom: 48, left: 40, right: 24, top: 24 }}
-          theme={chartTheme}
-          width={320}
-        >
-          <VictoryAxis
-            style={axisStyle}
-            tickValues={viewModel.weeklyTrend.data.map((point) => point.label)}
-          />
-          <VictoryAxis dependentAxis style={axisStyle} tickValues={[0, 2, 4, 6, 8, 10]} />
-          <VictoryLine
-            data={viewModel.weeklyTrend.data.map((point) => ({
-              x: point.label,
-              y: point.scoreValue,
-              label: point.scoreLabel,
-            }))}
-            interpolation="monotoneX"
-            style={{
-              data: {
-                stroke: "#4f46e5",
-                strokeWidth: 3,
-              },
-            }}
-          />
-        </VictoryChart>
+        <View testID="manager-dashboard-weekly-chart">
+          <WeeklyTrendChart data={viewModel.weeklyTrend.data} width={320} />
+        </View>
       </ChartCard>
 
       <ChartCard
@@ -116,26 +52,9 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         title="Mood distribution"
         visibility={viewModel.moodDistribution.visibility}
       >
-        <VictoryPie
-          colorScale={viewModel.moodDistribution.data.map((segment) => segment.color)}
-          data={viewModel.moodDistribution.data.map((segment) => ({
-            x: segment.label,
-            y: segment.value,
-          }))}
-          height={240}
-          innerRadius={60}
-          labelRadius={90}
-          labels={({ datum }) => `${datum.x}`}
-          padAngle={2}
-          style={{
-            labels: {
-              fill: "#6b7280",
-              fontSize: 11,
-            },
-          }}
-          theme={chartTheme}
-          width={320}
-        />
+        <View testID="manager-dashboard-distribution-chart">
+          <MoodDistributionList data={viewModel.moodDistribution.data} />
+        </View>
       </ChartCard>
 
       <ChartCard
@@ -146,31 +65,9 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         title="Submission volume"
         visibility={viewModel.submissionVolume.visibility}
       >
-        <VictoryChart
-          domainPadding={{ x: 18, y: 12 }}
-          height={220}
-          padding={{ bottom: 48, left: 40, right: 24, top: 24 }}
-          theme={chartTheme}
-          width={320}
-        >
-          <VictoryAxis
-            style={axisStyle}
-            tickValues={viewModel.submissionVolume.data.map((bar) => bar.label)}
-          />
-          <VictoryAxis dependentAxis style={axisStyle} />
-          <VictoryBar
-            data={viewModel.submissionVolume.data.map((bar) => ({
-              x: bar.label,
-              y: bar.totalValue,
-              label: bar.totalLabel,
-            }))}
-            style={{
-              data: {
-                fill: "#14b8a6",
-              },
-            }}
-          />
-        </VictoryChart>
+        <View testID="manager-dashboard-volume-chart">
+          <SubmissionVolumeChart data={viewModel.submissionVolume.data} />
+        </View>
       </ChartCard>
 
       <ChartCard
@@ -181,33 +78,9 @@ export function ManagerDashboardCharts({ viewModel }: ManagerDashboardChartsProp
         title="Tag frequency"
         visibility={viewModel.tagFrequency.visibility}
       >
-        <VictoryChart
-          domainPadding={{ x: 18, y: 12 }}
-          height={240}
-          horizontal
-          padding={{ bottom: 36, left: 96, right: 24, top: 24 }}
-          theme={chartTheme}
-          width={320}
-        >
-          <VictoryAxis style={axisStyle} />
-          <VictoryAxis
-            dependentAxis
-            style={axisStyle}
-            tickValues={viewModel.tagFrequency.data.map((bar) => bar.tag)}
-          />
-          <VictoryBar
-            data={viewModel.tagFrequency.data.map((bar) => ({
-              x: bar.tag,
-              y: bar.value,
-              label: bar.valueLabel,
-            }))}
-            style={{
-              data: {
-                fill: "#f97316",
-              },
-            }}
-          />
-        </VictoryChart>
+        <View testID="manager-dashboard-tags-chart">
+          <TagFrequencyChart data={viewModel.tagFrequency.data} />
+        </View>
       </ChartCard>
     </View>
   );
@@ -266,42 +139,6 @@ function ChartCard({
     </ThemedView>
   );
 }
-
-function getHeatmapFill(scoreValue: number, visibility: DashboardMetricVisibility): string {
-  if (visibility === "hidden") {
-    return "#9ca3af";
-  }
-
-  if (scoreValue >= 8) {
-    return "#22c55e";
-  }
-
-  if (scoreValue >= 6) {
-    return "#84cc16";
-  }
-
-  if (scoreValue >= 4) {
-    return "#facc15";
-  }
-
-  if (scoreValue >= 2) {
-    return "#fb923c";
-  }
-
-  return "#ef4444";
-}
-
-const axisStyle = {
-  axis: { stroke: "transparent" },
-  tickLabels: {
-    fill: "#6b7280",
-    fontSize: 10,
-  },
-  grid: {
-    stroke: "#e5e7eb",
-    opacity: 0.6,
-  },
-};
 
 const styles = StyleSheet.create({
   grid: {

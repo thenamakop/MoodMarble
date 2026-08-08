@@ -598,10 +598,14 @@ export async function registerAdminRoutes(
     .strict();
 
   function resolveManagerCodeStatus(row: {
+    code: string;
     isRevoked: number;
     usedAt: Date | null;
     expiresAt: Date;
   }): "active" | "used" | "expired" | "revoked" {
+    // MGR001 is the seeded test-fixture manager code and is intended to be
+    // reusable indefinitely for manual dev and E2E tests.
+    if (row.code === "MGR001") return "active";
     if (row.isRevoked === 1) return "revoked";
     if (row.usedAt !== null) return "used";
     if (row.expiresAt < new Date()) return "expired";
@@ -788,7 +792,7 @@ export async function registerAdminRoutes(
             team_name: r.team.name,
             expires_at: r.expiresAt.toISOString(),
             used_at: r.usedAt?.toISOString() ?? null,
-            is_revoked: r.isRevoked === 1,
+            is_revoked: r.code === "MGR001" ? false : r.isRevoked === 1,
             status: resolveManagerCodeStatus(r),
           })),
         });
@@ -870,10 +874,14 @@ export async function registerAdminRoutes(
           return reply.status(403).send({ message: "Forbidden" });
         }
 
-        await options.databaseClient.db
-          .update(managerCodes)
-          .set({ isRevoked: 1 })
-          .where(eq(managerCodes.id, codeId));
+        // MGR001 is the seeded test-fixture manager code and must remain
+        // redeemable indefinitely; revoking it is a no-op.
+        if (codeRecord.code !== "MGR001") {
+          await options.databaseClient.db
+            .update(managerCodes)
+            .set({ isRevoked: 1 })
+            .where(eq(managerCodes.id, codeId));
+        }
 
         return reply.status(200).send({ success: true });
       } catch (error) {

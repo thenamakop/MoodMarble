@@ -18,6 +18,7 @@ interface LocalMoodTimelineScreenProps {
   clearHistory?: () => Promise<void>;
   formatRecordedAt?: (recordedAt: string) => string;
   moodFilter?: MoodValue | null;
+  nested?: boolean;
 }
 
 export function LocalMoodTimelineScreen({
@@ -26,6 +27,7 @@ export function LocalMoodTimelineScreen({
   clearHistory = clearLocalMoodHistory,
   formatRecordedAt = formatLocalRecordedTime,
   moodFilter = null,
+  nested = false,
 }: LocalMoodTimelineScreenProps) {
   const theme = useTheme();
   const [dayGroups, setDayGroups] = useState<LocalMoodHistoryDayGroup[]>(
@@ -104,6 +106,150 @@ export function LocalMoodTimelineScreen({
     }
   }, [clearHistory, hydrateTimeline]);
 
+  const content = (
+    <>
+      <View style={styles.heroSection}>
+        <ThemedText type="title" style={styles.title}>
+          Your mood timeline
+        </ThemedText>
+        <ThemedText themeColor="textSecondary" style={styles.subtitle}>
+          Your marbles stay on this device. Scan each day to spot patterns, streaks, and steady
+          stretches.
+        </ThemedText>
+      </View>
+
+      <ThemedView
+        type="backgroundElement"
+        style={styles.streakPanel}
+        testID="timeline-streak-panel"
+      >
+        <View style={styles.streakHeader}>
+          <View style={styles.streakCopy}>
+            <ThemedText type="subtitle" style={styles.streakValue}>
+              {streak.dayCount} day{streak.dayCount === 1 ? "" : "s"}
+            </ThemedText>
+            <ThemedText themeColor="textSecondary">
+              Streak ending on {streak.endDate ?? "your next marble"}
+            </ThemedText>
+          </View>
+
+          {dayGroups.length > 0 ? (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityState={{ disabled: isClearing }}
+              disabled={isClearing}
+              onPress={handleClearHistory}
+              style={({ pressed }) => [
+                styles.clearButton,
+                {
+                  backgroundColor: theme.background,
+                  borderColor: theme.backgroundSelected,
+                  opacity: pressed && !isClearing ? 0.85 : 1,
+                },
+              ]}
+              testID="clear-local-history-button"
+            >
+              <ThemedText type="smallBold">
+                {isClearing ? "Clearing..." : "Clear local history"}
+              </ThemedText>
+            </Pressable>
+          ) : null}
+        </View>
+      </ThemedView>
+
+      {isLoading ? (
+        <ThemedView type="backgroundElement" style={styles.loadingPanel}>
+          <ActivityIndicator color={theme.text} />
+          <ThemedText themeColor="textSecondary">Loading your saved marbles...</ThemedText>
+        </ThemedView>
+      ) : dayGroups.length === 0 ? (
+        <ThemedView
+          type="backgroundElement"
+          style={styles.emptyPanel}
+          testID="timeline-empty-state"
+        >
+          <ThemedText type="subtitle" style={styles.emptyTitle}>
+            No mood history yet
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+            Share your first marble to start a private timeline on this device.
+          </ThemedText>
+        </ThemedView>
+      ) : filteredDayGroups.length === 0 ? (
+        <ThemedView
+          type="backgroundElement"
+          style={styles.emptyPanel}
+          testID="timeline-filter-empty-state"
+        >
+          <ThemedText type="subtitle" style={styles.emptyTitle}>
+            No entries for this mood
+          </ThemedText>
+          <ThemedText themeColor="textSecondary" style={styles.emptyText}>
+            Try a different filter or drop a marble with this mood.
+          </ThemedText>
+        </ThemedView>
+      ) : (
+        filteredDayGroups.map((group) => (
+          <ThemedView
+            key={group.submission_date}
+            type="backgroundElement"
+            style={styles.dayPanel}
+            testID={`timeline-day-${group.submission_date}`}
+          >
+            <View style={styles.dayHeader}>
+              <ThemedText type="subtitle" style={styles.dayTitle}>
+                {group.submission_date}
+              </ThemedText>
+              <ThemedText themeColor="textSecondary">
+                {group.records.length} marble
+                {group.records.length === 1 ? "" : "s"}
+              </ThemedText>
+            </View>
+
+            <View style={styles.entryList}>
+              {group.records.map((record) => (
+                <View
+                  key={record.id}
+                  style={[styles.entryCard, { borderColor: theme.backgroundSelected }]}
+                  testID={`timeline-entry-${record.id}`}
+                >
+                  <View style={styles.entryHeader}>
+                    <View style={styles.entryMood}>
+                      <View
+                        style={[
+                          styles.moodDot,
+                          {
+                            backgroundColor: MOOD_COLORS[record.mood_type],
+                          },
+                        ]}
+                      />
+                      <ThemedText type="smallBold">{MOOD_LABELS[record.mood_type]}</ThemedText>
+                    </View>
+                    <ThemedText themeColor="textSecondary" type="small">
+                      {formatRecordedAt(record.recorded_at)}
+                    </ThemedText>
+                  </View>
+
+                  <ThemedText
+                    themeColor="textSecondary"
+                    type="small"
+                    testID={`timeline-tags-${record.id}`}
+                  >
+                    {record.tags.length > 0 ? record.tags.join("  ") : "No tags saved"}
+                  </ThemedText>
+                </View>
+              ))}
+            </View>
+          </ThemedView>
+        ))
+      )}
+    </>
+  );
+
+  if (nested) {
+    return <View style={styles.nestedContainer}>{content}</View>;
+  }
+
   return (
     <ThemedView style={styles.screen}>
       <SafeAreaView style={styles.safeArea}>
@@ -111,141 +257,7 @@ export function LocalMoodTimelineScreen({
           style={styles.scrollView}
           contentContainerStyle={[styles.contentContainer, { paddingBottom: safeBottomPadding }]}
         >
-          <View style={styles.heroSection}>
-            <ThemedText type="title" style={styles.title}>
-              Your mood timeline
-            </ThemedText>
-            <ThemedText themeColor="textSecondary" style={styles.subtitle}>
-              Your marbles stay on this device. Scan each day to spot patterns, streaks, and steady
-              stretches.
-            </ThemedText>
-          </View>
-
-          <ThemedView
-            type="backgroundElement"
-            style={styles.streakPanel}
-            testID="timeline-streak-panel"
-          >
-            <View style={styles.streakHeader}>
-              <View style={styles.streakCopy}>
-                <ThemedText type="subtitle" style={styles.streakValue}>
-                  {streak.dayCount} day{streak.dayCount === 1 ? "" : "s"}
-                </ThemedText>
-                <ThemedText themeColor="textSecondary">
-                  Streak ending on {streak.endDate ?? "your next marble"}
-                </ThemedText>
-              </View>
-
-              {dayGroups.length > 0 ? (
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityState={{ disabled: isClearing }}
-                  disabled={isClearing}
-                  onPress={handleClearHistory}
-                  style={({ pressed }) => [
-                    styles.clearButton,
-                    {
-                      backgroundColor: theme.background,
-                      borderColor: theme.backgroundSelected,
-                      opacity: pressed && !isClearing ? 0.85 : 1,
-                    },
-                  ]}
-                  testID="clear-local-history-button"
-                >
-                  <ThemedText type="smallBold">
-                    {isClearing ? "Clearing..." : "Clear local history"}
-                  </ThemedText>
-                </Pressable>
-              ) : null}
-            </View>
-          </ThemedView>
-
-          {isLoading ? (
-            <ThemedView type="backgroundElement" style={styles.loadingPanel}>
-              <ActivityIndicator color={theme.text} />
-              <ThemedText themeColor="textSecondary">Loading your saved marbles...</ThemedText>
-            </ThemedView>
-          ) : dayGroups.length === 0 ? (
-            <ThemedView
-              type="backgroundElement"
-              style={styles.emptyPanel}
-              testID="timeline-empty-state"
-            >
-              <ThemedText type="subtitle" style={styles.emptyTitle}>
-                No mood history yet
-              </ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                Share your first marble to start a private timeline on this device.
-              </ThemedText>
-            </ThemedView>
-          ) : filteredDayGroups.length === 0 ? (
-            <ThemedView
-              type="backgroundElement"
-              style={styles.emptyPanel}
-              testID="timeline-filter-empty-state"
-            >
-              <ThemedText type="subtitle" style={styles.emptyTitle}>
-                No entries for this mood
-              </ThemedText>
-              <ThemedText themeColor="textSecondary" style={styles.emptyText}>
-                Try a different filter or drop a marble with this mood.
-              </ThemedText>
-            </ThemedView>
-          ) : (
-            filteredDayGroups.map((group) => (
-              <ThemedView
-                key={group.submission_date}
-                type="backgroundElement"
-                style={styles.dayPanel}
-                testID={`timeline-day-${group.submission_date}`}
-              >
-                <View style={styles.dayHeader}>
-                  <ThemedText type="subtitle" style={styles.dayTitle}>
-                    {group.submission_date}
-                  </ThemedText>
-                  <ThemedText themeColor="textSecondary">
-                    {group.records.length} marble
-                    {group.records.length === 1 ? "" : "s"}
-                  </ThemedText>
-                </View>
-
-                <View style={styles.entryList}>
-                  {group.records.map((record) => (
-                    <View
-                      key={record.id}
-                      style={[styles.entryCard, { borderColor: theme.backgroundSelected }]}
-                      testID={`timeline-entry-${record.id}`}
-                    >
-                      <View style={styles.entryHeader}>
-                        <View style={styles.entryMood}>
-                          <View
-                            style={[
-                              styles.moodDot,
-                              {
-                                backgroundColor: MOOD_COLORS[record.mood_type],
-                              },
-                            ]}
-                          />
-                          <ThemedText type="smallBold">{MOOD_LABELS[record.mood_type]}</ThemedText>
-                        </View>
-                        <ThemedText themeColor="textSecondary" type="small">
-                          {formatRecordedAt(record.recorded_at)}
-                        </ThemedText>
-                      </View>
-
-                      <ThemedText
-                        themeColor="textSecondary"
-                        type="small"
-                        testID={`timeline-tags-${record.id}`}
-                      >
-                        {record.tags.length > 0 ? record.tags.join("  ") : "No tags saved"}
-                      </ThemedText>
-                    </View>
-                  ))}
-                </View>
-              </ThemedView>
-            ))
-          )}
+          {content}
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -287,6 +299,11 @@ const styles = StyleSheet.create({
     gap: Spacing.three,
     paddingHorizontal: Spacing.four,
     paddingTop: Spacing.four,
+  },
+  nestedContainer: {
+    width: "100%",
+    paddingHorizontal: Spacing.four,
+    gap: Spacing.three,
   },
   heroSection: {
     gap: Spacing.two,

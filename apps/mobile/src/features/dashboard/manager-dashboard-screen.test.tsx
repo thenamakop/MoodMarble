@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { fireEvent, render } from "@testing-library/react-native";
 
 import { ManagerDashboardScreen } from "@/features/dashboard/manager-dashboard-screen";
 
@@ -27,13 +27,61 @@ describe("ManagerDashboardScreen", () => {
 
     expect(view.getByTestId("manager-dashboard-screen")).toBeTruthy();
     expect(view.getByText("dashboard.title")).toBeTruthy();
-    expect(view.getByTestId("manager-dashboard-date-picker")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-this-week")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-last-week")).toBeTruthy();
+    expect(view.getByTestId("manager-dashboard-choose-week")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-team-selector")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-export-button")).toBeTruthy();
     expect(view.getByTestId("manager-dashboard-ready-state")).toBeTruthy();
   });
 
-  it("renders the Sign out button and calls onSignOut when tapped", async () => {
+  it("calls onExport when the export button is pressed and a viewModel is present", async () => {
+    const onExport = jest.fn();
+    const viewModel = {
+      summary: { totalSubmissionsLabel: "8", windowLabel: "2026-06-15 to 2026-06-21" },
+      banner: null,
+      dailyHeatmap: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+      weeklyTrend: { visibility: "visible", hiddenMessage: null, thresholdMessage: null, data: [] },
+      submissionVolume: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+      moodDistribution: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+      tagFrequency: {
+        visibility: "visible",
+        hiddenMessage: null,
+        thresholdMessage: null,
+        data: [],
+      },
+    } as never;
+    const view = await render(
+      <ManagerDashboardScreen
+        contentState={{ kind: "ready" }}
+        onExport={onExport}
+        viewModel={viewModel}
+      />,
+    );
+
+    fireEvent.press(view.getByTestId("manager-dashboard-export-button"));
+    expect(onExport).toHaveBeenCalledTimes(1);
+  });
+
+  it("shows an Alert confirmation before calling onSignOut", async () => {
+    const alertSpy = jest.spyOn(require("react-native"), "Alert", "get").mockReturnValue({
+      alert: jest.fn(),
+    });
     const onSignOut = jest.fn().mockResolvedValue(undefined);
     const view = await render(
       <ManagerDashboardScreen contentState={{ kind: "ready" }} onSignOut={onSignOut} />,
@@ -41,7 +89,45 @@ describe("ManagerDashboardScreen", () => {
 
     expect(view.getByTestId("manager-dashboard-logout")).toBeTruthy();
     fireEvent.press(view.getByTestId("manager-dashboard-logout"));
-    await waitFor(() => expect(onSignOut).toHaveBeenCalledTimes(1));
+
+    const { alert } = require("react-native").Alert;
+    expect(alert).toHaveBeenCalledTimes(1);
+    expect(alert).toHaveBeenCalledWith(
+      "dashboard.signOutConfirmation.title",
+      "dashboard.signOutConfirmation.body",
+      expect.arrayContaining([
+        expect.objectContaining({ text: "common.cancel", style: "cancel" }),
+        expect.objectContaining({ text: "dashboard.signOut", style: "destructive" }),
+      ]),
+      { cancelable: true },
+    );
+
+    const destructiveButton = alert.mock.calls[0][2].find(
+      (button: { style: string }) => button.style === "destructive",
+    );
+    await destructiveButton.onPress();
+    expect(onSignOut).toHaveBeenCalledTimes(1);
+
+    alertSpy.mockRestore();
+  });
+
+  it("does not call onSignOut when the Alert cancel button is pressed", async () => {
+    jest.spyOn(require("react-native"), "Alert", "get").mockReturnValue({
+      alert: jest.fn(),
+    });
+    const onSignOut = jest.fn().mockResolvedValue(undefined);
+    const view = await render(
+      <ManagerDashboardScreen contentState={{ kind: "ready" }} onSignOut={onSignOut} />,
+    );
+
+    fireEvent.press(view.getByTestId("manager-dashboard-logout"));
+
+    const { alert } = require("react-native").Alert;
+    const cancelButton = alert.mock.calls[0][2].find(
+      (button: { style: string }) => button.style === "cancel",
+    );
+    expect(cancelButton).toEqual({ text: "common.cancel", style: "cancel" });
+    expect(onSignOut).not.toHaveBeenCalled();
   });
 
   it("renders the loading state", async () => {
@@ -78,23 +164,27 @@ describe("ManagerDashboardScreen", () => {
     expect(onReturnHome).toHaveBeenCalledTimes(1);
   });
 
-  it("invokes the date and team selection controls when manager options are available", async () => {
-    const onSelectDate = jest.fn();
+  it("invokes the week and team selection controls when manager options are available", async () => {
+    const onSelectThisWeek = jest.fn();
+    const onSelectLastWeek = jest.fn();
     const onSelectTeam = jest.fn();
     const view = await render(
       <ManagerDashboardScreen
         canChangeDate
         canChangeTeam
         contentState={{ kind: "ready" }}
-        onSelectDate={onSelectDate}
+        onSelectLastWeek={onSelectLastWeek}
         onSelectTeam={onSelectTeam}
+        onSelectThisWeek={onSelectThisWeek}
       />,
     );
 
-    fireEvent.press(view.getByTestId("manager-dashboard-date-picker"));
+    fireEvent.press(view.getByTestId("manager-dashboard-this-week"));
+    fireEvent.press(view.getByTestId("manager-dashboard-last-week"));
     fireEvent.press(view.getByTestId("manager-dashboard-team-selector"));
 
-    expect(onSelectDate).toHaveBeenCalledTimes(1);
+    expect(onSelectThisWeek).toHaveBeenCalledTimes(1);
+    expect(onSelectLastWeek).toHaveBeenCalledTimes(1);
     expect(onSelectTeam).toHaveBeenCalledTimes(1);
   });
 

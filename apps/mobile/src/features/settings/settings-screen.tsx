@@ -28,6 +28,7 @@ import { loadLocalSettings, requestStoredOnboardingReplay } from "@/features/set
 import { useTheme } from "@/hooks/use-theme";
 
 import { clearLocalDeviceData } from "./local-data";
+import { seedSampleLocalMoodHistory } from "./seed-local-history";
 
 const SUGGESTED_REMINDER_TIMES = ["09:00", "13:00", "18:00"];
 
@@ -65,6 +66,7 @@ export function SettingsScreen({
   const [isBusy, setIsBusy] = useState(true);
   const [isClearPromptVisible, setIsClearPromptVisible] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const [isSeeding, setIsSeeding] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
   const [permissionStatus, setPermissionStatus] =
     useState<NotificationPermissionStatus>("undetermined");
@@ -270,6 +272,24 @@ export function SettingsScreen({
       setErrorMessage(
         error instanceof Error ? error.message : t("settings.errorMessages.clearLocalData"),
       );
+    }
+  }
+
+  async function handleSeedLocalHistory() {
+    setIsSeeding(true);
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    try {
+      await seedSampleLocalMoodHistory();
+      setStatusMessage("Sample local history seeded. Open History to view.");
+    } catch (error) {
+      setStatusMessage(null);
+      setErrorMessage(
+        error instanceof Error ? error.message : "Failed to seed sample local history.",
+      );
+    } finally {
+      setIsSeeding(false);
     }
   }
 
@@ -673,6 +693,41 @@ export function SettingsScreen({
               </View>
             ) : null}
           </ThemedView>
+
+          {__DEV__ ? (
+            <ThemedView type="backgroundElement" style={styles.panel}>
+              <View style={styles.sectionCopy}>
+                <ThemedText type="subtitle" style={styles.sectionTitle}>
+                  Debug tools
+                </ThemedText>
+                <ThemedText themeColor="textSecondary">
+                  Temporary helpers for screenshots and demos. Not available in release builds.
+                </ThemedText>
+              </View>
+
+              <Pressable
+                accessibilityLabel="Seed sample local mood history"
+                accessibilityRole="button"
+                disabled={isSeeding}
+                onPress={handleSeedLocalHistory}
+                style={({ pressed }) => [
+                  styles.secondaryButton,
+                  {
+                    backgroundColor: theme.background,
+                    borderColor: theme.backgroundSelected,
+                    opacity: isSeeding ? 0.45 : pressed ? 0.85 : 1,
+                  },
+                ]}
+                testID="settings-seed-local-history"
+              >
+                {isSeeding ? (
+                  <ActivityIndicator color={theme.text} size="small" />
+                ) : (
+                  <ThemedText type="smallBold">Seed sample local history</ThemedText>
+                )}
+              </Pressable>
+            </ThemedView>
+          ) : null}
 
           {statusMessage ? (
             <ThemedView type="backgroundElement" style={styles.statusPanel}>

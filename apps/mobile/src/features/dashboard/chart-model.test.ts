@@ -1,4 +1,7 @@
-import { buildManagerDashboardViewModel } from "@/features/dashboard/chart-model";
+import {
+  buildManagerDashboardViewModel,
+  getChartScoreValue,
+} from "@/features/dashboard/chart-model";
 
 describe("buildManagerDashboardViewModel", () => {
   it("maps backend dashboard responses into stable chart buckets", () => {
@@ -50,6 +53,38 @@ describe("buildManagerDashboardViewModel", () => {
     ]);
   });
 
+  it("returns null scoreValue for privacy-hidden weekly trend points", () => {
+    const bundle = createVisibleBundle();
+    // Override one day to be privacy-hidden. Cast through unknown to bypass
+    // the narrow literal types inferred by the factory function — this is
+    // intentional test data that simulates a real hidden API response.
+    (bundle.weekly.daily_points as unknown[])[4] = {
+      date: "2026-06-19",
+      privacy: hiddenPrivacy(["minimum_hourly_submissions"]),
+      total_submissions: { kind: "hidden" as const },
+      average_mood_score: { kind: "hidden" as const },
+    };
+
+    const viewModel = buildManagerDashboardViewModel(bundle);
+
+    // The hidden day should have scoreValue: null, not 0
+    expect(viewModel.weeklyTrend.data[4].scoreValue).toBeNull();
+    // Visible days should still have their numeric values
+    expect(viewModel.weeklyTrend.data[0].scoreValue).toBe(5);
+    expect(viewModel.weeklyTrend.data[3].scoreValue).toBe(6.5);
+  });
+
+  it("returns null scoreValue for privacy-hidden daily heatmap cells", () => {
+    const viewModel = buildManagerDashboardViewModel(createVisibleBundle());
+
+    // hour 14 is hidden in createVisibleBundle
+    expect(viewModel.dailyHeatmap.data[14].scoreValue).toBeNull();
+    expect(viewModel.dailyHeatmap.data[14].visibility).toBe("hidden");
+
+    // Visible hours should have numeric values
+    expect(viewModel.dailyHeatmap.data[9].scoreValue).toBe(7);
+  });
+
   it("preserves hidden privacy state for chart fallbacks", () => {
     const viewModel = buildManagerDashboardViewModel(createHiddenBundle());
 
@@ -93,9 +128,7 @@ function createVisibleBundle() {
       hourly_buckets: Array.from({ length: 24 }, (_, hourOfDay) => ({
         hour_of_day: hourOfDay,
         privacy:
-          hourOfDay === 14
-            ? hiddenPrivacy(["minimum_hourly_submissions"])
-            : visiblePrivacy(),
+          hourOfDay === 14 ? hiddenPrivacy(["minimum_hourly_submissions"]) : visiblePrivacy(),
         total_submissions:
           hourOfDay === 9
             ? { kind: "exact" as const, value: 4 }
@@ -221,9 +254,7 @@ function createHiddenBundle() {
         total_submissions: { kind: "hidden" as const },
         alert_state: { status: "hidden" as const, message: null },
       },
-      tag_counts: [
-        { tag: "#workload" as const, count: { kind: "hidden" as const } },
-      ],
+      tag_counts: [{ tag: "#workload" as const, count: { kind: "hidden" as const } }],
     },
   };
 }
@@ -240,9 +271,7 @@ function visiblePrivacy() {
   };
 }
 
-function hiddenPrivacy(
-  reasons: ("minimum_submissions" | "minimum_hourly_submissions")[],
-) {
+function hiddenPrivacy(reasons: ("minimum_submissions" | "minimum_hourly_submissions")[]) {
   return {
     visibility: "hidden" as const,
     reasons,
