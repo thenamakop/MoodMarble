@@ -7,12 +7,19 @@ jest.mock("expo-router", () => ({
 }));
 
 jest.mock("@/features/history/timeline-screen", () => ({
-  LocalMoodTimelineScreen: ({ moodFilter }: { moodFilter?: string | null }) => {
+  LocalMoodTimelineScreen: ({
+    moodFilter,
+    nested,
+  }: {
+    moodFilter?: string | null;
+    nested?: boolean;
+  }) => {
     const React = require("react");
     const { Text, View } = require("react-native");
     return (
       <View>
         <Text>timeline-view</Text>
+        <Text testID="timeline-nested-prop">{String(nested)}</Text>
         {moodFilter ? <Text testID="timeline-active-filter">{moodFilter}</Text> : null}
       </View>
     );
@@ -20,10 +27,15 @@ jest.mock("@/features/history/timeline-screen", () => ({
 }));
 
 jest.mock("@/features/history/calendar-screen", () => ({
-  LocalMoodCalendarScreen: () => {
+  LocalMoodCalendarScreen: ({ nested }: { nested?: boolean }) => {
     const React = require("react");
-    const { Text } = require("react-native");
-    return <Text>calendar-view</Text>;
+    const { Text, View } = require("react-native");
+    return (
+      <View>
+        <Text>calendar-view</Text>
+        <Text testID="calendar-nested-prop">{String(nested)}</Text>
+      </View>
+    );
   },
 }));
 
@@ -74,51 +86,38 @@ describe("LocalHistoryScreen", () => {
     expect(onReturnHome).toHaveBeenCalledTimes(1);
   });
 
-  it("renders mood filter chips", async () => {
+  it("renders the mood filter dropdown", async () => {
     useRouter.mockReturnValue({ push: jest.fn() });
 
     const view = await render(<LocalHistoryScreen />);
 
-    await waitFor(() => expect(view.getByTestId("mood-filter-row")).toBeTruthy());
-    expect(view.getByTestId("mood-filter-all")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-happy")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-calm")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-stressed")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-energised")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-focused")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-neutral")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-tired")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-sad")).toBeTruthy();
-    expect(view.getByTestId("mood-filter-unheard")).toBeTruthy();
+    await waitFor(() => expect(view.getByTestId("mood-filter-dropdown")).toBeTruthy());
+    expect(view.getByText("Filter: All")).toBeTruthy();
   });
 
-  it("filters timeline when a mood chip is selected", async () => {
+  it("filters the timeline through the dropdown menu", async () => {
     useRouter.mockReturnValue({ push: jest.fn() });
 
     const view = await render(<LocalHistoryScreen />);
 
-    await waitFor(() => expect(view.getByTestId("mood-filter-happy")).toBeTruthy());
+    await waitFor(() => expect(view.getByTestId("mood-filter-dropdown")).toBeTruthy());
 
-    // No filter active initially
+    // No filter is active initially
     expect(view.queryByTestId("timeline-active-filter")).toBeNull();
 
-    // Select the "happy" mood chip
-    fireEvent.press(view.getByTestId("mood-filter-happy"));
+    // Open the dropdown menu
+    fireEvent.press(view.getByTestId("mood-filter-dropdown"));
+    await waitFor(() => expect(view.getByTestId("mood-filter-menu")).toBeTruthy());
 
+    // Select a mood
+    fireEvent.press(view.getByTestId("mood-filter-option-happy"));
     await waitFor(() => expect(view.getByTestId("timeline-active-filter")).toBeTruthy());
     expect(view.getByTestId("timeline-active-filter").props.children).toBe("happy");
 
-    // Pressing the same chip again clears the filter
-    fireEvent.press(view.getByTestId("mood-filter-happy"));
-
-    await waitFor(() => expect(view.queryByTestId("timeline-active-filter")).toBeNull());
-
-    // Pressing "All" also clears the filter when one is set
-    fireEvent.press(view.getByTestId("mood-filter-calm"));
-    await waitFor(() =>
-      expect(view.getByTestId("timeline-active-filter").props.children).toBe("calm"),
-    );
-    fireEvent.press(view.getByTestId("mood-filter-all"));
+    // Open the dropdown again and reset to "All"
+    fireEvent.press(view.getByTestId("mood-filter-dropdown"));
+    await waitFor(() => expect(view.getByTestId("mood-filter-option-all")).toBeTruthy());
+    fireEvent.press(view.getByTestId("mood-filter-option-all"));
     await waitFor(() => expect(view.queryByTestId("timeline-active-filter")).toBeNull());
   });
 });

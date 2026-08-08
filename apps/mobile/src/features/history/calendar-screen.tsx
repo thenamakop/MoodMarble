@@ -228,11 +228,7 @@ export function LocalMoodCalendarScreen({
   );
 
   if (nested) {
-    return (
-      <View style={[styles.nestedContainer, { paddingBottom: safeBottomPadding }]}>
-        {calendarContent}
-      </View>
-    );
+    return <View style={styles.nestedContainer}>{calendarContent}</View>;
   }
 
   return (
@@ -263,10 +259,9 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   nestedContainer: {
-    maxWidth: MaxContentWidth,
-    gap: Spacing.three,
+    width: "100%",
     paddingHorizontal: Spacing.four,
-    paddingTop: Spacing.four,
+    gap: Spacing.three,
   },
   contentContainer: {
     gap: Spacing.three,
