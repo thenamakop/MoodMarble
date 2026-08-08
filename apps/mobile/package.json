@@ -62,6 +62,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "test": "jest",
+    "test:coverage": "jest --runInBand --coverage",
     "e2e:android:preflight": "node ./scripts/android-e2e-preflight.cjs",
     "e2e:android:start": "expo start --dev-client --port 8081 --host localhost",
     "e2e:android:metro": "expo start --dev-client --clear --host localhost",
